@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "gwas-sumstats-formatter"
+version = "0.1.0"
+description = ""
+authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>"]
+readme = "README.md"
+packages = [{include = "gwas_sumstats_formatter"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typer = {extras = ["all"], version = "^0.7.0"}
+petl = "^1.7.12"
+
+[tool.poetry.scripts]
+ss2ssf = "gwas_sumstats_formatter.main:app"
+
+[tool.poetry.group.dev.dependencies]
+flake8 = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
