@@ -24,6 +24,7 @@ import typer
 from pathlib import Path
 
 from transformer import SumStatsTable
+from utils import parse_accession_id
 
 
 app = typer.Typer()
@@ -33,15 +34,21 @@ app = typer.Typer()
 def main(filename: Path = typer.Argument(...,
                                          exists=True,
                                          readable=True),
-         outfile: Path = typer.Option(None,
-                                      "--outfile", "-o",
-                                      writable=True,
-                                      file_okay=True),
+         outfile: str = typer.Option(None,
+                                     "--outfile", "-o",
+                                     writable=True,
+                                     file_okay=True),
          metadata_only: bool = typer.Option(False,
                                             "--metadata-only", "-m")
          ):
-    sst = SumStatsTable(filename)  
-    print(sst.reformat_header())
+    # init sumstats table
+    sst = SumStatsTable(filename)
+    # reformat column order
+    sst.reformat_header()
+    # write to outfile
+    if outfile is None:
+        outfile = parse_accession_id(filename) + ".tsv.gz"
+    sst.to_file(outfile=outfile)
 
 
 if __name__ == "__main__":
