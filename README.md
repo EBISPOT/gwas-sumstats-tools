@@ -1,0 +1,1 @@
+# GWAS Summary Statistics Formatter
