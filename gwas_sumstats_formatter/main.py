@@ -1,24 +1,3 @@
-"""
-Convert from old format to new standard
-TODO:
-[X] reorder/rename columns
-    - use petl
-[ ] create metadata file from rest api 
-    - import schema from standard repo
-    - metadata client - take from harm pipeline
-
-Input: 
-    1. file labelled with GCST
-    2. outfile name
-steps:
-    calc:
-        GCST
-        md5sum
-        metadata
-output:
-    outfile + outfile-meta.yaml
-"""
-
 from pathlib import Path
 import typer
 
@@ -92,7 +71,6 @@ def ss_format(filename: Path = typer.Argument(...,
     meta_dict.update(get_file_metadata(in_file=filename, out_file=ss_out))
     ssm.update_metadata(data_dict=meta_dict)
     ssm.to_file()
-
 
 
 if __name__ == "__main__":
