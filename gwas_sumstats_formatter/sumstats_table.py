@@ -15,6 +15,11 @@ class SumStatsTable:
         self.sumstats = etl.fromcsv(sumstats_file, delimiter=self.delimiter)
 
     def reformat_header(self) -> etl.Table:
+        """Reformats the headers according to the standard
+
+        Returns:
+            etl.Table
+        """
         self.rename_headers()
         missing_headers = self._get_missing_headers()
         if missing_headers:
@@ -24,22 +29,54 @@ class SumStatsTable:
         return self.sumstats
 
     def to_file(self, outfile: Path) -> None:
+        """Write table to TSV file
+
+        Arguments:
+            outfile -- Output file name
+        """
         etl.totsv(self.sumstats, outfile)
 
     def _get_delimiter(self, filepath: Path) -> str:
+        """Get delimiter from file path
+
+        Arguments:
+            filepath -- Input file path
+
+        Returns:
+            delimiter, either ',' or '\t'
+        """
         return ',' if '.csv' in filepath.suffixes else '\t'
 
     def rename_headers(self, header_map: dict = HEADER_MAP) -> etl.Table:
+        """Rename headers according to the header map
+
+        Keyword Arguments:
+            header_map -- dict of header mappings from old to new \
+                (default: {HEADER_MAP})
+
+        Returns:
+            etl.Table
+        """
         self.sumstats = etl.rename(self.sumstats, header_map)
         return self.sumstats
 
     def _get_missing_headers(self) -> set:
+        """Identify and return missing headers
+
+        Returns:
+            set of missing headers
+        """
         missing_headers = set(self.HEADERS_REQUIRED) - set(self.get_header())
         if set(self.HEADER_EFFECT).isdisjoint(set(self.get_header())):
             missing_headers.add("beta")
         return missing_headers
 
     def _set_header_order(self) -> list:
+        """Set the header order
+
+        Returns:
+            List of headers in standard order
+        """
         all_headers = [h for h in self.HEADERS_REQUIRED]
         all_headers.extend([h for h in self.HEADERS_OPTIONAL])
         all_headers.extend([h for h in self.HEADER_EFFECT])
@@ -57,7 +94,15 @@ class SumStatsTable:
             pass
         return header_order
 
-    def _add_missing_headers(self, missing_headers) -> etl.Table:
+    def _add_missing_headers(self, missing_headers: set) -> etl.Table:
+        """Add missing headers and fill with #NA
+
+        Arguments:
+            missing_headers -- missing headers set
+
+        Returns:
+            etl.Table
+        """
         add_fields = [(h, '#NA') for h in missing_headers]
         if len(add_fields) > 1:
             self.sumstats = etl.addfields(self.sumstats, add_fields)
@@ -67,5 +112,9 @@ class SumStatsTable:
         return self.sumstats
 
     def get_header(self) -> tuple:
-        return etl.header(self.sumstats)
+        """Get the header of the file
 
+        Returns:
+            tuple of the headers
+        """
+        return etl.header(self.sumstats)
