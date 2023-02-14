@@ -3,6 +3,8 @@
 ```
 Usage: ss2ssf [OPTIONS] FILENAME  
 
+Convert 'old' formatted sumstats to the new standard
+
 Arguments:
  *    filename      PATH  Input sumstats file [default: None] [required]
 
