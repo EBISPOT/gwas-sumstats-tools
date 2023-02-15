@@ -25,6 +25,19 @@ def parse_accession_id(filename: Path) -> Union[str, None]:
     return gcst_search.group()
 
 
+def parse_genome_assembly(filename: Path) -> Union[str, None]:
+    """Get genome assembly from file path
+
+    Arguments:
+        filename -- Input file path 
+
+    Returns:
+        Genome assembly or None
+    """
+    gcst_search = re.search(r"([Build|[GRCh]*)([0-9]+)\.", filename.stem, re.IGNORECASE)
+    return gcst_search.group(2)
+
+
 def download_with_requests(url, params=None, headers=None) \
     -> Union[bytes, None]:
     """Download content from URL

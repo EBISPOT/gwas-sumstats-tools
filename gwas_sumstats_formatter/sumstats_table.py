@@ -9,23 +9,37 @@ class SumStatsTable:
                         "effect_allele_frequency", "p_value")
     HEADER_EFFECT = ("beta", "odds_ratio")
     HEADERS_OPTIONAL = ("variant_id", "rsid", "info", "ci_upper", "ci_lower", "ref_allele")
-    
+
     def __init__(self, sumstats_file: Path, delimiter: str = None) -> None:
         self.delimiter = delimiter if delimiter else self._get_delimiter(sumstats_file)
-        self.sumstats = etl.fromcsv(sumstats_file, delimiter=self.delimiter)
+        self.sumstats = etl.fromcsv(str(sumstats_file), delimiter=self.delimiter)
 
-    def reformat_header(self) -> etl.Table:
+    def reformat_header(self, header_map: dict = HEADER_MAP) -> etl.Table:
         """Reformats the headers according to the standard
 
         Returns:
             etl.Table
         """
-        self.rename_headers()
+        self.rename_headers(header_map=header_map)
         missing_headers = self._get_missing_headers()
         if missing_headers:
             self._add_missing_headers(missing_headers)
         header_order = self._set_header_order()
         self.sumstats = etl.cut(self.sumstats, *header_order)
+        return self.sumstats
+
+    def reformat_table(self) -> etl.Table:
+        """Reformat table data
+
+        1. replace missing values with "#NA"
+        2. rsid must be rsids
+
+        Returns:
+            etl.Table
+        """
+        self.sumstats = etl.replaceall(self.sumstats, "NA", "#NA")
+        self.sumstats = etl.replaceall(self.sumstats, None, "#NA")
+        self,
         return self.sumstats
 
     def to_file(self, outfile: Path) -> None:
@@ -34,7 +48,7 @@ class SumStatsTable:
         Arguments:
             outfile -- Output file name
         """
-        etl.totsv(self.sumstats, outfile)
+        self.sumstats.totsv(str(outfile))
 
     def _get_delimiter(self, filepath: Path) -> str:
         """Get delimiter from file path
@@ -47,7 +61,7 @@ class SumStatsTable:
         """
         return ',' if '.csv' in filepath.suffixes else '\t'
 
-    def rename_headers(self, header_map: dict = HEADER_MAP) -> etl.Table:
+    def rename_headers(self, header_map: dict) -> etl.Table:
         """Rename headers according to the header map
 
         Keyword Arguments:
@@ -57,7 +71,8 @@ class SumStatsTable:
         Returns:
             etl.Table
         """
-        self.sumstats = etl.rename(self.sumstats, header_map)
+        filtered_header_map = {k: v for k, v in header_map.items() if k in self.get_header()}
+        self.sumstats = etl.rename(self.sumstats, filtered_header_map)
         return self.sumstats
 
     def _get_missing_headers(self) -> set:
@@ -118,3 +133,23 @@ class SumStatsTable:
             tuple of the headers
         """
         return etl.header(self.sumstats)
+
+
+def header_dict_from_args(args: list) -> dict:
+    """Generate a dict from cli args split on ":"
+
+    Arguments:
+        args -- cli args list
+
+    Returns:
+        Dict of key, values
+    """
+    header_dict = {}
+    for arg in args:
+        if ":" not in arg:
+            # skip because it's not a metadata mapping
+            pass
+        else:
+            key, value = arg.replace("--", "").split(":")
+            header_dict[key] = value
+    return header_dict

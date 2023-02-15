@@ -15,7 +15,7 @@ pyyaml = "^6.0"
 pydantic = "^1.10.4"
 
 [tool.poetry.scripts]
-ss2ssf = "gwas_sumstats_formatter.main:app"
+gwas-ssf = "gwas_sumstats_formatter.main:app"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"

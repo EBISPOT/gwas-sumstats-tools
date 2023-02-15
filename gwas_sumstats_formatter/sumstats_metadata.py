@@ -3,6 +3,7 @@ from datetime import date
 from pathlib import Path
 from gwas_sumstats_formatter.utils import (download_with_requests,
                                            parse_accession_id,
+                                           parse_genome_assembly,
                                            get_md5sum)
 from gwas_sumstats_formatter.schema.metadata import SumStatsMetadata
 
@@ -28,6 +29,11 @@ GWAS_CAT_MAPPINGS = {
     'authorNotes': 'authorNotes',
     'coordinateSystem': 'coordinateSystem',
     'sex': 'sex'
+    }
+GENOME_ASSEMBLY_MAPPINGS = {
+    '36': 'GRCh36',
+    '37': 'GRCh37',
+    '38': 'GRCh38'
     }
 
 
@@ -76,6 +82,14 @@ class MetadataClient:
         """
         return yaml.dump(self.metadata.dict())
 
+    def as_dict(self) -> dict:
+        """Dict repr of metadata
+
+        Returns:
+            Dict of metadata
+        """
+        return self.metadata.dict()
+
 
 def metadata_dict_from_args(args: list) -> dict:
     """Generate a dict from cli args split on "="
@@ -89,6 +103,7 @@ def metadata_dict_from_args(args: list) -> dict:
     meta_dict = {}
     for arg in args:
         if "=" not in arg:
+            # skip because it's not a metadata mapping
             pass
         else:
             key, value = arg.replace("--", "").split("=")
@@ -127,7 +142,15 @@ def get_file_metadata(in_file: Path, out_file: str) -> dict:
     meta_dict['GWASID'] = accession_id
     meta_dict['dataFileName'] = Path(out_file).name
     meta_dict['fileType'] = 'GWAS-SFF v0.1'
+    meta_dict['genomeAssembly'] = GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown')
     meta_dict['dataFileMd5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
     meta_dict['dateLastModified'] = date.today()
     meta_dict['GWASCatalogAPI'] = GWAS_CAT_API_STUDIES_URL + accession_id
     return meta_dict
+
+
+def init_metadata_from_file(filename: Path, metadata_infile: Path = None) -> SumStatsMetadata:
+    m_in = metadata_infile if metadata_infile else filename.with_suffix(filename.suffix + "-meta.yaml")
+    ssm = MetadataClient(in_file=m_in)
+    ssm.from_file()
+    return ssm
