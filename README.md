@@ -1,4 +1,4 @@
-# `gwas-ssf`
+# GWAS-SSF Read and Format tools
 
 **Usage**:
 
@@ -17,7 +17,7 @@ $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 
 ## `gwas-ssf format`
 
-[green]Format[/green] a sumstats file and creating a new one. Add/edit metadata.
+Format a sumstats file and creating a new one. Add/edit metadata.
 
 **Usage**:
 
@@ -43,7 +43,7 @@ $ gwas-ssf format [OPTIONS] FILENAME
 
 ## `gwas-ssf read`
 
-[green]Read[/green] a sumstats file
+Read a sumstats file
 
 **Usage**:
 
