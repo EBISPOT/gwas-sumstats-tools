@@ -12,8 +12,8 @@ $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `format`: [green]Format[/green] a sumstats file and...
-* `read`: [green]Read[/green] a sumstats file
+* `format`: Format a sumstats file and...
+* `read`: Read a sumstats file
 
 ## `gwas-ssf format`
 
