@@ -33,7 +33,7 @@ $ gwas-ssf format [OPTIONS] FILENAME
 
 * `-o, --ss-out PATH`: Output sumstats file
 * `-s, --minimal2standard`: Try to convert a valid, minimally formatted file to the standard format.This assumes the file at least has `p_value`  combined with rsid in `variant_id` field or `chromosome` and `base_pair_location`. Validity of the new file is not guaranteed because mandatory data could be missing from the original file.  [default: False]
-* `-m, --generate-metadata`: Do/Don't create the metadata file  [default: False]
+* `-m, --generate-metadata`: Create the metadata file  [default: False]
 * `--meta-out PATH`: Specify the metadata output file
 * `--meta-in PATH`: Specify a metadata file to read in
 * `-e, --meta-edit`: Enable metadata edit mode. Then provide params to edit in the `--<FIELD>=<VALUE>` format e.g. `--GWASID=GCST123456` to edit/add that value  [default: False]
