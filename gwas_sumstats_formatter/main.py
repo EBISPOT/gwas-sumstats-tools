@@ -4,20 +4,19 @@ import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from gwas_sumstats_formatter.sumstats_table import (SumStatsTable,
-                                                    header_dict_from_args)
-from gwas_sumstats_formatter.sumstats_metadata import (MetadataClient,
-                                                       metadata_dict_from_args,
-                                                       metadata_dict_from_gwas_cat,
-                                                       get_file_metadata,
-                                                       init_metadata_from_file)
+from gwas_sumstats_formatter.sumstats.data_table import (SumStatsTable,
+                                                               header_dict_from_args)
+from gwas_sumstats_formatter.sumstats.metadata import (MetadataClient,
+                                                                  metadata_dict_from_args,
+                                                                  metadata_dict_from_gwas_cat,
+                                                                  get_file_metadata,
+                                                                  init_metadata_from_file)
 from gwas_sumstats_formatter.utils import (set_data_outfile_name,
                                            set_metadata_outfile_name,
                                            parse_accession_id)
 
 
 app = typer.Typer(add_completion=False,
-                  rich_markup_mode="rich",
                   no_args_is_help=True,
                   context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -33,6 +32,12 @@ def ss_write():
 def ss_validate():
     pass
 """
+
+
+def exit_if_no_data(table):
+    if table is None:
+        print("No data in table. Exiting.")
+        raise typer.Exit()
 
 
 @app.command("read",
@@ -67,6 +72,7 @@ def ss_read(filename: Path = typer.Argument(...,
     [green]Read[/green] a sumstats file
     """
     sst = SumStatsTable(filename)
+    exit_if_no_data(table=sst.sumstats)
     if get_header:
         print("[bold]\n-------- SUMSTATS HEADERS --------\n[/bold]")
         for h in sst.get_header():
@@ -84,8 +90,6 @@ def ss_read(filename: Path = typer.Argument(...,
         # Just preview the file
         print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
         print(sst.sumstats)
-    
-
 
 
 @app.command("format",
@@ -96,17 +100,23 @@ def ss_read(filename: Path = typer.Argument(...,
 def ss_format(filename: Path = typer.Argument(...,
                                               exists=True,
                                               readable=True,
-                                              help="Input sumstats file"),
+                                              help="Input sumstats file. Must be TSV or CSV and may be gzipped"),
               data_outfile: Path = typer.Option(None,
                                                 "--ss-out", "-o",
                                                 writable=True,
                                                 file_okay=True,
                                                 help="Output sumstats file"),
-              generate_data: bool = typer.Option(True,
-                                                 "--generate-data/--not-generate-data", "-d/-D",
-                                                 help="Do/Don't create the data file"),
-              generate_metadata: bool = typer.Option(True,
-                                                     "--generate-metadata/--not-generate-metadata", "-m/-M",
+              minimal_to_standard: bool = typer.Option(False,
+                                                 "--minimal2standard", "-s",
+                                                 help=("Try to convert a valid, minimally formatted file "
+                                                       "to the standard format."
+                                                       "This assumes the file at least has `p_value` "
+                                                       " combined with rsid in `variant_id` field or "
+                                                       "`chromosome` and `base_pair_location`. Validity "
+                                                       "of the new file is not guaranteed because mandatory "
+                                                       "data could be missing from the original file.")),
+              generate_metadata: bool = typer.Option(False,
+                                                     "--generate-metadata", "-m",
                                                      help="Do/Don't create the metadata file"),
               metadata_outfile: Path = typer.Option(None,
                                                     "--meta-out",
@@ -144,14 +154,17 @@ def ss_format(filename: Path = typer.Argument(...,
     # Set metadata outfile name
     m_out = set_metadata_outfile_name(data_outfile=ss_out,
                                       metadata_outfile=metadata_outfile)
-    if generate_data:
+    if minimal_to_standard:
         sst = SumStatsTable(filename)
+        exit_if_no_data(table=sst.sumstats)
         print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
         print(sst.sumstats)
         if custom_header_map:
             header_map = header_dict_from_args(args=extra_args.args)
-        sst.reformat_header(header_map=header_map)
-        sst.reformat_table()
+            sst.reformat_header(header_map=header_map)
+        else:
+            sst.reformat_header()
+        sst.normalise_missing_values()
         print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
         print(sst.sumstats)
         print(f"[green]Formatting and writing sumstats data --> {ss_out}[/green]")

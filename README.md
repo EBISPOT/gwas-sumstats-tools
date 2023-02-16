@@ -1,17 +1,64 @@
-# GWAS Summary Statistics Formatter
+# `gwas-ssf`
 
+**Usage**:
+
+```console
+$ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 ```
-Usage: ss2ssf [OPTIONS] FILENAME  
 
-Arguments:
- *    filename      PATH  Input sumstats file [default: None] [required]
+**Options**:
 
-Options:
---ss-out         -o      TEXT  Output sumstats file [default: None]
---metadata-only  -m            Only create the metadata file 
---meta-out               TEXT  Specify the metadata output file [default: None]
---meta-in                TEXT  Specify a metadata file to read in [default: None]
---meta-edit                    Enable metadata edit mode. Then provide params to edit in the `--<KEY>=<VALUE>` format e.g. `--GWASID=GCST123456` to edit/add that value
---meta-gwas                    Populate metadata from GWAS Catalog [default: True]
---help                         Show this message and exit. 
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `format`: [green]Format[/green] a sumstats file and...
+* `read`: [green]Read[/green] a sumstats file
+
+## `gwas-ssf format`
+
+[green]Format[/green] a sumstats file and creating a new one. Add/edit metadata.
+
+**Usage**:
+
+```console
+$ gwas-ssf format [OPTIONS] FILENAME
 ```
+
+**Arguments**:
+
+* `FILENAME`: Input sumstats file. Must be TSV or CSV and may be gzipped  [required]
+
+**Options**:
+
+* `-o, --ss-out PATH`: Output sumstats file
+* `-s, --minimal2standard`: Try to convert a valid, minimally formatted file to the standard format.This assumes the file at least has `p_value`  combined with rsid in `variant_id` field or `chromosome` and `base_pair_location`. Validity of the new file is not guaranteed because mandatory data could be missing from the original file.  [default: False]
+* `-m, --generate-metadata`: Do/Don't create the metadata file  [default: False]
+* `--meta-out PATH`: Specify the metadata output file
+* `--meta-in PATH`: Specify a metadata file to read in
+* `-e, --meta-edit`: Enable metadata edit mode. Then provide params to edit in the `--<FIELD>=<VALUE>` format e.g. `--GWASID=GCST123456` to edit/add that value  [default: False]
+* `-g, --meta-gwas`: Populate metadata from GWAS Catalog  [default: False]
+* `-c, --custom-header-map`: Provide a custom header mapping using the `--<FROM>:<TO>` format e.g. `--chr:chromosome`  [default: False]
+* `--help`: Show this message and exit.
+
+## `gwas-ssf read`
+
+[green]Read[/green] a sumstats file
+
+**Usage**:
+
+```console
+$ gwas-ssf read [OPTIONS] FILENAME
+```
+
+**Arguments**:
+
+* `FILENAME`: Input sumstats file  [required]
+
+**Options**:
+
+* `-h, --get-header`: Just return the headers of the file  [default: False]
+* `--meta-in PATH`: Specify a metadata file to read in, defaulting to <filename>-meta.yaml
+* `-M, --get-all-metadata`: Return all metadata  [default: False]
+* `-m, --get-metadata TEXT`: Get metadata for the specified fields e.g. `-m genomeAssembly -m isHarmonised
+* `--help`: Show this message and exit.
