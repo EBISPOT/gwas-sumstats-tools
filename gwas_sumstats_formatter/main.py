@@ -188,6 +188,8 @@ def ss_format(filename: Path = typer.Argument(...,
         print(ssm)
         print(f"[green]Writing metadata --> {m_out}[/green]")
         ssm.to_file()
+    if not any([minimal_to_standard, generate_metadata]):
+        print("Nothing to do.")
 
 
 if __name__ == "__main__":
