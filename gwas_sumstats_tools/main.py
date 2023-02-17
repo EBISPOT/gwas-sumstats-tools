@@ -4,20 +4,21 @@ import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from gwas_sumstats_formatter.sumstats.data_table import (SumStatsTable,
-                                                               header_dict_from_args)
-from gwas_sumstats_formatter.sumstats.metadata import (MetadataClient,
-                                                                  metadata_dict_from_args,
-                                                                  metadata_dict_from_gwas_cat,
-                                                                  get_file_metadata,
-                                                                  init_metadata_from_file)
-from gwas_sumstats_formatter.utils import (set_data_outfile_name,
-                                           set_metadata_outfile_name,
-                                           parse_accession_id)
+from gwas_sumstats_tools.sumstats.data_table import (SumStatsTable,
+                                                     header_dict_from_args)
+from gwas_sumstats_tools.sumstats.metadata import (MetadataClient,
+                                                   metadata_dict_from_args,
+                                                   metadata_dict_from_gwas_cat,
+                                                   get_file_metadata,
+                                                   init_metadata_from_file)
+from gwas_sumstats_tools.utils import (set_data_outfile_name,
+                                       set_metadata_outfile_name,
+                                       parse_accession_id)
 
 
 app = typer.Typer(add_completion=False,
                   no_args_is_help=True,
+                  rich_markup_mode="rich",
                   context_settings={"help_option_names": ["-h", "--help"]})
 
 

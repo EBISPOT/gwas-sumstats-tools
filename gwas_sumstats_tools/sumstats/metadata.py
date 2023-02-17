@@ -1,11 +1,11 @@
 import yaml
 from datetime import date
 from pathlib import Path
-from gwas_sumstats_formatter.utils import (download_with_requests,
-                                           parse_accession_id,
-                                           parse_genome_assembly,
-                                           get_md5sum)
-from gwas_sumstats_formatter.schema.metadata import SumStatsMetadata
+from gwas_sumstats_tools.utils import (download_with_requests,
+                                       parse_accession_id,
+                                       parse_genome_assembly,
+                                       get_md5sum)
+from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
 
 
 GWAS_CAT_API_STUDIES_URL = "https://www.ebi.ac.uk/gwas/rest/api/studies/"

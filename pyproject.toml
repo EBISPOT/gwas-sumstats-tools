@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "gwas-sumstats-formatter"
+name = "gwas-sumstats-tools"
 version = "0.1.0"
 description = ""
 authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>"]
 readme = "README.md"
-packages = [{include = "gwas_sumstats_formatter"}]
+packages = [{include = "gwas_sumstats_tools"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -15,11 +15,10 @@ pydantic = "^1.10.4"
 typer = {extras = ["all"], version = "^0.7.0"}
 
 [tool.poetry.scripts]
-gwas-ssf = "gwas_sumstats_formatter.main:app"
+gwas-ssf = "gwas_sumstats_tools.main:app"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
-
 
 [build-system]
 requires = ["poetry-core"]
