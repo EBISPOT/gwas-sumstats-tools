@@ -1,4 +1,4 @@
-# GWAS-SSF Tools
+# GWAS SumStats Tools
 
 
 A basic toolkit for reading and formatting GWAS sumstats files from the GWAS Catalog.
