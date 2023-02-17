@@ -1,6 +1,33 @@
-# GWAS-SSF Read and Format tools
+# GWAS-SSF Tools
 
-**Usage**:
+
+A basic toolkit for reading and formatting GWAS sumstats files from the GWAS Catalog.
+Built with:
+* [Petl](https://petl.readthedocs.io/en/stable/index.html)
+* [Pydantic](https://docs.pydantic.dev/)
+* [Typer](https://typer.tiangolo.com/)
+
+There are two commands, `read` and `format`.
+
+`read` is for:
+* Previewing a data file: _no options_
+* Extracting the field headers: `-h`
+* Extracting all the metadata: `-M`
+* Extacting specific field, value pairs from the metada: `-m <field name>` 
+
+`format` is for:
+* Converting a minamally formatted sumstats data file to the standard format. This is not guaranteed to return a valid standard file, because manadatory data fields could be missing in the input. It simply does the following. `-s`
+  * Renames `variant_id` -> `rsid`
+  * Reorders the fields
+  * Converts `NA` missing values to `#NA`
+  * It is memory efficient and will take approx. 30s per 1 million records
+* Generate metadata for a data file: `-m`
+  * Read metadata in from existing file: `--meta-in <file>`
+  * Create metadata from the GWAS Catalog (internal use, requires authenticated API): `-g`
+  * Edit/add the values to the metadata: `-e` with `--<FIELD>=<VALUE>`
+
+
+##Usage
 
 ```console
 $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
@@ -15,7 +42,7 @@ $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 * `format`: Format a sumstats file and...
 * `read`: Read a sumstats file
 
-## `gwas-ssf format`
+### `gwas-ssf format`
 
 Format a sumstats file and creating a new one. Add/edit metadata.
 
@@ -41,9 +68,9 @@ $ gwas-ssf format [OPTIONS] FILENAME
 * `-c, --custom-header-map`: Provide a custom header mapping using the `--<FROM>:<TO>` format e.g. `--chr:chromosome`  [default: False]
 * `--help`: Show this message and exit.
 
-## `gwas-ssf read`
+### `gwas-ssf read`
 
-Read a sumstats file
+Read (preview) a sumstats file
 
 **Usage**:
 
@@ -62,3 +89,9 @@ $ gwas-ssf read [OPTIONS] FILENAME
 * `-M, --get-all-metadata`: Return all metadata  [default: False]
 * `-m, --get-metadata TEXT`: Get metadata for the specified fields e.g. `-m genomeAssembly -m isHarmonised
 * `--help`: Show this message and exit.
+
+
+## TODO:
+- [ ] Installation/distribution docs
+- [ ] Transformation features
+- [ ] update GWAS API

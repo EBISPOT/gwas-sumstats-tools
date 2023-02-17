@@ -17,9 +17,8 @@ coerce_chromosome()
 
 normalise_missing_values()
 
-
-
 """
+
 
 class SumStatsTable:
     FIELD_MAP = {"variant_id": "rsid"}
@@ -50,7 +49,7 @@ class SumStatsTable:
 
     def from_file(self, infile: Path) -> Union[etl.Table, None]:
         self.sumstats = etl.fromcsv(str(infile), delimiter=self.delimiter)
-        if etl.nrows(self.sumstats) < 1:
+        if etl.nrows(self.head_table(nrows=1)) < 1:
             return None
         return self.sumstats
 
@@ -61,6 +60,9 @@ class SumStatsTable:
             outfile -- Output file name
         """
         self.sumstats.totsv(str(outfile))
+
+    def head_table(self, nrows: int = 10) -> etl.Table:
+        return etl.head(self.sumstats, n=nrows)
 
     def _get_delimiter(self, filepath: Path) -> str:
         """Get delimiter from file path
