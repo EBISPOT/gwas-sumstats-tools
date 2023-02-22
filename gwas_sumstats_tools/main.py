@@ -11,6 +11,7 @@ from gwas_sumstats_tools.sumstats.metadata import (MetadataClient,
                                                    metadata_dict_from_gwas_cat,
                                                    get_file_metadata,
                                                    init_metadata_from_file)
+from gwas_sumstats_tools.sumstats.validate_data import DataTableValidator
 from gwas_sumstats_tools.utils import (set_data_outfile_name,
                                        set_metadata_outfile_name,
                                        parse_accession_id)
@@ -23,7 +24,7 @@ app = typer.Typer(add_completion=False,
 
 
 """
-TODO: write, validate
+TODO: write, validate, read with tabix
 
 @app.command("create")
 def ss_write():
@@ -39,6 +40,59 @@ def exit_if_no_data(table):
     if table is None:
         print("No data in table. Exiting.")
         raise typer.Exit()
+
+
+@app.command("validate",
+             no_args_is_help=True,
+             context_settings={"help_option_names": ["-h", "--help"],
+                               "allow_extra_args": True,
+                               "ignore_unknown_options": True})
+def ss_validate(filename: Path = typer.Argument(...,
+                                                exists=True,
+                                                readable=True,
+                                                help="Input sumstats file"),
+                errors_file: bool = typer.Option(False,
+                                                 "--errors-out", "-e",
+                                                 help="Output erros to a csv file, <filename>.err.csv.gz"),
+                pval_zero: bool = typer.Option(False,
+                                               "--p-zero", "-z",
+                                               help="Force p-values of zero to be allowable"),
+                pval_neg_log: bool = typer.Option(False,
+                                                  "--p-neg-log", "-n",
+                                                  help="Force p-values to be validated as -log10"),
+                minimum_rows: int = typer.Option(100_000,
+                                                 "--min-rows", "-m",
+                                                 help="Minimum rows acceptable for the file"),
+                #metadata_only: bool = typer.Option(False,
+                #                                   "--metadata-only", "-M",
+                #                                   help="Only validate the metadata file <filename>-meta.yaml"),
+                #infer_from_metadata: bool = typer.Option(False,
+                #                                   "--infer-from-metadata", "-i",
+                #                                   help=("Infer validation options from the "
+                #                                         "metadata file <filename>-meta.yaml. "
+                #                                         "E.g. fields for analysis software and "
+                #                                         "negative log10 p-values affect the data "
+                #                                         "validation behaviour."))
+                ):
+    """
+    [green]Validate[/green] a sumstats file/metadata file
+    """
+    validator = DataTableValidator(pval_zero=pval_zero,
+                                   pval_neg_log=pval_neg_log,
+                                   minimum_rows=minimum_rows,
+                                   sumstats_file=filename)
+    valid = validator.validate()
+    if valid:
+        print("File is valid")
+        raise typer.Exit(0)
+    else:
+        print("File is not valid")
+        if validator.errors_table is not None:
+            print(validator.errors_table.head(10))
+        if errors_file:
+            print(f"[green]Writing errors --> {filename}.err.csv.gz[/green]")
+            validator.write_errors_to_file()
+        raise typer.Exit(1)
 
 
 @app.command("read",
@@ -76,7 +130,7 @@ def ss_read(filename: Path = typer.Argument(...,
     exit_if_no_data(table=sst.sumstats)
     if get_header:
         print("[bold]\n-------- SUMSTATS HEADERS --------\n[/bold]")
-        for h in sst.get_header():
+        for h in sst.header():
             print(h)
     if get_all_metadata:
         ssm = init_metadata_from_file(filename=filename, metadata_infile=metadata_infile)
