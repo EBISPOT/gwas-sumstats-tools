@@ -24,18 +24,6 @@ app = typer.Typer(add_completion=False,
                   context_settings={"help_option_names": ["-h", "--help"]})
 
 
-"""
-TODO: write, validate, read with tabix
-
-@app.command("create")
-def ss_write():
-    pass
-
-@app.command("validate")
-def ss_validate():
-    pass
-"""
-
 def exit_if_no_data(table: Union[etl.Table, None]) -> None:
     if table is None:
         print("No data in table. Exiting.")
@@ -76,23 +64,22 @@ def ss_validate(filename: Path = typer.Argument(...,
                                                          "validation behaviour."))
                 ):
     """
-    [green]Validate[/green] a sumstats file/metadata file
+    [green]VALIDATE[/green] a GWAS summary statistics data file
     """
     (valid,
      message,
      error_preview,
-     error_types) = validate(filename=filename,
-                             errors_file=errors_file,
-                             pval_zero=pval_zero,
-                             pval_neg_log=pval_neg_log,
-                             minimum_rows=minimum_rows,
-                             infer_from_metadata=infer_from_metadata)
+     error_type) = validate(filename=filename,
+                            errors_file=errors_file,
+                            pval_zero=pval_zero,
+                            pval_neg_log=pval_neg_log,
+                            minimum_rows=minimum_rows,
+                            infer_from_metadata=infer_from_metadata)
     print(f"Validation status: {valid}")
     print(message)
-    if error_types:
-        print("Primary reason for validation failure:")
-        for k, v in error_types.items():
-            print(f"[red]{k}[/red]") if v else None
+    if error_type:
+        print(("Primary reason for validation failure: "
+               f"[red]{error_type}[/red]"))
     if error_preview:
         print(("See below for a preview of the errors. "
                "To get all the errors in a file run the "
@@ -131,7 +118,7 @@ def ss_read(filename: Path = typer.Argument(...,
                                                                    "`-m genomeAssembly -m isHarmonised"))
             ):
     """
-    [green]Read[/green] a sumstats file
+    [green]READ[/green] a sumstats file
     """
     sst = SumStatsTable(filename)
     exit_if_no_data(table=sst.sumstats)
@@ -208,7 +195,7 @@ def ss_format(filename: Path = typer.Argument(...,
               extra_args: typer.Context = typer.Option(None)
               ):
     """
-    [green]Format[/green] a sumstats file and creating a new one. Add/edit metadata.
+    [green]FORMAT[/green] a sumstats file by creating a new one from the existing one. Add/edit metadata.
     """
     # Set data outfile name
     ss_out = set_data_outfile_name(data_infile=filename,

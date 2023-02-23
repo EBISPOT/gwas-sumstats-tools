@@ -75,6 +75,8 @@ class SumStatsTable:
         Returns:
             delimiter, either ',' or '\t'
         """
+        if not isinstance(filepath, Path):
+            filepath = Path(filepath)
         return ',' if '.csv' in filepath.suffixes else '\t'
 
     def rename_headers(self, header_map: dict) -> etl.Table:

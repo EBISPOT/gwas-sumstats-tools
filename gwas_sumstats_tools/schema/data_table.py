@@ -1,3 +1,13 @@
+"""
+Pandera Schema https://pandera.readthedocs.io for defining 
+the summary statistics data tables. The schema is dynamically
+generated because of columns that can be defined in multiple
+ways e.g. the effect size column (index 4) can be a beta, an
+odds ratio or a hazard ratio - and these all have differing 
+validation constraints.
+"""
+
+
 from pandera import Column, DataFrameSchema, Check
 
 
