@@ -5,11 +5,11 @@ import petl as etl
 from pandera import DataFrameSchema, errors
 
 from gwas_sumstats_tools.schema.data_table import SumStatsSchema
-from gwas_sumstats_tools.sumstats.data_table import SumStatsTable
-from gwas_sumstats_tools.sumstats.metadata import init_metadata_from_file
+from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
+from gwas_sumstats_tools.interfaces.metadata import init_metadata_from_file
 
 
-class DataTableValidator(SumStatsTable):
+class Validator(SumStatsTable):
     def __init__(self,
                  pval_zero: bool = False,
                  pval_neg_log: bool = False,
@@ -157,10 +157,10 @@ def validate(filename: Path,
             pval_zero = True if ssm.as_dict().get('analysisSoftware') is not None else False
         if pval_neg_log is False:
             pval_neg_log = ssm.as_dict().get('pvalueIsNegLog10') if True else False
-    validator = DataTableValidator(pval_zero=pval_zero,
-                                   pval_neg_log=pval_neg_log,
-                                   minimum_rows=minimum_rows,
-                                   sumstats_file=filename)
+    validator = Validator(pval_zero=pval_zero,
+                          pval_neg_log=pval_neg_log,
+                          minimum_rows=minimum_rows,
+                          sumstats_file=filename)
     valid, message = validator.validate()
     if not valid:
         if validator.errors_table:

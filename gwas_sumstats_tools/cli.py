@@ -5,14 +5,14 @@ import petl as etl
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from gwas_sumstats_tools.sumstats.data_table import (SumStatsTable,
+from gwas_sumstats_tools.interfaces.data_table import (SumStatsTable,
                                                      header_dict_from_args)
-from gwas_sumstats_tools.sumstats.metadata import (MetadataClient,
+from gwas_sumstats_tools.interfaces.metadata import (MetadataClient,
                                                    metadata_dict_from_args,
                                                    metadata_dict_from_gwas_cat,
                                                    get_file_metadata,
                                                    init_metadata_from_file)
-from gwas_sumstats_tools.sumstats.validate_data import validate
+from gwas_sumstats_tools.validate import validate
 from gwas_sumstats_tools.utils import (set_data_outfile_name,
                                        set_metadata_outfile_name,
                                        parse_accession_id)

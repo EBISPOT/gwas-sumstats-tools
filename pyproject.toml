@@ -16,7 +16,7 @@ typer = {extras = ["all"], version = "^0.7.0"}
 pandera = "^0.13.4"
 
 [tool.poetry.scripts]
-gwas-ssf = "gwas_sumstats_tools.main:app"
+gwas-ssf = "gwas_sumstats_tools.cli:app"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
