@@ -11,12 +11,13 @@ from gwas_sumstats_tools.interfaces.metadata import init_metadata_from_file
 
 class Validator(SumStatsTable):
     def __init__(self,
+                 sumstats_file: Path,
                  pval_zero: bool = False,
                  pval_neg_log: bool = False,
                  minimum_rows: int = 100_000,
                  sample_size: int = 100_000,
                  **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(sumstats_file=sumstats_file)
         self.pval_zero = pval_zero
         self.pval_neg_log = pval_neg_log
         self.errors_table = None
