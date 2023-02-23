@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 import typer
+import petl as etl
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -35,12 +36,14 @@ def ss_validate():
     pass
 """
 
-
-def exit_if_no_data(table):
+def exit_if_no_data(table: Union[etl.Table, None]) -> None:
     if table is None:
         print("No data in table. Exiting.")
         raise typer.Exit()
 
+
+def exit_status(status: bool) -> int:
+    return 0 if status is True else 1
 
 
 @app.command("validate",
@@ -75,16 +78,28 @@ def ss_validate(filename: Path = typer.Argument(...,
     """
     [green]Validate[/green] a sumstats file/metadata file
     """
-    valid = validate(filename=filename,
-                     errors_file=errors_file,
-                     pval_zero=pval_zero,
-                     pval_neg_log=pval_neg_log,
-                     minimum_rows=minimum_rows,
-                     infer_from_metadata=infer_from_metadata)
-    if valid:
-        raise typer.Exit(0)
-    else:
-        raise typer.Exit(1)
+    (valid,
+     message,
+     error_preview,
+     error_types) = validate(filename=filename,
+                             errors_file=errors_file,
+                             pval_zero=pval_zero,
+                             pval_neg_log=pval_neg_log,
+                             minimum_rows=minimum_rows,
+                             infer_from_metadata=infer_from_metadata)
+    print(f"Validation status: {valid}")
+    print(message)
+    if error_types:
+        print("Primary reason for validation failure:")
+        for k, v in error_types.items():
+            print(f"[red]{k}[/red]") if v else None
+    if error_preview:
+        print(("See below for a preview of the errors. "
+               "To get all the errors in a file run the "
+               "[green][bold]validate[/bold][/green] command "
+               "with the [green][bold]-e[/bold][/green] flag."))
+        print(error_preview)
+    raise typer.Exit(exit_status(valid))
 
 
 @app.command("read",

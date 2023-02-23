@@ -1,10 +1,4 @@
-"""
-In [90]: def v(df): 
-    ...:     try: 
-    ...:         schema.validate(df, lazy=True) 
-    ...:     except pa.errors.SchemaErrors as err: 
-    ...:         return err.failure_cases 
-"""
+from typing import Union
 from pathlib import Path
 import pandas as pd
 import petl as etl
@@ -34,7 +28,7 @@ class DataTableValidator(SumStatsTable):
             "minrows": False,
             "data": False
         }
-        self.valid = None
+        self.valid = True
 
     def schema(self) -> DataFrameSchema:
         schema = SumStatsSchema(effect_field=self.effect_field(),
@@ -42,30 +36,27 @@ class DataTableValidator(SumStatsTable):
                                 pval_neg_log=self.pval_neg_log).schema()
         return schema
 
-    def validate(self) -> bool:
+    def validate(self) -> tuple[bool, str]:
         """Validate sumstats data.
         First validate a sample of 100,000 records,
         if this sample is valid, validate the rest of
         the data.
 
         Returns:
-            Validation status
+            Validation status, message
         """
-        nrows = max(self.sample_size, self.minimum_rows)
-        sample_df = self.as_pd_df(nrows=nrows)
-
-        self.valid = self._validate_df(sample_df)
-        if len(sample_df) < self.minimum_rows:
-            self.valid = False
-            self.error_types['minrows'] = True
-            print(f"The file has fewer than {self.minimum_rows}, because of this alone, the file is invalid")
-        if not self.valid:
-            print((f"Validated the first {nrows} rows, "
-                   "stopping there because errors were found"))
-        else:
+        self.valid, message = self._validate_file_ext()
+        if self.valid:
+            nrows = max(self.sample_size, self.minimum_rows)
+            sample_df = self.as_pd_df(nrows=nrows)
+            self.valid, message = self._minrow_check(df=sample_df)
+        if self.valid:
+            self.valid, message = self._validate_df(sample_df,
+                                                    message=f"Validated the first {nrows} rows.")
+        if self.valid:
             full_df = self.as_pd_df()
-            self._validate_df(full_df)
-        return self.valid
+            self.valid, message = self._validate_df(full_df)
+        return self.valid, message
 
     def write_errors_to_file(self) -> None:
         """Write the error df to a CSV file
@@ -73,32 +64,68 @@ class DataTableValidator(SumStatsTable):
         errors_out = self.filename + ".err.csv.gz"
         self.errors_table.tocsv(errors_out)
 
-    def _validate_df(self, dataframe: pd.DataFrame) -> bool:
+    def _validate_file_ext(self) -> tuple[bool, Union[str, None]]:
+        file_ext = Path(self.filename).suffix
+        valid = file_ext in SumStatsSchema.FILE_EXTENSIONS
+        if not valid:
+            self.error_types["file extension"] = True
+            return valid, (f"Extension, '{file_ext}', "
+                           f"not in valid set: {SumStatsSchema.FILE_EXTENSIONS}.")
+        return valid, None
+
+    def _validate_df(self,
+                     dataframe: pd.DataFrame,
+                     message: str = "Data table is invalid") -> tuple[bool, str]:
         """Validate a pandas dataframe of specified size
         using Pandera.
 
         Keyword Arguments:
             sample_size -- Number of rows (default: {None})
+            message -- Custom error message (default: {"Errors were found in data"})
 
         Returns:
-            Validation status
+            Validation status, message
         """
         try:
             self.schema().validate(dataframe, lazy=True)
             valid = True
+            message = "Data table is valid."
         except errors.SchemaErrors as err:
             self.errors_table = etl.fromdataframe(err.failure_cases) if len(err.failure_cases) > 0 else None
             valid = False
-        return valid
-    
-    def _evaluate_errors(self) -> dict:
+        return valid, message
+
+    def _minrow_check(self, df: pd.DataFrame) -> tuple[bool, Union[str, None]]:
+        """Min row check
+
+        Arguments:
+            df -- dataframe
+
+        Returns:
+            Valid status, message
+        """
+        if len(df) < self.minimum_rows:
+            self.error_types['minrows'] = True
+            message = ("The file has fewer than the minimum rows required: "
+                       f"{len(df)} < {self.minimum_rows}.")
+            self.error_types["minrows"] = True
+            return False, message
+        return True, None
+
+    def _evaluate_errors(self) -> None:
         """Evaluate the error df and summarise in 
         the error_types dict
 
         Returns:
-            Dict of error types
+            Update error types dict
         """
-        pass
+
+        if 'DataFrameSchema' in self.errors_table['schema_context']:
+            self.error_types['headers'] = True
+        elif 'Column' in self.errors_table['schema_context']:
+            self.error_types['data'] = True
+        else:
+            pass
 
 
 def validate(filename: Path,
@@ -106,8 +133,12 @@ def validate(filename: Path,
              pval_zero: bool = False,
              pval_neg_log: bool = False,
              minimum_rows: int = 100_000,
-             infer_from_metadata: bool = False) -> bool:
-    """Validate driver function 
+             infer_from_metadata: bool = False) -> tuple[bool,
+                                                         str,
+                                                         Union[etl.Table, None],
+                                                         Union[dict, None]
+                                                         ]:
+    """Validate driver function
 
     Arguments:
         filename -- Sumstats file path
@@ -120,8 +151,10 @@ def validate(filename: Path,
         infer_from_metadata -- infer validation options from metadata (default: {False})
 
     Returns:
-        Valid status
+        Valid status: bool, message: str, error preview: etl.Table|none, error type: dict|None
     """
+    error_preview = None
+    error_types = None
     if infer_from_metadata:
         ssm = init_metadata_from_file(filename=filename)
         if pval_zero is False:
@@ -132,16 +165,13 @@ def validate(filename: Path,
                                    pval_neg_log=pval_neg_log,
                                    minimum_rows=minimum_rows,
                                    sumstats_file=filename)
-    valid = validator.validate()
-    if valid:
-        print("File is valid")
-        return True
-    else:
-        print("File is not valid")
-        if validator.errors_table is not None:
-            print(validator.errors_table.head(10))
-        if errors_file:
-            print(f"[green]Writing errors --> {filename}.err.csv.gz[/green]")
+    valid, message = validator.validate()
+    if not valid:
+        if validator.errors_table:
+            error_preview = validator.errors_table.head(10)
+            validator._evaluate_errors()
+        if errors_file and validator.errors_table:
+            message += f"\n[green]Writing errors --> {filename}.err.csv.gz[/green]"
             validator.write_errors_to_file()
-        return False
-
+        error_types = validator.error_types
+    return valid, message, error_preview, error_types

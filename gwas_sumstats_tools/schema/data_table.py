@@ -36,6 +36,10 @@ class SumStatsSchema:
                      error="Must be greater than or equal to 0")
             ])
     }
+    FILE_EXTENSIONS = {
+        ".tsv",
+        ".tsv.gz"
+    }
 
     def __init__(self,
                  effect_field: str = 'beta',
