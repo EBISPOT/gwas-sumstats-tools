@@ -86,13 +86,16 @@ class SumStatsSchema:
                                    error="Must be a value between 0 and 1, inclusive")
                     ]),
                 "p_value": self._get_pvalue_validator(),
-                "variant_id": Column(str, nullable=True, required=False),
+                "variant_id": Column(str, [
+                    Check.str_matches(r'^[A-Za-z0-9_-]+$',
+                                      error="Must match pattern")
+                    ], nullable=True, required=False),
                 "rsid": Column(str, [
-                    Check.str_matches(r'^rs\d+$',
+                    Check.str_matches(r'^rs[0-9]+$',
                                       error="Must match rsID pattern")
                     ], nullable=True, required=False),
                 "ref_allele": Column(str, [
-                    Check.isin({'OA', 'EA'})
+                    Check.isin(('OA', 'EA'))
                     ], nullable=True, required=False),
                 "ci_upper": Column(float, nullable=True, required=False),
                 "ci_lower": Column(float, nullable=True, required=False),

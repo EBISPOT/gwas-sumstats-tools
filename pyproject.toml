@@ -13,7 +13,8 @@ requests = "^2.28.2"
 pyyaml = "^6.0"
 pydantic = "^1.10.4"
 typer = {extras = ["all"], version = "^0.7.0"}
-pandera = "^0.13.4"
+pandera = {extras = ["io"], version = "^0.13.4"}
+hypothesis = "^6.68.2"
 
 [tool.poetry.scripts]
 gwas-ssf = "gwas_sumstats_tools.cli:app"

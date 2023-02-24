@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Union
 import pandas as pd
+import numpy as np
 import petl as etl
 
 
@@ -167,7 +168,7 @@ class SumStatsTable:
         Returns:
             effect field
         """
-        field_4 = self.header[4] if len(self.header()) > 4 else None
+        field_4 = self.header()[4] if len(self.header()) > 4 else None
         return field_4
 
     def as_pd_df(self, nrows: int = None) -> pd.DataFrame:
@@ -181,8 +182,8 @@ class SumStatsTable:
         """
         df = pd.DataFrame()
         if self.sumstats:
-            self.sumstats = etl.replaceall(self.sumstats, '#NA', None)
             df = etl.todataframe(self.sumstats, nrows=nrows)
+            df = df.replace([None, "#NA", "NA", "N/A", "NaN"], np.nan)
         return df
 
 
