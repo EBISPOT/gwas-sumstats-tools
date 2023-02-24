@@ -22,7 +22,7 @@ def parse_accession_id(filename: Path) -> Union[str, None]:
         GCST or None
     """
     gcst_search = re.search(r"GCST[0-9]+", filename.stem)
-    return gcst_search.group()
+    return gcst_search.group() if gcst_search else None
 
 
 def parse_genome_assembly(filename: Path) -> Union[str, None]:
@@ -35,7 +35,7 @@ def parse_genome_assembly(filename: Path) -> Union[str, None]:
         Genome assembly or None
     """
     gcst_search = re.search(r"([Build|[GRCh]*)([0-9]+)\.", filename.stem, re.IGNORECASE)
-    return gcst_search.group(2)
+    return gcst_search.group(2) if gcst_search else None
 
 
 def download_with_requests(url, params=None, headers=None) \

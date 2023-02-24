@@ -1,16 +1,18 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 import typer
+import petl as etl
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from gwas_sumstats_tools.sumstats.data_table import (SumStatsTable,
+from gwas_sumstats_tools.interfaces.data_table import (SumStatsTable,
                                                      header_dict_from_args)
-from gwas_sumstats_tools.sumstats.metadata import (MetadataClient,
+from gwas_sumstats_tools.interfaces.metadata import (MetadataClient,
                                                    metadata_dict_from_args,
                                                    metadata_dict_from_gwas_cat,
                                                    get_file_metadata,
                                                    init_metadata_from_file)
+from gwas_sumstats_tools.validate import validate
 from gwas_sumstats_tools.utils import (set_data_outfile_name,
                                        set_metadata_outfile_name,
                                        parse_accession_id)
@@ -22,23 +24,69 @@ app = typer.Typer(add_completion=False,
                   context_settings={"help_option_names": ["-h", "--help"]})
 
 
-"""
-TODO: write, validate
-
-@app.command("create")
-def ss_write():
-    pass
-
-@app.command("validate")
-def ss_validate():
-    pass
-"""
-
-
-def exit_if_no_data(table):
+def exit_if_no_data(table: Union[etl.Table, None]) -> None:
     if table is None:
         print("No data in table. Exiting.")
         raise typer.Exit()
+
+
+def exit_status(status: bool) -> int:
+    return 0 if status is True else 1
+
+
+@app.command("validate",
+             no_args_is_help=True,
+             context_settings={"help_option_names": ["-h", "--help"],
+                               "allow_extra_args": True,
+                               "ignore_unknown_options": True})
+def ss_validate(filename: Path = typer.Argument(...,
+                                                exists=True,
+                                                readable=True,
+                                                help="Input sumstats file. Must be TSV or CSV and may be gzipped"),
+                errors_file: bool = typer.Option(False,
+                                                 "--errors-out", "-e",
+                                                 help="Output erros to a csv file, <filename>.err.csv.gz"),
+                pval_zero: bool = typer.Option(False,
+                                               "--p-zero", "-z",
+                                               help="Force p-values of zero to be allowable. Takes precedence over inferred value (-i)"),
+                pval_neg_log: bool = typer.Option(False,
+                                                  "--p-neg-log", "-n",
+                                                  help="Force p-values to be validated as -log10. Takes precedence over inferred value (-i)"),
+                minimum_rows: int = typer.Option(100_000,
+                                                 "--min-rows", "-m",
+                                                 help="Minimum rows acceptable for the file"),
+                infer_from_metadata: bool = typer.Option(False,
+                                                   "--infer-from-metadata", "-i",
+                                                   help=("Infer validation options from the "
+                                                         "metadata file <filename>-meta.yaml. "
+                                                         "E.g. fields for analysis software and "
+                                                         "negative log10 p-values affect the data "
+                                                         "validation behaviour."))
+                ):
+    """
+    [green]VALIDATE[/green] a GWAS summary statistics data file
+    """
+    (valid,
+     message,
+     error_preview,
+     error_type) = validate(filename=filename,
+                            errors_file=errors_file,
+                            pval_zero=pval_zero,
+                            pval_neg_log=pval_neg_log,
+                            minimum_rows=minimum_rows,
+                            infer_from_metadata=infer_from_metadata)
+    print(f"Validation status: {valid}")
+    print(message)
+    if error_type:
+        print(("Primary reason for validation failure: "
+               f"[red]{error_type}[/red]"))
+    if error_preview:
+        print(("See below for a preview of the errors. "
+               "To get all the errors in a file run the "
+               "[green][bold]validate[/bold][/green] command "
+               "with the [green][bold]-e[/bold][/green] flag."))
+        print(error_preview)
+    raise typer.Exit(exit_status(valid))
 
 
 @app.command("read",
@@ -49,7 +97,7 @@ def exit_if_no_data(table):
 def ss_read(filename: Path = typer.Argument(...,
                                             exists=True,
                                             readable=True,
-                                            help="Input sumstats file"),
+                                            help="Input sumstats file. Must be TSV or CSV and may be gzipped"),
             get_header: bool = typer.Option(False,
                                             "--get-header", "-h",
                                             help="Just return the headers of the file"),
@@ -70,13 +118,13 @@ def ss_read(filename: Path = typer.Argument(...,
                                                                    "`-m genomeAssembly -m isHarmonised"))
             ):
     """
-    [green]Read[/green] a sumstats file
+    [green]READ[/green] a sumstats file
     """
     sst = SumStatsTable(filename)
     exit_if_no_data(table=sst.sumstats)
     if get_header:
         print("[bold]\n-------- SUMSTATS HEADERS --------\n[/bold]")
-        for h in sst.get_header():
+        for h in sst.header():
             print(h)
     if get_all_metadata:
         ssm = init_metadata_from_file(filename=filename, metadata_infile=metadata_infile)
@@ -118,7 +166,7 @@ def ss_format(filename: Path = typer.Argument(...,
                                                        "data could be missing from the original file.")),
               generate_metadata: bool = typer.Option(False,
                                                      "--generate-metadata", "-m",
-                                                     help="Do/Don't create the metadata file"),
+                                                     help="Create the metadata file"),
               metadata_outfile: Path = typer.Option(None,
                                                     "--meta-out",
                                                     writable=True,
@@ -147,15 +195,17 @@ def ss_format(filename: Path = typer.Argument(...,
               extra_args: typer.Context = typer.Option(None)
               ):
     """
-    [green]Format[/green] a sumstats file and creating a new one. Add/edit metadata.
+    [green]FORMAT[/green] a sumstats file by creating a new one from the existing one. Add/edit metadata.
     """
     # Set data outfile name
     ss_out = set_data_outfile_name(data_infile=filename,
                                    data_outfile=data_outfile)
     # Set metadata outfile name
-    m_out = set_metadata_outfile_name(data_outfile=ss_out,
+    m_out = set_metadata_outfile_name(data_outfile=str(filename),
                                       metadata_outfile=metadata_outfile)
     if minimal_to_standard:
+        m_out = set_metadata_outfile_name(data_outfile=ss_out,
+                                          metadata_outfile=metadata_outfile)
         sst = SumStatsTable(filename)
         exit_if_no_data(table=sst.sumstats)
         print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")

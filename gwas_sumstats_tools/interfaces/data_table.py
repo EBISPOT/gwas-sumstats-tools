@@ -1,5 +1,7 @@
 from pathlib import Path
 from typing import Union
+import pandas as pd
+import numpy as np
 import petl as etl
 
 
@@ -25,12 +27,13 @@ class SumStatsTable:
     FIELDS_REQUIRED = ("chromosome", "base_pair_location", "effect_allele",
                        "other_allele", "standard_error",
                        "effect_allele_frequency", "p_value")
-    FIELDS_EFFECT = ("beta", "odds_ratio")
+    FIELDS_EFFECT = ("beta", "odds_ratio", "hazard_ratio")
     FIELDS_OPTIONAL = ("variant_id", "rsid", "info", "ci_upper", "ci_lower", "ref_allele")
 
     def __init__(self, sumstats_file: Path, delimiter: str = None) -> None:
+        self.filename = str(sumstats_file)
         self.delimiter = delimiter if delimiter else self._get_delimiter(sumstats_file)
-        self.sumstats = self.from_file(infile=sumstats_file)
+        self.sumstats = self.from_file(infile=self.filename)
         self.sumstats_df = None
 
     def reformat_header(self, header_map: dict = FIELD_MAP) -> etl.Table:
@@ -47,8 +50,8 @@ class SumStatsTable:
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self.sumstats
 
-    def from_file(self, infile: Path) -> Union[etl.Table, None]:
-        self.sumstats = etl.fromcsv(str(infile), delimiter=self.delimiter)
+    def from_file(self, infile: str) -> Union[etl.Table, None]:
+        self.sumstats = etl.fromcsv(self.filename, delimiter=self.delimiter)
         if etl.nrows(self.head_table(nrows=1)) < 1:
             return None
         return self.sumstats
@@ -73,6 +76,8 @@ class SumStatsTable:
         Returns:
             delimiter, either ',' or '\t'
         """
+        if not isinstance(filepath, Path):
+            filepath = Path(filepath)
         return ',' if '.csv' in filepath.suffixes else '\t'
 
     def rename_headers(self, header_map: dict) -> etl.Table:
@@ -85,7 +90,7 @@ class SumStatsTable:
         Returns:
             etl.Table
         """
-        filtered_header_map = {k: v for k, v in header_map.items() if k in self.get_header()}
+        filtered_header_map = {k: v for k, v in header_map.items() if k in self.header()}
         self.sumstats = etl.rename(self.sumstats, filtered_header_map)
         return self.sumstats
     
@@ -100,8 +105,8 @@ class SumStatsTable:
         Returns:
             set of missing headers
         """
-        missing_headers = set(self.FIELDS_REQUIRED) - set(self.get_header())
-        if set(self.FIELDS_EFFECT).isdisjoint(set(self.get_header())):
+        missing_headers = set(self.FIELDS_REQUIRED) - set(self.header())
+        if set(self.FIELDS_EFFECT).isdisjoint(set(self.header())):
             missing_headers.add("beta")
         return missing_headers
 
@@ -115,18 +120,17 @@ class SumStatsTable:
         all_headers.extend([h for h in self.FIELDS_OPTIONAL])
         all_headers.extend([h for h in self.FIELDS_EFFECT])
         header_order = [h for h in self.FIELDS_REQUIRED]
-        header_order.extend([h for h in self.FIELDS_OPTIONAL if h in self.get_header()])
-        header_order.extend([h for h in self.get_header() if h not in all_headers])
-        if 'beta' in self.get_header() and 'odds_ratio' in self.get_header():
+        header_order.extend([h for h in self.FIELDS_OPTIONAL if h in self.header()])
+        header_order.extend([h for h in self.header() if h not in all_headers])
+        if 'beta' in self.header():
             header_order.insert(4, 'beta')
-            header_order.append('odds_ratio')
-            self.effect_field = 'beta'
-        elif 'beta' in self.get_header():
-            header_order.insert(4, 'beta')
-            self.effect_field = 'beta'
-        elif 'odds_ratio' in self.get_header():
+            for h in ('odds_ratio', 'hazard_ratio'):
+                header_order.append(h) if h in self.header() else None
+        elif 'beta' not in self.header() and 'odds_ratio' in self.header():
             header_order.insert(4, 'odds_ratio')
-            self.effect_field = 'odds_ratio'
+            header_order.append('hazard_ratio') if 'hazard_ratio' in self.header() else None
+        elif 'odds_ratio' not in self.header() and 'hazard_ratio' in self.header():
+            header_order.insert(4, 'hazard_ratio')
         else:
             pass
         return header_order
@@ -148,13 +152,39 @@ class SumStatsTable:
             self.sumstats = etl.addfield(self.sumstats, field, value)
         return self.sumstats
 
-    def get_header(self) -> tuple:
+    def header(self) -> tuple:
         """Get the header of the file
 
         Returns:
             tuple of the headers
         """
-        return etl.header(self.sumstats)
+        if self.sumstats:
+            return etl.header(self.sumstats)
+        return ()
+
+    def effect_field(self) -> Union[str, None]:
+        """Get the effect allele (field index 4).
+
+        Returns:
+            effect field
+        """
+        field_4 = self.header()[4] if len(self.header()) > 4 else None
+        return field_4
+
+    def as_pd_df(self, nrows: int = None) -> pd.DataFrame:
+        """Sumstats table as a Pandas dataframe
+
+        Keyword Arguments:
+            nrows -- Number of rows (default: {None, which means all rows})
+
+        Returns:
+            Pandas dataframe
+        """
+        df = pd.DataFrame()
+        if self.sumstats:
+            df = etl.todataframe(self.sumstats, nrows=nrows)
+            df = df.replace([None, "#NA", "NA", "N/A", "NaN"], np.nan)
+        return df
 
 
 def header_dict_from_args(args: list) -> dict:
