@@ -157,31 +157,33 @@ class SumStatsTable:
         Returns:
             tuple of the headers
         """
-        return etl.header(self.sumstats)
+        if self.sumstats:
+            return etl.header(self.sumstats)
+        return ()
 
-    def effect_field(self) -> str:
-        """Get the effect allele (field index 4)
+    def effect_field(self) -> Union[str, None]:
+        """Get the effect allele (field index 4).
 
         Returns:
             effect field
         """
-        field_4 = etl.header(self.sumstats)[4]
-        if field_4 in self.FIELDS_EFFECT:
-            return field_4
-        else:
-            raise ValueError("No effect field recognised at index 4")
+        field_4 = self.header[4] if len(self.header()) > 4 else None
+        return field_4
 
     def as_pd_df(self, nrows: int = None) -> pd.DataFrame:
         """Sumstats table as a Pandas dataframe
-        
+
         Keyword Arguments:
             nrows -- Number of rows (default: {None, which means all rows})
 
         Returns:
             Pandas dataframe
         """
-        self.sumstats = etl.replaceall(self.sumstats, '#NA', None)
-        return etl.todataframe(self.sumstats, nrows=nrows)
+        df = pd.DataFrame()
+        if self.sumstats:
+            self.sumstats = etl.replaceall(self.sumstats, '#NA', None)
+            df = etl.todataframe(self.sumstats, nrows=nrows)
+        return df
 
 
 def header_dict_from_args(args: list) -> dict:

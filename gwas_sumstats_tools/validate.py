@@ -27,7 +27,8 @@ class Validator(SumStatsTable):
         self.valid = None
 
     def schema(self) -> DataFrameSchema:
-        schema = SumStatsSchema(effect_field=self.effect_field(),
+        effect_field = self.effect_field() if self.effect_field() is not None else 'beta'
+        schema = SumStatsSchema(effect_field=effect_field,
                                 pval_zero=self.pval_zero,
                                 pval_neg_log=self.pval_neg_log).schema()
         return schema
