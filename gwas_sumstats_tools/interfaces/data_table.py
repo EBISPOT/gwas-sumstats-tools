@@ -171,6 +171,22 @@ class SumStatsTable:
         field_4 = self.header()[4] if len(self.header()) > 4 else None
         return field_4
 
+    def _pval_to_mantissa_and_exponent(self, table: etl.Table) -> etl.Table:
+        table_w_split_p = etl.split(table,
+                                   'p_value',
+                                   'e|E',
+                                   newfields=['_mantissa', '_exponent'],
+                                   include_original=True,
+                                   maxsplit=1)
+
+        return table_w_split_p
+
+    def _prep_table_for_validation(self) -> etl.Table:
+        table = etl.Table()
+        if self.sumstats:
+            table = self._pval_to_mantissa_and_exponent(table=self.sumstats)
+        return table 
+        
     def as_pd_df(self, nrows: int = None) -> pd.DataFrame:
         """Sumstats table as a Pandas dataframe
 
@@ -180,9 +196,11 @@ class SumStatsTable:
         Returns:
             Pandas dataframe
         """
+
         df = pd.DataFrame()
         if self.sumstats:
-            df = etl.todataframe(self.sumstats, nrows=nrows)
+            table_to_validate = self._prep_table_for_validation()
+            df = etl.todataframe(table_to_validate, nrows=nrows)
             df = df.replace([None, "#NA", "NA", "N/A", "NaN"], np.nan)
         return df
 

@@ -9,6 +9,7 @@ validation constraints.
 
 
 from pandera import Column, DataFrameSchema, Check
+from pandera.dtypes import Float128
 
 
 class SumStatsSchema:
@@ -27,21 +28,22 @@ class SumStatsSchema:
             ])
         }
     PVALUE_VALIDATORS = {
-        'default':  Column(float, [
-            Check.in_range(0, 1,
-                           include_min=False,
-                           error="Must be a value > 0 and <= 1")
-            ]),
-        'pval_zero': Column(float, [
+        'pval_zero': Column(Float128, [
             Check.in_range(0, 1,
                            include_min=True,
-                           error="Must be a value between 0 and 1, inclusive")
+                           error="Must be a value between 0 and 1, inclusive of 0")
             ]),
-        'pval_neg_log_default': Column(float, [
+        'pval_neg_log_zero': Column(float, [
+            Check.ge(0,
+                     error="Must be greater than or equal to 0")
+            ])
+    }
+    MANTISSA_VALIDATORS = {
+        'default': Column(float, [
             Check.gt(0,
                      error="Must be greater than 0")
             ]),
-        'pval_neg_log_zero': Column(float, [
+        'pval_zero': Column(float, [
             Check.ge(0,
                      error="Must be greater than or equal to 0")
             ])
@@ -87,7 +89,7 @@ class SumStatsSchema:
                     ]),
                 "p_value": self._get_pvalue_validator(),
                 "variant_id": Column(str, [
-                    Check.str_matches(r'^[A-Za-z0-9_-]+$',
+                    Check.str_matches(r'^[A-Za-z0-9_]+$',
                                       error="Must match pattern")
                     ], nullable=True, required=False),
                 "rsid": Column(str, [
@@ -106,7 +108,9 @@ class SumStatsSchema:
                 "n": Column("Int64", [
                     Check.ge(0,
                              error="Must be greater than or equal to 0")
-                    ], nullable=True, required=False)
+                    ], nullable=True, required=False),
+                "_mantissa": self._get_mantissa_validator(),
+                "_exponent": Column("Int64", nullable=True)           
             },
             coerce=True,
             ordered=True
@@ -114,12 +118,32 @@ class SumStatsSchema:
         return schema
 
     def _get_pvalue_validator(self) -> Column:
-        if self.pval_zero and self.pval_neg_log:
+        """Get the pvalue validator.
+        
+        Choice of standard allowing zero or 
+        -log10 allowing zero. The zero constraint
+        is applied to the mantissa.
+        The float type is Float128 but even
+        this is not precise enough for some
+        datasets, whose very small values evaluate
+        to 0, if we don't split mantissa and exp.
+
+        Returns:
+            p-value validator
+        """
+        if self.pval_neg_log:
             return self.PVALUE_VALIDATORS.get('pval_neg_log_zero')
-        elif not self.pval_zero and self.pval_neg_log:
-            return self.PVALUE_VALIDATORS.get('pval_neg_log_default')
-        elif self.pval_zero and not self.pval_neg_log:
-            return self.PVALUE_VALIDATORS.get('pval_zero')
         else:
-            # not self.pval_zero and not self.pval_neg_log
-            return self.PVALUE_VALIDATORS.get('default')
+            return self.PVALUE_VALIDATORS.get('pval_zero')
+
+    def _get_mantissa_validator(self) -> Column:
+        """Mantissa validator
+
+        Returns:
+            _description_
+        """
+        if self.pval_zero:
+            # Constaint for zero value pvalues here
+            return self.MANTISSA_VALIDATORS.get('pval_zero')
+        else:
+            return self.MANTISSA_VALIDATORS.get('default')
