@@ -97,6 +97,7 @@ class SumStatsTable:
     def normalise_missing_values(self) -> etl.Table:
         self.sumstats = etl.replaceall(self.sumstats, 'NA', '#NA')
         self.sumstats = etl.replaceall(self.sumstats, None, '#NA')
+        self.sumstats = etl.replaceall(self.sumstats, '', '#NA')
         return self.sumstats
 
     def _get_missing_headers(self) -> set:
@@ -172,13 +173,12 @@ class SumStatsTable:
         return field_4
 
     def _pval_to_mantissa_and_exponent(self, table: etl.Table) -> etl.Table:
-        table_w_split_p = etl.split(table,
+        table_w_split_p = etl.split(self._square_up_table(table),
                                    'p_value',
                                    'e|E',
                                    newfields=['_mantissa', '_exponent'],
                                    include_original=True,
                                    maxsplit=1)
-
         return table_w_split_p
 
     def _prep_table_for_validation(self) -> etl.Table:
@@ -199,10 +199,18 @@ class SumStatsTable:
 
         df = pd.DataFrame()
         if self.sumstats:
-            table_to_validate = self._prep_table_for_validation()
+            table_to_validate = self._square_up_table(self._prep_table_for_validation())
             df = etl.todataframe(table_to_validate, nrows=nrows)
-            df = df.replace([None, "#NA", "NA", "N/A", "NaN"], np.nan)
+            df = df.replace([None, "", "#NA", "NA", "N/A", "NaN"], np.nan)
         return df
+    
+    def _square_up_table(self, table: etl.Table, missing: str="#NA") -> etl.Table:
+        """Square up a table with missing/extra values on rows.
+
+        Returns:
+            etl.Table
+        """
+        return etl.cat(table, missing=missing)
 
 
 def header_dict_from_args(args: list) -> dict:

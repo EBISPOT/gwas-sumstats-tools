@@ -155,10 +155,13 @@ def validate(filename: Path,
     primary_error_type = None
     if infer_from_metadata:
         ssm = init_metadata_from_file(filename=filename)
-        if pval_zero is False:
-            pval_zero = True if ssm.as_dict().get('analysisSoftware') is not None else False
-        if pval_neg_log is False:
-            pval_neg_log = ssm.as_dict().get('pvalueIsNegLog10') if True else False
+        if ssm:
+            if pval_zero is False:
+                pval_zero = True if ssm.as_dict().get('analysisSoftware') is not None else False
+            if pval_neg_log is False:
+                pval_neg_log = ssm.as_dict().get('pvalueIsNegLog10') if True else False
+        else:
+            print("Cannot infer options from metadata file, because metadata file cannot be found.")
     validator = Validator(pval_zero=pval_zero,
                           pval_neg_log=pval_neg_log,
                           minimum_rows=minimum_rows,

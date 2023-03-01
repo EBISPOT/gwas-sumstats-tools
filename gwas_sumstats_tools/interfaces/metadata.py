@@ -1,4 +1,5 @@
 import yaml
+from typing import Union
 from datetime import date
 from pathlib import Path
 from gwas_sumstats_tools.utils import (download_with_requests,
@@ -149,8 +150,11 @@ def get_file_metadata(in_file: Path, out_file: str) -> dict:
     return meta_dict
 
 
-def init_metadata_from_file(filename: Path, metadata_infile: Path = None) -> SumStatsMetadata:
+def init_metadata_from_file(filename: Path, metadata_infile: Path = None) -> Union[SumStatsMetadata, None]:
     m_in = metadata_infile if metadata_infile else filename.with_suffix(filename.suffix + "-meta.yaml")
-    ssm = MetadataClient(in_file=m_in)
-    ssm.from_file()
-    return ssm
+    if m_in.exists():
+        ssm = MetadataClient(in_file=m_in)
+        ssm.from_file()
+        return ssm
+    else:
+        return None
