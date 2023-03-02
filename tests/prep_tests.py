@@ -34,10 +34,10 @@ class SSTestFile:
         self.filepath = os.path.join(self.TEST_DIR, filepath)
         self.sep = sep
         self.test_data = test_data if test_data else self.TEST_DATA
-        self.df = pd.DataFrame.from_dict(self.test_data)
 
     def to_file(self) -> None:
-        self.df.to_csv(self.filepath, sep=self.sep, index=False, mode='w')
+        df = pd.DataFrame.from_dict(self.test_data)
+        df.to_csv(self.filepath, sep=self.sep, index=False, mode='w')
         
     def remove(self) -> None:
         shutil.rmtree(self.TEST_DIR)
