@@ -30,7 +30,7 @@ There are three commands, `read`, `validate` and `format`.
   * Edit/add the values to the metadata: `-e` with `--<FIELD>=<VALUE>`
 
 
-##Usage
+## Usage
 
 ```console
 $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
