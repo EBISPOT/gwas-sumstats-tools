@@ -7,13 +7,16 @@ Built with:
 * [Pydantic](https://docs.pydantic.dev/)
 * [Typer](https://typer.tiangolo.com/)
 
-There are two commands, `read` and `format`.
+There are three commands, `read`, `validate` and `format`.
 
 `read` is for:
 * Previewing a data file: _no options_
 * Extracting the field headers: `-h`
 * Extracting all the metadata: `-M`
-* Extacting specific field, value pairs from the metada: `-m <field name>` 
+* Extacting specific field, value pairs from the metada: `-m <field name>`
+
+`validate` is for:
+* Validating a summary statistic file using a dynamically generated schema
 
 `format` is for:
 * Converting a minamally formatted sumstats data file to the standard format. This is not guaranteed to return a valid standard file, because manadatory data fields could be missing in the input. It simply does the following. `-s`
@@ -42,6 +45,52 @@ $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 * `format`: Format a sumstats file and...
 * `read`: Read a sumstats file
 
+### `gwas-ssf read`
+
+Read (preview) a sumstats file
+
+**Usage**:
+
+```console
+$ gwas-ssf read [OPTIONS] FILENAME
+```
+
+**Arguments**:
+
+* `FILENAME`: Input sumstats file  [required]
+
+**Options**:
+
+* `-h, --get-header`: Just return the headers of the file  [default: False]
+* `--meta-in PATH`: Specify a metadata file to read in, defaulting to <filename>-meta.yaml
+* `-M, --get-all-metadata`: Return all metadata  [default: False]
+* `-m, --get-metadata TEXT`: Get metadata for the specified fields e.g. `-m genomeAssembly -m isHarmonised
+* `--help`: Show this message and exit.
+
+
+### `gwas-ssf validate`
+
+Validate a sumstats file
+
+**Usage**:
+
+```console
+$ gwas-ssf validate [OPTIONS] FILENAME
+```
+
+**Arguments**:
+
+* `FILENAME`: Input sumstats file. Must be TSV or CSV and may be gzipped [required]
+
+**Options**:
+
+* `-e, --errors-out`: Output erros to a csv file, <filename>.err.csv.gz
+* `-z, --p-zero`: Force p-values of zero to be allowable. Takes precedence over inferred value (-i)
+* `-n, --p-neg-log`: Force p-values to be validated as -log10. Takes precedence over inferred value (-i)
+* `-m, --min-rows`:  Minimum rows acceptable for the file [default: 100000]
+* `-i, --infer-from-metadata`: Infer validation options from the metadata file <filename>-meta.yaml. E.g. fields for analysis software and negative log10 p-values affect the data validation behaviour.
+* `--help`: Show this message and exit.
+
 ### `gwas-ssf format`
 
 Format a sumstats file and creating a new one. Add/edit metadata.
@@ -67,31 +116,3 @@ $ gwas-ssf format [OPTIONS] FILENAME
 * `-g, --meta-gwas`: Populate metadata from GWAS Catalog  [default: False]
 * `-c, --custom-header-map`: Provide a custom header mapping using the `--<FROM>:<TO>` format e.g. `--chr:chromosome`  [default: False]
 * `--help`: Show this message and exit.
-
-### `gwas-ssf read`
-
-Read (preview) a sumstats file
-
-**Usage**:
-
-```console
-$ gwas-ssf read [OPTIONS] FILENAME
-```
-
-**Arguments**:
-
-* `FILENAME`: Input sumstats file  [required]
-
-**Options**:
-
-* `-h, --get-header`: Just return the headers of the file  [default: False]
-* `--meta-in PATH`: Specify a metadata file to read in, defaulting to <filename>-meta.yaml
-* `-M, --get-all-metadata`: Return all metadata  [default: False]
-* `-m, --get-metadata TEXT`: Get metadata for the specified fields e.g. `-m genomeAssembly -m isHarmonised
-* `--help`: Show this message and exit.
-
-
-## TODO:
-- [ ] Installation/distribution docs
-- [ ] Transformation features
-- [ ] update GWAS API

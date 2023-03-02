@@ -1,3 +1,8 @@
+"""
+A helper class for creating summary statistics
+data files for the tests.
+"""
+
 import os
 import shutil
 from pathlib import Path
@@ -38,9 +43,9 @@ class SSTestFile:
     def to_file(self) -> None:
         df = pd.DataFrame.from_dict(self.test_data)
         df.to_csv(self.filepath, sep=self.sep, index=False, mode='w')
-        
+
     def remove(self) -> None:
         shutil.rmtree(self.TEST_DIR)
-        
+
     def _setup_dir(self) -> None:
         os.makedirs(self.TEST_DIR, exist_ok=True)
