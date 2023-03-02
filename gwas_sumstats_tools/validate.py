@@ -63,7 +63,7 @@ class Validator(SumStatsTable):
         self.errors_table.tocsv(errors_out)
 
     def _validate_file_ext(self) -> tuple[bool, Union[str, None]]:
-        file_ext = Path(self.filename).suffix
+        file_ext = "".join(Path(self.filename).suffixes)
         valid = file_ext in SumStatsSchema.FILE_EXTENSIONS
         if not valid:
             self.primary_error_type = "file_ext"

@@ -3,6 +3,7 @@ from typing import Union
 import pandas as pd
 import numpy as np
 import petl as etl
+import gzip
 
 
 """formatters
@@ -51,10 +52,27 @@ class SumStatsTable:
         return self.sumstats
 
     def from_file(self, infile: str) -> Union[etl.Table, None]:
-        self.sumstats = etl.fromcsv(self.filename, delimiter=self.delimiter)
-        if etl.nrows(self.head_table(nrows=1)) < 1:
+        """Try to read the file in to a Table.
+        Files can be TAB seperated and optionally compressed
+        with (B)GZIP. There could be cases where an input file 
+        has been renamed but the data is something different 
+        to that suggested by the name and extension. Most 
+        cases should be covered by the exception clause.
+
+        Arguments:
+            infile -- Input file
+
+        Returns:
+            petl Table or None
+        """
+        try:
+            self.sumstats = etl.fromcsv(self.filename, delimiter=self.delimiter)
+            if etl.nrows(self.head_table(nrows=1)) < 1:
+                return None
+            return self.sumstats
+        except (IOError, UnicodeDecodeError) as exception:
+            print(exception)
             return None
-        return self.sumstats
 
     def to_file(self, outfile: Path) -> None:
         """Write table to TSV file
