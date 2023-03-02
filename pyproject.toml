@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gwas-sumstats-tools"
-version = "0.1.0"
+version = "0.1.1a2"
 description = ""
 authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>"]
 readme = "README.md"
@@ -21,6 +21,7 @@ gwas-ssf = "gwas_sumstats_tools.cli:app"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
+pytest = "^7.2.1"
 
 [build-system]
 requires = ["poetry-core"]

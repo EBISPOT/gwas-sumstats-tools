@@ -63,7 +63,7 @@ class Validator(SumStatsTable):
         self.errors_table.tocsv(errors_out)
 
     def _validate_file_ext(self) -> tuple[bool, Union[str, None]]:
-        file_ext = Path(self.filename).suffix
+        file_ext = "".join(Path(self.filename).suffixes)
         valid = file_ext in SumStatsSchema.FILE_EXTENSIONS
         if not valid:
             self.primary_error_type = "file_ext"
@@ -155,10 +155,13 @@ def validate(filename: Path,
     primary_error_type = None
     if infer_from_metadata:
         ssm = init_metadata_from_file(filename=filename)
-        if pval_zero is False:
-            pval_zero = True if ssm.as_dict().get('analysisSoftware') is not None else False
-        if pval_neg_log is False:
-            pval_neg_log = ssm.as_dict().get('pvalueIsNegLog10') if True else False
+        if ssm:
+            if pval_zero is False:
+                pval_zero = True if ssm.as_dict().get('analysisSoftware') is not None else False
+            if pval_neg_log is False:
+                pval_neg_log = ssm.as_dict().get('pvalueIsNegLog10') if True else False
+        else:
+            print("Cannot infer options from metadata file, because metadata file cannot be found.")
     validator = Validator(pval_zero=pval_zero,
                           pval_neg_log=pval_neg_log,
                           minimum_rows=minimum_rows,

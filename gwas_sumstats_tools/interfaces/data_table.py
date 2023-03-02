@@ -3,6 +3,7 @@ from typing import Union
 import pandas as pd
 import numpy as np
 import petl as etl
+import gzip
 
 
 """formatters
@@ -51,10 +52,27 @@ class SumStatsTable:
         return self.sumstats
 
     def from_file(self, infile: str) -> Union[etl.Table, None]:
-        self.sumstats = etl.fromcsv(self.filename, delimiter=self.delimiter)
-        if etl.nrows(self.head_table(nrows=1)) < 1:
+        """Try to read the file in to a Table.
+        Files can be TAB seperated and optionally compressed
+        with (B)GZIP. There could be cases where an input file 
+        has been renamed but the data is something different 
+        to that suggested by the name and extension. Most 
+        cases should be covered by the exception clause.
+
+        Arguments:
+            infile -- Input file
+
+        Returns:
+            petl Table or None
+        """
+        try:
+            self.sumstats = etl.fromcsv(self.filename, delimiter=self.delimiter)
+            if etl.nrows(self.head_table(nrows=1)) < 1:
+                return None
+            return self.sumstats
+        except (IOError, UnicodeDecodeError) as exception:
+            print(exception)
             return None
-        return self.sumstats
 
     def to_file(self, outfile: Path) -> None:
         """Write table to TSV file
@@ -97,6 +115,7 @@ class SumStatsTable:
     def normalise_missing_values(self) -> etl.Table:
         self.sumstats = etl.replaceall(self.sumstats, 'NA', '#NA')
         self.sumstats = etl.replaceall(self.sumstats, None, '#NA')
+        self.sumstats = etl.replaceall(self.sumstats, '', '#NA')
         return self.sumstats
 
     def _get_missing_headers(self) -> set:
@@ -171,6 +190,21 @@ class SumStatsTable:
         field_4 = self.header()[4] if len(self.header()) > 4 else None
         return field_4
 
+    def _pval_to_mantissa_and_exponent(self, table: etl.Table) -> etl.Table:
+        table_w_split_p = etl.split(self._square_up_table(table),
+                                   'p_value',
+                                   'e|E',
+                                   newfields=['_mantissa', '_exponent'],
+                                   include_original=True,
+                                   maxsplit=1)
+        return table_w_split_p
+
+    def _prep_table_for_validation(self) -> etl.Table:
+        table = etl.Table()
+        if self.sumstats:
+            table = self._pval_to_mantissa_and_exponent(table=self.sumstats)
+        return table 
+        
     def as_pd_df(self, nrows: int = None) -> pd.DataFrame:
         """Sumstats table as a Pandas dataframe
 
@@ -180,11 +214,21 @@ class SumStatsTable:
         Returns:
             Pandas dataframe
         """
+
         df = pd.DataFrame()
         if self.sumstats:
-            df = etl.todataframe(self.sumstats, nrows=nrows)
-            df = df.replace([None, "#NA", "NA", "N/A", "NaN"], np.nan)
+            table_to_validate = self._square_up_table(self._prep_table_for_validation())
+            df = etl.todataframe(table_to_validate, nrows=nrows)
+            df = df.replace([None, "", "#NA", "NA", "N/A", "NaN"], np.nan)
         return df
+    
+    def _square_up_table(self, table: etl.Table, missing: str="#NA") -> etl.Table:
+        """Square up a table with missing/extra values on rows.
+
+        Returns:
+            etl.Table
+        """
+        return etl.cat(table, missing=missing)
 
 
 def header_dict_from_args(args: list) -> dict:

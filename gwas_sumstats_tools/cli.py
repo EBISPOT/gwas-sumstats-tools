@@ -66,15 +66,21 @@ def ss_validate(filename: Path = typer.Argument(...,
     """
     [green]VALIDATE[/green] a GWAS summary statistics data file
     """
-    (valid,
-     message,
-     error_preview,
-     error_type) = validate(filename=filename,
-                            errors_file=errors_file,
-                            pval_zero=pval_zero,
-                            pval_neg_log=pval_neg_log,
-                            minimum_rows=minimum_rows,
-                            infer_from_metadata=infer_from_metadata)
+    print(f"Validating file: {filename}")
+    with Progress(SpinnerColumn(),
+                  TextColumn("[progress.description]{task.description}"),
+                  transient=True
+                  ) as progress:
+        progress.add_task(description="Validating...", total=None)
+        (valid,
+         message,
+         error_preview,
+         error_type) = validate(filename=filename,
+                                errors_file=errors_file,
+                                pval_zero=pval_zero,
+                                pval_neg_log=pval_neg_log,
+                                minimum_rows=minimum_rows,
+                                infer_from_metadata=infer_from_metadata)
     print(f"Validation status: {valid}")
     print(message)
     if error_type:
