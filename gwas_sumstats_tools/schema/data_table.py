@@ -7,7 +7,7 @@ odds ratio or a hazard ratio - and these all have differing
 validation constraints.
 """
 
-
+from collections import OrderedDict
 from pandera import Column, DataFrameSchema, Check
 from pandera.dtypes import Float128
 
@@ -62,8 +62,16 @@ class SumStatsSchema:
         self.pval_neg_log = pval_neg_log
 
     def schema(self) -> DataFrameSchema:
+        all_fields = OrderedDict(self.mandatory_fields(),
+                                 **self.optional_fields())
         schema = DataFrameSchema(
-            {
+            all_fields,
+            coerce=True
+        )
+        return schema
+
+    def mandatory_fields(self) -> dict:
+        return OrderedDict({
                 "chromosome": Column(int, [
                     Check.in_range(1, 25,
                                    error="Must be a value between 1 and 25"),
@@ -88,6 +96,15 @@ class SumStatsSchema:
                                    error="Must be a value between 0 and 1, inclusive")
                     ]),
                 "p_value": self._get_pvalue_validator(),
+                "_mantissa": self._get_mantissa_validator(),
+                "_exponent": Column("Int64", nullable=True)           
+            })
+
+    def field_order(self) -> tuple:
+        return tuple(k for k in self.mandatory_fields() if not k.startswith("_"))
+
+    def optional_fields(self) -> dict:
+        return {
                 "variant_id": Column(str, [
                     Check.str_matches(r'^[A-Za-z0-9_]+$',
                                       error="Must match pattern")
@@ -108,15 +125,9 @@ class SumStatsSchema:
                 "n": Column("Int64", [
                     Check.ge(0,
                              error="Must be greater than or equal to 0")
-                    ], nullable=True, required=False),
-                "_mantissa": self._get_mantissa_validator(),
-                "_exponent": Column("Int64", nullable=True)           
-            },
-            coerce=True,
-            ordered=True
-        )
-        return schema
-
+                    ], nullable=True, required=False)
+            }
+    
     def _get_pvalue_validator(self) -> Column:
         """Get the pvalue validator.
         
