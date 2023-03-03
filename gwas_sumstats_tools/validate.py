@@ -26,12 +26,16 @@ class Validator(SumStatsTable):
         self.primary_error_type = None
         self.valid = None
 
-    def schema(self) -> DataFrameSchema:
-        effect_field = self.effect_field() if self.effect_field() is not None else 'beta'
+    def schema(self) -> SumStatsSchema:
+        effect_field = self.effect_field() if self.effect_field() in \
+            SumStatsSchema().EFFECT_FIELD_DEFINITIONS else 'beta'
         schema = SumStatsSchema(effect_field=effect_field,
                                 pval_zero=self.pval_zero,
-                                pval_neg_log=self.pval_neg_log).schema()
+                                pval_neg_log=self.pval_neg_log)
         return schema
+
+    def optional_schema(self) -> DataFrameSchema:
+        return SumStatsSchema().optional_schema()
 
     def validate(self) -> tuple[bool, str]:
         """Validate sumstats data.
@@ -43,6 +47,7 @@ class Validator(SumStatsTable):
             Validation status, message
         """
         self.valid, message = self._validate_file_ext()
+        self.valid, message = self._validate_field_order()
         if self.valid:
             nrows = max(self.sample_size, self.minimum_rows)
             sample_df = self.as_pd_df(nrows=nrows)
@@ -63,13 +68,26 @@ class Validator(SumStatsTable):
         self.errors_table.tocsv(errors_out)
 
     def _validate_file_ext(self) -> tuple[bool, Union[str, None]]:
+        message = None
         file_ext = "".join(Path(self.filename).suffixes)
         valid = file_ext in SumStatsSchema.FILE_EXTENSIONS
         if not valid:
             self.primary_error_type = "file_ext"
-            return valid, (f"Extension, '{file_ext}', "
+            message = (f"Extension, '{file_ext}', "
                            f"not in valid set: {SumStatsSchema.FILE_EXTENSIONS}.")
-        return valid, None
+        return valid, message
+
+    def _validate_field_order(self) -> tuple[bool, Union[str, None]]:
+        message = None
+        required_order = self.schema().field_order()
+        actual_order = self.header()[:len(required_order)]
+        valid = actual_order == required_order
+        if not valid:
+            self.primary_error_type = "field order"
+            message = ("Fields not in the required order:\n"
+                       f"Headers given:    {actual_order}\n"
+                       f"Headers required: {required_order}")
+        return valid, message
 
     def _validate_df(self,
                      dataframe: pd.DataFrame,
@@ -85,7 +103,7 @@ class Validator(SumStatsTable):
             Validation status, message
         """
         try:
-            self.schema().validate(dataframe, lazy=True)
+            self.schema().schema().validate(dataframe, lazy=True)
             valid = True
             message = "Data table is valid."
             self.errors_table = None
