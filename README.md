@@ -29,6 +29,10 @@ There are three commands, `read`, `validate` and `format`.
   * Create metadata from the GWAS Catalog (internal use, requires authenticated API): `-g`
   * Edit/add the values to the metadata: `-e` with `--<FIELD>=<VALUE>`
 
+## Installation
+```console
+$ pip install gwas-sumstats-tools
+```
 
 ## Usage
 
