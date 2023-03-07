@@ -111,7 +111,7 @@ class SumStatsTable:
         filtered_header_map = {k: v for k, v in header_map.items() if k in self.header()}
         self.sumstats = etl.rename(self.sumstats, filtered_header_map)
         return self.sumstats
-    
+
     def normalise_missing_values(self) -> etl.Table:
         self.sumstats = etl.replaceall(self.sumstats, 'NA', '#NA')
         self.sumstats = etl.replaceall(self.sumstats, None, '#NA')

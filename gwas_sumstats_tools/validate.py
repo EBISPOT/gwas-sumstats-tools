@@ -34,9 +34,6 @@ class Validator(SumStatsTable):
                                 pval_neg_log=self.pval_neg_log)
         return schema
 
-    def optional_schema(self) -> DataFrameSchema:
-        return SumStatsSchema().optional_schema()
-
     def validate(self) -> tuple[bool, str]:
         """Validate sumstats data.
         First validate a sample of 100,000 records,
@@ -47,7 +44,8 @@ class Validator(SumStatsTable):
             Validation status, message
         """
         self.valid, message = self._validate_file_ext()
-        self.valid, message = self._validate_field_order()
+        if self.valid:
+            self.valid, message = self._validate_field_order()
         if self.valid:
             nrows = max(self.sample_size, self.minimum_rows)
             sample_df = self.as_pd_df(nrows=nrows)

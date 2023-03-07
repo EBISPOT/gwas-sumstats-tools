@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gwas-sumstats-tools"
-version = "0.1.1a2"
+version = "0.1.1"
 description = ""
 authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>"]
 readme = "README.md"
@@ -15,6 +15,7 @@ pydantic = "^1.10.4"
 typer = {extras = ["all"], version = "^0.7.0"}
 pandera = {extras = ["io"], version = "^0.13.4"}
 hypothesis = "^6.68.2"
+pytest-mock = "^3.10.0"
 
 [tool.poetry.scripts]
 gwas-ssf = "gwas_sumstats_tools.cli:app"
