@@ -106,6 +106,7 @@ def test_evaluate_errors():
     assert v.primary_error_type == 'headers'
 
 
+@pytest.mark.filterwarnings("ignore: overflow")
 class TestValidator:
     """
     Test the validator with dummy data
@@ -230,40 +231,101 @@ class TestValidator:
         assert v.primary_error_type == "data"
         assert v.errors_table.nrows() == 4
 
+    def test_invalid_chromosome(self, sumstats_file):
+        sumstats_file.replace_data("chromosome", [0, 26, "CHR1", None])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        assert v.errors_table.nrows() == 5
 
+    def test_invalid_position(self, sumstats_file):
+        sumstats_file.replace_data("base_pair_location", [0, "pos", None, -2])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        assert v.errors_table.nrows() == 5
 
+    def test_invalid_effect_allele(self, sumstats_file):
+        sumstats_file.replace_data("effect_allele", ["D", "I", "N", None])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        assert v.errors_table.nrows() == 4
 
-#    def test_validate_bad_snp_and_no_pos_file_data(self):
+    def test_invalid_standard_error(self, sumstats_file):
+        sumstats_file.replace_data("standard_error", ["str", None, "a", "b"])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        print(v.errors_table.look(limit=10))
+        assert v.errors_table.nrows() == 5
+    
+    def test_invalid_effect_allele_frequency(self, sumstats_file):
+        sumstats_file.replace_data("effect_allele_frequency", ["str", None, -1, 1.1])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        assert v.errors_table.nrows() == 4
 
-#    def test_validate_bad_chr_file_data(self):
+    def test_pvalue_scientific_notation(self, sumstats_file):
+        sumstats_file.replace_data("p_value", ["1E-90000", "20e-2", "1e-90000", "200e-100"])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is True
 
-#    def test_validate_bad_chr_and_no_snp_file_data(self):
+    def test_invalid_pvalue(self, sumstats_file):
+        sumstats_file.replace_data("p_value", ["1E+90000", 2, -1, None])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        print(v.errors_table.look(limit=10))
+        assert v.errors_table.nrows() == 6
 
-#
-#    def test_validate_bad_bp_file_data(self):
+    def test_invalid_rsid(self, sumstats_file):
+        sumstats_file.replace_data("rsid", ["str", None, 1, "123"])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        assert v.errors_table.nrows() == 3
 
-#
-#    def test_validate_bad_bp_and_no_snp_file_data(self):
-#
-#    def test_validate_bad_optional_odds_ratio_file_data(self):
+    def test_invalid_ref(self, sumstats_file):
+        sumstats_file.replace_data("ref_allele", ["str", None, 1, "A"])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        assert v.errors_table.nrows() == 3
 
-#
-#    def test_validate_bad_optional_effect_allele_file_data(self):
-#
-#    def test_validate_empty_snp_file_data(self):
-#
-#    def test_validate_empty_snp_no_pos_file_data(self):
-#
-#    def test_validate_ref_allele_ok(self):
-#
-#    def test_validate_ref_allele_not_ok(self):
-#
-#    def test_validate_small_pvalue_file_data(self):
-#
-#    def test_validate_pvalue_can_be_one(self):
-#
-#    def test_drop_bad_rows_does_not_drop_good_lines(self):
-#
-#    def test_drop_bad_rows_drops_bad_lines(self):
-#
-#    def test_drop_bad_rows_drops_bad_rows_even_with_linelimit(self):
+    def test_invalid_ci(self, sumstats_file):
+        sumstats_file.replace_data("ci_upper", ["str", None, 1, "A"])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        print(v.errors_table.look(limit=10))
+        assert v.errors_table.nrows() == 3
+
+    def test_invalid_info(self, sumstats_file):
+        sumstats_file.replace_data("info", ["a", None, 1.1, -1])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        print(v.errors_table.look(limit=10))
+        assert v.errors_table.nrows() == 3
+        
+    def test_invalid_n(self, sumstats_file):
+        sumstats_file.replace_data("n", ["a", None, 1.1, -1])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+        print(v.errors_table.look(limit=10))
+        assert v.errors_table.nrows() == 5
