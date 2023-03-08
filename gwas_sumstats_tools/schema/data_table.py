@@ -15,6 +15,16 @@ from pandera.dtypes import Float128
 class SumStatsSchema:
     """Pandera DataFrameSchema interface for
     summary statistics data.
+    
+    Note on the pvalue validator:
+    
+    Choice of standard allowing zero or 
+    -log10 allowing zero. The zero constraint
+    is applied to the mantissa.
+    The float type is Float128 but even
+    this is not precise enough for some
+    datasets, whose very small values evaluate
+    to 0, if we don't split mantissa and exp.
     """
     EFFECT_FIELD_DEFINITIONS = {
         "beta": Column(float),
@@ -27,13 +37,13 @@ class SumStatsSchema:
                      error="Must be a value greater than or equal to 0")
             ])
         }
-    PVALUE_VALIDATORS = {
-        'pval_zero': Column(Float128, [
+    PVALUE_FIELD_DEFINITIONS = {
+        'p_value': Column(Float128, [
             Check.in_range(0, 1,
                            include_min=True,
                            error="Must be a value between 0 and 1, inclusive of 0")
             ]),
-        'pval_neg_log_zero': Column(float, [
+        'neg_log_10_p_value': Column(float, [
             Check.ge(0,
                      error="Must be greater than or equal to 0")
             ])
@@ -55,11 +65,11 @@ class SumStatsSchema:
 
     def __init__(self,
                  effect_field: str = 'beta',
-                 pval_zero: bool = False,
-                 pval_neg_log: bool = False) -> None:
+                 pval_field: str = 'p_value',
+                 pval_zero: bool = False) -> None:
         self.effect_field = effect_field
+        self.pval_field = pval_field
         self.pval_zero = pval_zero
-        self.pval_neg_log = pval_neg_log
 
     def schema(self) -> DataFrameSchema:
         all_fields = OrderedDict(self.mandatory_fields(),
@@ -95,9 +105,9 @@ class SumStatsSchema:
                     Check.in_range(0, 1,
                                    error="Must be a value between 0 and 1, inclusive")
                     ]),
-                "p_value": self._get_pvalue_validator(),
-                "_mantissa": self._get_mantissa_validator(),
-                "_exponent": Column("Int64", nullable=True)           
+                self.pval_field: self.PVALUE_FIELD_DEFINITIONS.get(self.pval_field),
+                "_p_value_mantissa": self._get_mantissa_validator(),
+                "_p_value_exponent": Column("Int64", nullable=True)           
             })
 
     def field_order(self) -> tuple:
@@ -127,25 +137,6 @@ class SumStatsSchema:
                              error="Must be greater than or equal to 0")
                     ], nullable=True, required=False)
             }
-    
-    def _get_pvalue_validator(self) -> Column:
-        """Get the pvalue validator.
-        
-        Choice of standard allowing zero or 
-        -log10 allowing zero. The zero constraint
-        is applied to the mantissa.
-        The float type is Float128 but even
-        this is not precise enough for some
-        datasets, whose very small values evaluate
-        to 0, if we don't split mantissa and exp.
-
-        Returns:
-            p-value validator
-        """
-        if self.pval_neg_log:
-            return self.PVALUE_VALIDATORS.get('pval_neg_log_zero')
-        else:
-            return self.PVALUE_VALIDATORS.get('pval_zero')
 
     def _get_mantissa_validator(self) -> Column:
         """Mantissa validator

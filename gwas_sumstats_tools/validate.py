@@ -2,7 +2,7 @@ from typing import Union
 from pathlib import Path
 import pandas as pd
 import petl as etl
-from pandera import DataFrameSchema, errors
+from pandera import errors
 
 from gwas_sumstats_tools.schema.data_table import SumStatsSchema
 from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
@@ -13,13 +13,11 @@ class Validator(SumStatsTable):
     def __init__(self,
                  sumstats_file: Path,
                  pval_zero: bool = False,
-                 pval_neg_log: bool = False,
                  minimum_rows: int = 100_000,
                  sample_size: int = 100_000,
                  **kwargs) -> None:
         super().__init__(sumstats_file=sumstats_file)
         self.pval_zero = pval_zero
-        self.pval_neg_log = pval_neg_log
         self.errors_table = None
         self.minimum_rows = minimum_rows
         self.sample_size = sample_size
@@ -29,9 +27,11 @@ class Validator(SumStatsTable):
     def schema(self) -> SumStatsSchema:
         effect_field = self.effect_field() if self.effect_field() in \
             SumStatsSchema().EFFECT_FIELD_DEFINITIONS else 'beta'
+        p_value_field = self.p_value_field() if self.p_value_field() in \
+            SumStatsSchema().PVALUE_FIELD_DEFINITIONS else 'p_value'
         schema = SumStatsSchema(effect_field=effect_field,
-                                pval_zero=self.pval_zero,
-                                pval_neg_log=self.pval_neg_log)
+                                pval_field=p_value_field,
+                                pval_zero=self.pval_zero)
         return schema
 
     def validate(self) -> tuple[bool, str]:
@@ -145,7 +145,6 @@ class Validator(SumStatsTable):
 def validate(filename: Path,
              errors_file: bool = False,
              pval_zero: bool = False,
-             pval_neg_log: bool = False,
              minimum_rows: int = 100_000,
              infer_from_metadata: bool = False) -> tuple[bool,
                                                          str,
@@ -160,7 +159,6 @@ def validate(filename: Path,
     Keyword Arguments:
         errors_file -- create error file csv (default: {False})
         pval_zero -- allow pvalues of zero (default: {False})
-        pval_neg_log -- pvalues validated as -log10 (default: {False})
         minimum_rows -- set minimum rows allowable (default: {100_000})
         infer_from_metadata -- infer validation options from metadata (default: {False})
 
@@ -174,12 +172,9 @@ def validate(filename: Path,
         if ssm:
             if pval_zero is False:
                 pval_zero = True if ssm.as_dict().get('analysisSoftware') is not None else False
-            if pval_neg_log is False:
-                pval_neg_log = ssm.as_dict().get('pvalueIsNegLog10') if True else False
         else:
             print("Cannot infer options from metadata file, because metadata file cannot be found.")
     validator = Validator(pval_zero=pval_zero,
-                          pval_neg_log=pval_neg_log,
                           minimum_rows=minimum_rows,
                           sumstats_file=filename)
     valid, message = validator.validate()

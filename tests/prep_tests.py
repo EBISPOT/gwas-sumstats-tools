@@ -7,6 +7,7 @@ import os
 import shutil
 from pathlib import Path
 from typing import Union
+import yaml
 from collections import OrderedDict
 import pandas as pd
 
@@ -33,6 +34,33 @@ TEST_DATA = OrderedDict({
 EFFECT_FIELDS = {"odds_ratio": [0.92090, 1.01440, 0.97385, 0.99302],
                  "hazard_ratio": [0.92090, 1.01440, 0.97385, 0.99302]}
 
+TEST_METADATA = {
+    "genotyping_technology": ["Genome-wide genotyping array"],
+    "gwas_id": "GCST90000123",
+    "samples": [
+        {
+            "sample_size": 12345,
+            "sample_ancestry": ["European"],
+            "ancestry_method": [
+                "self-reported",
+                "genetically determined"
+            ]
+            }
+    ],
+    "trait_description": [
+        "breast carcinoma"
+    ],
+    "minor_allele_freq_lower_limit": 0.001,
+    "data_file_name": "0000123.tsv",
+    "file_type": "GWAS-SSF v1.0",
+    "data_file_md5sum": "32ce41c3dca4cd9f463a0ce7351966fd",
+    "is_harmonised": False,
+    "is_sorted": False,
+    "date_last_modified": "2023-02-09",
+    "genome_assembly": "GRCh37",
+    "coordinate_system": "1-based",
+    "sex": "combined"
+}
 
 class SSTestFile:
     def __init__(self,
@@ -80,3 +108,21 @@ class SSTestFile:
         self.test_data = OrderedDict((header_to if k == header_from else k, v)
                                      for k, v in self.test_data.items())
         return self.test_data
+
+
+class MetaTestFile:
+    def __init__(self,
+                 filepath: Path = "test_file.tsv-meta.yaml"):
+        self._setup_dir()
+        self.filepath = os.path.join(TEST_DIR, filepath)
+        self.test_data = TEST_METADATA
+
+    def to_file(self) -> None:
+        with open(self.filepath, "w") as f:
+            yaml.dump(self.test_data, f)
+
+    def remove(self) -> None:
+        shutil.rmtree(TEST_DIR)
+
+    def _setup_dir(self) -> None:
+        os.makedirs(TEST_DIR, exist_ok=True)
