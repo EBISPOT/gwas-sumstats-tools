@@ -62,7 +62,20 @@ TEST_METADATA = {
     "sex": "combined"
 }
 
-class SSTestFile:
+
+class TestFileBase:
+    """Test file base class
+    """
+    def remove(self) -> None:
+        shutil.rmtree(TEST_DIR)
+
+    def _setup_dir(self) -> None:
+        os.makedirs(TEST_DIR, exist_ok=True)
+
+
+class SSTestFile(TestFileBase):
+    """Class for generating test sumstats data files
+    """
     def __init__(self,
                  filepath: Path = "test_file.tsv",
                  sep: str = "\t",
@@ -75,12 +88,6 @@ class SSTestFile:
     def to_file(self) -> None:
         df = pd.DataFrame.from_dict(self.test_data)
         df.to_csv(self.filepath, sep=self.sep, index=False, mode='w')
-
-    def remove(self) -> None:
-        shutil.rmtree(TEST_DIR)
-
-    def _setup_dir(self) -> None:
-        os.makedirs(TEST_DIR, exist_ok=True)
 
     def replace_data(self,
                      header: str,
@@ -110,7 +117,9 @@ class SSTestFile:
         return self.test_data
 
 
-class MetaTestFile:
+class MetaTestFile(TestFileBase):
+    """Class for generating test metadata files
+    """
     def __init__(self,
                  filepath: Path = "test_file.tsv-meta.yaml"):
         self._setup_dir()
@@ -120,9 +129,3 @@ class MetaTestFile:
     def to_file(self) -> None:
         with open(self.filepath, "w") as f:
             yaml.dump(self.test_data, f)
-
-    def remove(self) -> None:
-        shutil.rmtree(TEST_DIR)
-
-    def _setup_dir(self) -> None:
-        os.makedirs(TEST_DIR, exist_ok=True)
