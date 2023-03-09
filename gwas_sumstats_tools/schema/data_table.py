@@ -87,8 +87,8 @@ class SumStatsSchema:
                                    error="Must be a value between 1 and 25"),
                     ]),
                 "base_pair_location": Column(int, [
-                    Check.ge(1,
-                             error="Must be greater or equal to 1")
+                    Check.ge(0,
+                             error="Must be positive integer")
                     ]),
 
                 "effect_allele": Column(str, [

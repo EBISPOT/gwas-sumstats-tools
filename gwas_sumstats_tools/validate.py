@@ -68,11 +68,11 @@ class Validator(SumStatsTable):
     def _validate_file_ext(self) -> tuple[bool, Union[str, None]]:
         message = None
         file_ext = "".join(Path(self.filename).suffixes)
-        valid = file_ext in SumStatsSchema.FILE_EXTENSIONS
+        valid = file_ext.endswith(tuple(SumStatsSchema.FILE_EXTENSIONS))
         if not valid:
             self.primary_error_type = "file_ext"
             message = (f"Extension, '{file_ext}', "
-                           f"not in valid set: {SumStatsSchema.FILE_EXTENSIONS}.")
+                       f"not in valid set: {SumStatsSchema.FILE_EXTENSIONS}.")
         return valid, message
 
     def _validate_field_order(self) -> tuple[bool, Union[str, None]]:
