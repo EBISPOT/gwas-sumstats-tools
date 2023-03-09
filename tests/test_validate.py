@@ -65,6 +65,14 @@ def test_validate_file_ext(sumstats_file):
     assert v._validate_file_ext()[0] is False
     assert isinstance(v._validate_file_ext()[1], str)
     assert v.primary_error_type == "file_ext"
+    sumstats_file.filepath = "GCST1234567.tsv.gz"
+    sumstats_file.to_file()
+    v = Validator(sumstats_file=sumstats_file.filepath)
+    assert v._validate_file_ext() == (True, None)
+    sumstats_file.filepath = "GCST1234567.other.tsv.gz"
+    sumstats_file.to_file()
+    v = Validator(sumstats_file=sumstats_file.filepath)
+    assert v._validate_file_ext() == (True, None)
 
 
 def test_validate_field_order(sumstats_file):
