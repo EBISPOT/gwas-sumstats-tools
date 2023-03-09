@@ -1,0 +1,42 @@
+image: "python:3.9"
+
+stages:
+  - test
+  - build
+  - deploy
+
+.before_script_template:
+  before_script:
+    - pip install --upgrade pip
+    - pip install poetry
+    - poetry install
+
+test:
+  extends: .before_script_template
+  stage: test
+  script:
+    - poetry run pytest -v
+
+build:
+  extends: .before_script_template
+  stage: build
+  script:
+    - poetry build
+  only:
+    - tags
+
+deploy_test:
+  extends: .before_script_template
+  stage: deploy
+  script:
+    - poetry publish --repository=testpypi --username=$PYPI_USER --password=$PYPI_PWD 
+  only:
+    - tags
+
+deploy_prod:
+  extends: .before_script_template
+  stage: deploy
+  script:
+    - poetry publish --username=$PYPI_USER --password=$PYPI_PWD
+  only:
+    - tags

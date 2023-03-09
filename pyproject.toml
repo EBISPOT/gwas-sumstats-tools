@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gwas-sumstats-tools"
-version = "0.1.1"
+version = "0.1.2"
 description = ""
 authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>"]
 readme = "README.md"

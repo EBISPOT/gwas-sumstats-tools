@@ -130,4 +130,5 @@ To run the tests:
 
 2. `git clone https://github.com/EBISPOT/gwas-sumstats-tools.git`
 3. `cd gwas-sumstats-tools`
-4. `poetry run pytest`
+4. `poetry install`
+5. `poetry run pytest`
