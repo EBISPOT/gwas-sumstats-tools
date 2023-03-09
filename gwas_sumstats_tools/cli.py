@@ -1,33 +1,27 @@
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 import typer
-import petl as etl
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from gwas_sumstats_tools.interfaces.data_table import (SumStatsTable,
-                                                     header_dict_from_args)
+                                                       header_dict_from_args)
 from gwas_sumstats_tools.interfaces.metadata import (MetadataClient,
-                                                   metadata_dict_from_args,
-                                                   metadata_dict_from_gwas_cat,
-                                                   get_file_metadata,
-                                                   init_metadata_from_file)
+                                                     metadata_dict_from_args,
+                                                     metadata_dict_from_gwas_cat,
+                                                     get_file_metadata)
 from gwas_sumstats_tools.validate import validate
+from gwas_sumstats_tools.read import read
 from gwas_sumstats_tools.utils import (set_data_outfile_name,
                                        set_metadata_outfile_name,
-                                       parse_accession_id)
+                                       parse_accession_id,
+                                       exit_if_no_data)
 
 
 app = typer.Typer(add_completion=False,
                   no_args_is_help=True,
                   rich_markup_mode="rich",
                   context_settings={"help_option_names": ["-h", "--help"]})
-
-
-def exit_if_no_data(table: Union[etl.Table, None]) -> None:
-    if table is None:
-        print("No data in table. Exiting.")
-        raise typer.Exit()
 
 
 def exit_status(status: bool) -> int:
@@ -49,9 +43,6 @@ def ss_validate(filename: Path = typer.Argument(...,
                 pval_zero: bool = typer.Option(False,
                                                "--p-zero", "-z",
                                                help="Force p-values of zero to be allowable. Takes precedence over inferred value (-i)"),
-                pval_neg_log: bool = typer.Option(False,
-                                                  "--p-neg-log", "-n",
-                                                  help="Force p-values to be validated as -log10. Takes precedence over inferred value (-i)"),
                 minimum_rows: int = typer.Option(100_000,
                                                  "--min-rows", "-m",
                                                  help="Minimum rows acceptable for the file"),
@@ -78,7 +69,6 @@ def ss_validate(filename: Path = typer.Argument(...,
          error_type) = validate(filename=filename,
                                 errors_file=errors_file,
                                 pval_zero=pval_zero,
-                                pval_neg_log=pval_neg_log,
                                 minimum_rows=minimum_rows,
                                 infer_from_metadata=infer_from_metadata)
     print(f"Validation status: {valid}")
@@ -126,25 +116,13 @@ def ss_read(filename: Path = typer.Argument(...,
     """
     [green]READ[/green] a sumstats file
     """
-    sst = SumStatsTable(filename)
-    exit_if_no_data(table=sst.sumstats)
-    if get_header:
-        print("[bold]\n-------- SUMSTATS HEADERS --------\n[/bold]")
-        for h in sst.header():
-            print(h)
-    if get_all_metadata:
-        ssm = init_metadata_from_file(filename=filename, metadata_infile=metadata_infile)
-        print("[bold]\n-------- SUMSTATS METADATA --------\n[/bold]")
-        print(ssm)
-    if get_metadata:
-        ssm = init_metadata_from_file(filename=filename, metadata_infile=metadata_infile)
-        print("[bold]\n-------- SUMSTATS METADATA --------\n[/bold]")
-        for f in get_metadata:
-            print(f"{f}={ssm.as_dict().get(f)}")
-    if not any([get_header, get_all_metadata, get_metadata]):
-        # Just preview the file
-        print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
-        print(sst.sumstats)
+    result, message = read(filename=filename,
+                           metadata_infile=metadata_infile,
+                           get_header=get_header,
+                           get_all_metadata=get_all_metadata,
+                           get_metadata=get_metadata)
+    print(message)
+    print(result)
 
 
 @app.command("format",
@@ -153,7 +131,6 @@ def ss_read(filename: Path = typer.Argument(...,
                                "allow_extra_args": True,
                                "ignore_unknown_options": True})
 def ss_format(filename: Path = typer.Argument(...,
-                                              exists=True,
                                               readable=True,
                                               help="Input sumstats file. Must be TSV or CSV and may be gzipped"),
               data_outfile: Path = typer.Option(None,

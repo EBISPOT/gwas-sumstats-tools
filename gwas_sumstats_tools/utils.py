@@ -4,12 +4,20 @@ import requests
 import logging
 from typing import Union
 from pathlib import Path
-
+import typer
+import petl as etl
+from rich import print
 from requests.adapters import HTTPAdapter, Retry
 
 
 logging.basicConfig(level=logging.ERROR, format='(%(levelname)s): %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def exit_if_no_data(table: Union[etl.Table, None]) -> None:
+    if table is None:
+        print("No data in table. Exiting.")
+        raise typer.Exit()
 
 
 def parse_accession_id(filename: Path) -> Union[str, None]:

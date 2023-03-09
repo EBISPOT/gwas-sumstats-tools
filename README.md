@@ -120,3 +120,14 @@ $ gwas-ssf format [OPTIONS] FILENAME
 * `-g, --meta-gwas`: Populate metadata from GWAS Catalog  [default: False]
 * `-c, --custom-header-map`: Provide a custom header mapping using the `--<FROM>:<TO>` format e.g. `--chr:chromosome`  [default: False]
 * `--help`: Show this message and exit.
+
+## Development
+This repository uses [poetry](https://python-poetry.org/docs/) for dependency and packaging management.
+
+To run the tests:
+
+1. [install poetry](https://python-poetry.org/docs/#installation)
+
+2. `git clone https://github.com/EBISPOT/gwas-sumstats-tools.git`
+3. `cd gwas-sumstats-tools`
+4. `poetry run pytest`

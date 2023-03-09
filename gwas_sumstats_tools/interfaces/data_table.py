@@ -3,7 +3,6 @@ from typing import Union
 import pandas as pd
 import numpy as np
 import petl as etl
-import gzip
 
 
 """formatters
@@ -185,26 +184,47 @@ class SumStatsTable:
         """Get the effect allele (field index 4).
 
         Returns:
-            effect field
+            effect field label
         """
-        field_4 = self.header()[4] if len(self.header()) > 4 else None
+        field_4 = self._get_field_label_from_index(4)
         return field_4
+    
+    def p_value_field(self) -> Union[str, None]:
+        """Get the p_value field (field index 7).
+
+        Returns:
+            p_value field label
+        """
+        field_4 = self._get_field_label_from_index(7)
+        return field_4
+
+    def _get_field_label_from_index(self, index: int) -> Union[str, None]:
+        """Get the field label from specified index
+
+        Arguments:
+            index -- index of field
+
+        Returns:
+            field label or None
+        """
+        return self.header()[index] if len(self.header()) > index else None
 
     def _pval_to_mantissa_and_exponent(self, table: etl.Table) -> etl.Table:
         table_w_split_p = etl.split(self._square_up_table(table),
-                                   'p_value',
-                                   'e|E',
-                                   newfields=['_mantissa', '_exponent'],
-                                   include_original=True,
-                                   maxsplit=1)
+                                    self.p_value_field(),
+                                    'e|E',
+                                    newfields=['_p_value_mantissa',
+                                               '_p_value_exponent'],
+                                    include_original=True,
+                                    maxsplit=1)
         return table_w_split_p
 
     def _prep_table_for_validation(self) -> etl.Table:
         table = etl.Table()
         if self.sumstats:
             table = self._pval_to_mantissa_and_exponent(table=self.sumstats)
-        return table 
-        
+        return table
+
     def as_pd_df(self, nrows: int = None) -> pd.DataFrame:
         """Sumstats table as a Pandas dataframe
 

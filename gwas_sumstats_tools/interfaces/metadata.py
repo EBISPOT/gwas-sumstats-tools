@@ -11,24 +11,23 @@ from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
 
 GWAS_CAT_API_STUDIES_URL = "https://www.ebi.ac.uk/gwas/rest/api/studies/"
 GWAS_CAT_MAPPINGS = {
-    'genotypingTechnology': 'genotypingTechnology',
-    'sampleSize': 'sampleSize',
-    'sampleAncestry': 'sampleAncestry',
-    'traitDescription': 'traitDescription',
-    'effectAlleleFreqLowerLimit': 'effectAlleleFreqLowerLimit',
-    'ancestryMethod': 'ancestryMethod',
-    'caseControlStudy': 'caseControlStudy',
-    'caseCount': 'caseCount',
-    'controlCount': 'controlCount',
-    'genomeAssembly': 'genomeAssembly',
-    'pvalueIsNegLog10': 'pvalueIsNegLog10',
-    'analysisSoftware': 'analysisSoftware',
-    'imputationPanel': 'imputationPanel',
-    'imputationSoftware': 'imputationSoftware',
-    'adjustedCovariates': 'adjustedCovariates',
-    'ontologyMapping': 'ontologyMapping',
-    'authorNotes': 'authorNotes',
-    'coordinateSystem': 'coordinateSystem',
+    'genotypingTechnology': 'genotyping_technology',
+    'sampleSize': 'sample_size',
+    'sampleAncestry': 'sample_ancestry',
+    'traitDescription': 'trait_description',
+    'minorAlleleFreqLowerLimit': 'minor_allele_freq_lower_limit',
+    'ancestryMethod': 'ancestry_method',
+    'caseControlStudy': 'case_control_study',
+    'caseCount': 'case_count',
+    'controlCount': 'control_count',
+    'genomeAssembly': 'genome_assembly',
+    'analysisSoftware': 'analysis_software',
+    'imputationPanel': 'imputation_panel',
+    'imputationSoftware': 'imputation_software',
+    'adjustedCovariates': 'adjusted_covariates',
+    'ontologyMapping': 'ontology_mapping',
+    'authorNotes': 'author_notes',
+    'coordinateSystem': 'coordinate_system',
     'sex': 'sex'
     }
 GENOME_ASSEMBLY_MAPPINGS = {
@@ -79,9 +78,9 @@ class MetadataClient:
         self.metadata = self.metadata.parse_obj(self._meta_dict)
 
     def __repr__(self) -> str:
-        """YAML str representation of metadata.
+        """Representation of metadata.
         """
-        return yaml.dump(self.metadata.dict())
+        return self.as_yaml()
 
     def as_dict(self) -> dict:
         """Dict repr of metadata
@@ -90,6 +89,10 @@ class MetadataClient:
             Dict of metadata
         """
         return self.metadata.dict()
+
+    def as_yaml(self, **kwargs) -> str:
+        return yaml.dump(self.metadata.dict(**kwargs))
+        
 
 
 def metadata_dict_from_args(args: list) -> dict:
@@ -140,13 +143,13 @@ def get_file_metadata(in_file: Path, out_file: str) -> dict:
     """
     meta_dict = {}
     accession_id = parse_accession_id(filename=in_file) 
-    meta_dict['GWASID'] = accession_id
-    meta_dict['dataFileName'] = Path(out_file).name
-    meta_dict['fileType'] = 'GWAS-SFF v0.1'
-    meta_dict['genomeAssembly'] = GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown')
-    meta_dict['dataFileMd5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
-    meta_dict['dateLastModified'] = date.today()
-    meta_dict['GWASCatalogAPI'] = GWAS_CAT_API_STUDIES_URL + accession_id
+    meta_dict['gwas_id'] = accession_id
+    meta_dict['data_file_name'] = Path(out_file).name
+    meta_dict['file_type'] = 'GWAS-SFF v1.0'
+    meta_dict['genome_assembly'] = GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown')
+    meta_dict['data_file_md5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
+    meta_dict['date_last_modified'] = date.today()
+    meta_dict['gwas_catalog_api'] = GWAS_CAT_API_STUDIES_URL + accession_id
     return meta_dict
 
 

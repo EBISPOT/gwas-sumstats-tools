@@ -177,6 +177,13 @@ class TestValidator:
         assert v.validate()[0] is False
         assert v.primary_error_type == "field order"
 
+    def test_validate_p_value_field_missing(self, sumstats_file):
+        sumstats_file.test_data.pop("p_value")
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "field order"
+
     def test_validate_optional_field_missing(self, sumstats_file):
         sumstats_file.test_data.pop("rsid")
         sumstats_file.to_file()
@@ -202,25 +209,20 @@ class TestValidator:
         assert v.validate()[0] is True
 
     def test_neg_log_pvalue(self, sumstats_file):
-        sumstats_file.replace_data("p_value", [10, 2, 3, 4])
+        sumstats_file.replace_header_and_data(header_from="p_value",
+                                              header_to="neg_log_10_p_value",
+                                              data_to=[10, 2, 3, 4])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
-        assert v.validate()[0] is False
-        assert v.primary_error_type == "data"
-        assert v.errors_table.nrows() == 4
-        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4,
-                      pval_neg_log=True)
         assert v.validate()[0] is True
 
     def test_zero_neg_log_pvalue(self, sumstats_file):
-        sumstats_file.replace_data("p_value", [0, 0, 2, 3])
+        sumstats_file.replace_header_and_data(header_from="p_value",
+                                              header_to="neg_log_10_p_value",
+                                              data_to=[0, 0, 2, 3])
         sumstats_file.to_file()
-        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
-        assert v.validate()[0] is False
-        assert v.primary_error_type == "data"
-        assert v.errors_table.nrows() == 4
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4,
-                      pval_zero=True, pval_neg_log=True)
+                      pval_zero=True)
         assert v.validate()[0] is True
 
     def test_validate_bad_rsid(self, sumstats_file):
