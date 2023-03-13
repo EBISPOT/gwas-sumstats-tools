@@ -2,39 +2,17 @@ import yaml
 from typing import Union
 from datetime import date
 from pathlib import Path
+from gwas_sumstats_tools.config import (GWAS_CAT_API_STUDIES_URL,
+                                        GWAS_CAT_API_INGEST_STUDIES_URL,
+                                        GWAS_CAT_STUDY_MAPPINGS,
+                                        GWAS_CAT_SAMPLE_MAPPINGS,
+                                        GENOME_ASSEMBLY_MAPPINGS 
+                                        )
 from gwas_sumstats_tools.utils import (download_with_requests,
                                        parse_accession_id,
                                        parse_genome_assembly,
                                        get_md5sum)
 from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
-
-
-GWAS_CAT_API_STUDIES_URL = "https://www.ebi.ac.uk/gwas/rest/api/studies/"
-GWAS_CAT_MAPPINGS = {
-    'genotypingTechnology': 'genotyping_technology',
-    'sampleSize': 'sample_size',
-    'sampleAncestry': 'sample_ancestry',
-    'traitDescription': 'trait_description',
-    'minorAlleleFreqLowerLimit': 'minor_allele_freq_lower_limit',
-    'ancestryMethod': 'ancestry_method',
-    'caseControlStudy': 'case_control_study',
-    'caseCount': 'case_count',
-    'controlCount': 'control_count',
-    'genomeAssembly': 'genome_assembly',
-    'analysisSoftware': 'analysis_software',
-    'imputationPanel': 'imputation_panel',
-    'imputationSoftware': 'imputation_software',
-    'adjustedCovariates': 'adjusted_covariates',
-    'ontologyMapping': 'ontology_mapping',
-    'authorNotes': 'author_notes',
-    'coordinateSystem': 'coordinate_system',
-    'sex': 'sex'
-    }
-GENOME_ASSEMBLY_MAPPINGS = {
-    '36': 'GRCh36',
-    '37': 'GRCh37',
-    '38': 'GRCh38'
-    }
 
 
 class MetadataClient:
@@ -92,7 +70,6 @@ class MetadataClient:
 
     def as_yaml(self, **kwargs) -> str:
         return yaml.dump(self.metadata.dict(**kwargs))
-        
 
 
 def metadata_dict_from_args(args: list) -> dict:
@@ -124,7 +101,7 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
     Returns:
         Metadata dict
     """
-    study_url = GWAS_CAT_API_STUDIES_URL + accession_id
+    study_url = GWAS_CAT_API_INGEST_STUDIES_URL + accession_id
     content = download_with_requests(url=study_url)
     meta_dict = {}
     # TODO parse content into meta_dict

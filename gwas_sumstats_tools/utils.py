@@ -74,14 +74,8 @@ def download_with_requests(url, params=None, headers=None) \
         return None
 
 
-def set_data_outfile_name(data_infile: Path, data_outfile: str) -> str:
-    if data_outfile is None:
-        accession_id = parse_accession_id(filename=data_infile)
-        if accession_id:
-            data_outfile = accession_id + ".tsv.gz"
-        else:
-            data_outfile = data_infile.stem + "-REFORMED.tsv.gz"
-    return data_outfile
+def append_to_path(path: Path, to_add: str) -> Path:
+    return path.parent / (path.name + to_add)
 
 
 def set_metadata_outfile_name(data_outfile: str, metadata_outfile: str) -> str:
@@ -96,3 +90,43 @@ def get_md5sum(file: Path) -> str:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def header_dict_from_args(args: list) -> dict:
+    """Generate a dict from cli args split on ":"
+
+    Arguments:
+        args -- cli args list
+
+    Returns:
+        Dict of key, values
+    """
+    header_dict = {}
+    for arg in args:
+        if ":" not in arg:
+            # skip because it's not a metadata mapping
+            pass
+        else:
+            key, value = arg.replace("--", "").split(":")
+            header_dict[key] = value
+    return header_dict
+
+
+def metadata_dict_from_args(args: list) -> dict:
+    """Generate a dict from cli args split on "="
+
+    Arguments:
+        args -- cli args list
+
+    Returns:
+        Dict of key, values
+    """
+    meta_dict = {}
+    for arg in args:
+        if "=" not in arg:
+            # skip because it's not a metadata mapping
+            pass
+        else:
+            key, value = arg.replace("--", "").split("=")
+            meta_dict[key] = value
+    return meta_dict
