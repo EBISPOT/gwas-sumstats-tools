@@ -42,12 +42,13 @@ def parse_genome_assembly(filename: Path) -> Union[str, None]:
     Returns:
         Genome assembly or None
     """
-    gcst_search = re.search(r"([Build|[GRCh]*)([0-9]+)\.", filename.stem, re.IGNORECASE)
+    gcst_search = re.search(r"(build|grch)([0-9]+)", filename.stem, re.IGNORECASE)
     return gcst_search.group(2) if gcst_search else None
 
 
-def download_with_requests(url, params=None, headers=None) \
-    -> Union[bytes, None]:
+def download_with_requests(url,
+                           params: dict = None,
+                           headers: dict = None) -> Union[bytes, None]:
     """Download content from URL
 
     Arguments:
@@ -130,3 +131,38 @@ def metadata_dict_from_args(args: list) -> dict:
             key, value = arg.replace("--", "").split("=")
             meta_dict[key] = value
     return meta_dict
+
+
+def replace_dictionary_keys(data_dict: dict, replace_dict: dict) -> dict:
+    """Replace data_dict keys with values from replace_dict
+
+    Arguments:
+        data_dict -- dict to replace keys in
+        replace_dict -- dict mapping 'find' to 'replace' keys
+
+    Returns:
+        dict with keys replaced
+    """
+    return {replace_dict.get(k, k): v for k, v in data_dict.items()}
+
+
+def split_fields_on_delimiter(data_dict: dict,
+                              fields: tuple,
+                              delimiter: str = "|") -> dict:
+    """Split specified fields in dict on delimiter
+
+    Arguments:
+        data_dict -- dict to split fields in
+        fields -- fields to split
+
+    Keyword Arguments:
+        delimiter -- delimiter (default: {"|"})
+
+    Returns:
+        data_dict with fields split
+    """
+    return dict((k, v.split(delimiter))
+                if k in fields
+                else (k, v)
+                for k, v
+                in data_dict.items())

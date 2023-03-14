@@ -7,6 +7,7 @@ GWAS_CAT_STUDY_MAPPINGS = {
     'genotyping_technology': 'genotyping_technology',
     'traitDescription': 'trait_description',
     'effect_allele_frequency_lower_limit': 'minor_allele_freq_lower_limit',
+    'minor_allele_frequency_lower_limit': 'minor_allele_freq_lower_limit',
     'summary_statistics_assembly': 'genome_assembly',
     'analysisSoftware': 'analysis_software',
     'imputationPanel': 'imputation_panel',
@@ -33,3 +34,8 @@ GENOME_ASSEMBLY_MAPPINGS = {
     '37': 'GRCh37',
     '38': 'GRCh38'
     }
+
+STUDY_FIELD_TO_SPLIT = ('genotyping_technology', 'trait_description', 'ontology_mapping', 'adjusted_covariates')
+
+SAMPLE_FIELD_TO_SPLIT = ('ancestry_method', 'sample_ancestry')
+

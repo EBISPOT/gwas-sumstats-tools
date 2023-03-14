@@ -4,7 +4,7 @@ from tests.prep_tests import (SSTestFile,
                               TEST_DATA,
                               MetaTestFile,
                               TEST_METADATA)
-from gwas_sumstats_tools.read import Reader, read
+from gwas_sumstats_tools.read import Reader
 
 
 @pytest.fixture()
