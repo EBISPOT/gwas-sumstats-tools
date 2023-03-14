@@ -251,22 +251,3 @@ class SumStatsTable:
         return etl.cat(table, missing=missing)
 
 
-def header_dict_from_args(args: list) -> dict:
-    """Generate a dict from cli args split on ":"
-
-    Arguments:
-        args -- cli args list
-
-    Returns:
-        Dict of key, values
-    """
-    header_dict = {}
-    for arg in args:
-        if ":" not in arg:
-            # skip because it's not a metadata mapping
-            pass
-        else:
-            key, value = arg.replace("--", "").split(":")
-            header_dict[key] = value
-    return header_dict
-

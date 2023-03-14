@@ -1,40 +1,23 @@
 import yaml
+import json
 from typing import Union
 from datetime import date
 from pathlib import Path
+from pydantic import ValidationError
+from gwas_sumstats_tools.config import (GWAS_CAT_API_STUDIES_URL,
+                                        GWAS_CAT_API_INGEST_STUDIES_URL,
+                                        GWAS_CAT_STUDY_MAPPINGS,
+                                        STUDY_FIELD_TO_SPLIT,
+                                        SAMPLE_FIELD_TO_SPLIT,
+                                        GWAS_CAT_SAMPLE_MAPPINGS,
+                                        GENOME_ASSEMBLY_MAPPINGS)
 from gwas_sumstats_tools.utils import (download_with_requests,
                                        parse_accession_id,
                                        parse_genome_assembly,
-                                       get_md5sum)
+                                       get_md5sum,
+                                       replace_dictionary_keys,
+                                       split_fields_on_delimiter)
 from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
-
-
-GWAS_CAT_API_STUDIES_URL = "https://www.ebi.ac.uk/gwas/rest/api/studies/"
-GWAS_CAT_MAPPINGS = {
-    'genotypingTechnology': 'genotyping_technology',
-    'sampleSize': 'sample_size',
-    'sampleAncestry': 'sample_ancestry',
-    'traitDescription': 'trait_description',
-    'minorAlleleFreqLowerLimit': 'minor_allele_freq_lower_limit',
-    'ancestryMethod': 'ancestry_method',
-    'caseControlStudy': 'case_control_study',
-    'caseCount': 'case_count',
-    'controlCount': 'control_count',
-    'genomeAssembly': 'genome_assembly',
-    'analysisSoftware': 'analysis_software',
-    'imputationPanel': 'imputation_panel',
-    'imputationSoftware': 'imputation_software',
-    'adjustedCovariates': 'adjusted_covariates',
-    'ontologyMapping': 'ontology_mapping',
-    'authorNotes': 'author_notes',
-    'coordinateSystem': 'coordinate_system',
-    'sex': 'sex'
-    }
-GENOME_ASSEMBLY_MAPPINGS = {
-    '36': 'GRCh36',
-    '37': 'GRCh37',
-    '38': 'GRCh38'
-    }
 
 
 class MetadataClient:
@@ -75,7 +58,10 @@ class MetadataClient:
             data_dict -- Dict of data to populate model
         """
         self._meta_dict.update(data_dict)
-        self.metadata = self.metadata.parse_obj(self._meta_dict)
+        try:
+            self.metadata = self.metadata.parse_obj(self._meta_dict)
+        except ValidationError as e:
+            print(f"Metadata not updated due to the following error:\n {e}\n")
 
     def __repr__(self) -> str:
         """Representation of metadata.
@@ -92,27 +78,6 @@ class MetadataClient:
 
     def as_yaml(self, **kwargs) -> str:
         return yaml.dump(self.metadata.dict(**kwargs))
-        
-
-
-def metadata_dict_from_args(args: list) -> dict:
-    """Generate a dict from cli args split on "="
-
-    Arguments:
-        args -- cli args list
-
-    Returns:
-        Dict of key, values
-    """
-    meta_dict = {}
-    for arg in args:
-        if "=" not in arg:
-            # skip because it's not a metadata mapping
-            pass
-        else:
-            key, value = arg.replace("--", "").split("=")
-            meta_dict[key] = value
-    return meta_dict
 
 
 def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
@@ -124,11 +89,78 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
     Returns:
         Metadata dict
     """
-    study_url = GWAS_CAT_API_STUDIES_URL + accession_id
-    content = download_with_requests(url=study_url)
-    meta_dict = {}
-    # TODO parse content into meta_dict
+    study_url = GWAS_CAT_API_INGEST_STUDIES_URL + accession_id
+    study_response = download_with_requests(url=study_url)
+    meta_dict = _parse_gwas_api_study_response(study_response,
+                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
+    sample_url = study_url + "/samples"
+    sample_response = download_with_requests(url=sample_url, params={"size": 100})
+    samples_list = _parse_gwas_api_samples_response(sample_response,
+                                                    replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
+                                                    fields_to_split=SAMPLE_FIELD_TO_SPLIT)
+    meta_dict['samples'] = samples_list
     return meta_dict
+
+
+def _parse_gwas_api_study_response(response: bytes,
+                                   replace_dict: dict = None,
+                                   fields_to_split: tuple = None
+                                   ) -> dict:
+    """Parse study repsonse from GWAS cat api
+
+    Arguments:
+        response -- response bytes
+
+    Keyword Arguments:
+        replace_dict -- Header mappings (default: {None})
+        fields_to_split -- fields to split (default: {None})
+
+    Returns:
+        Dict of metadata
+    """
+    result_dict = {}
+    if response:
+        result_dict = json.loads(response.decode())
+        if replace_dict:
+            result_dict = replace_dictionary_keys(data_dict=result_dict,
+                                                  replace_dict=replace_dict)
+        if fields_to_split:
+            result_dict = split_fields_on_delimiter(data_dict=result_dict,
+                                                    fields=fields_to_split)
+    return result_dict
+
+
+def _parse_gwas_api_samples_response(response: bytes,
+                                     replace_dict: dict = None,
+                                     fields_to_split: tuple = None
+                                     ) -> list:
+    """Parse the samples response from GWAS cat api
+
+    Arguments:
+        response -- responce bytes
+
+    Keyword Arguments:
+        replace_dict -- Header mappings (default: {None})
+        fields_to_split -- fields to split (default: {None})
+
+    Returns:
+        List of samples dicts
+    """
+    formatted_list = []
+    if response:
+        result_dict = json.loads(response.decode())
+        sample_list = result_dict["_embedded"].get('samples')
+        if sample_list:
+            for element in sample_list:
+                if replace_dict:
+                    element = replace_dictionary_keys(data_dict=element,
+                                                      replace_dict=replace_dict)
+                if fields_to_split:
+                    element = split_fields_on_delimiter(data_dict=element,
+                                                        fields=fields_to_split)
+                formatted_list.append(element)
+    return formatted_list
 
 
 def get_file_metadata(in_file: Path, out_file: str) -> dict:

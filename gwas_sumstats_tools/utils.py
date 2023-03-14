@@ -42,12 +42,13 @@ def parse_genome_assembly(filename: Path) -> Union[str, None]:
     Returns:
         Genome assembly or None
     """
-    gcst_search = re.search(r"([Build|[GRCh]*)([0-9]+)\.", filename.stem, re.IGNORECASE)
+    gcst_search = re.search(r"(build|grch)([0-9]+)", filename.stem, re.IGNORECASE)
     return gcst_search.group(2) if gcst_search else None
 
 
-def download_with_requests(url, params=None, headers=None) \
-    -> Union[bytes, None]:
+def download_with_requests(url,
+                           params: dict = None,
+                           headers: dict = None) -> Union[bytes, None]:
     """Download content from URL
 
     Arguments:
@@ -74,14 +75,8 @@ def download_with_requests(url, params=None, headers=None) \
         return None
 
 
-def set_data_outfile_name(data_infile: Path, data_outfile: str) -> str:
-    if data_outfile is None:
-        accession_id = parse_accession_id(filename=data_infile)
-        if accession_id:
-            data_outfile = accession_id + ".tsv.gz"
-        else:
-            data_outfile = data_infile.stem + "-REFORMED.tsv.gz"
-    return data_outfile
+def append_to_path(path: Path, to_add: str) -> Path:
+    return path.parent / (path.name + to_add)
 
 
 def set_metadata_outfile_name(data_outfile: str, metadata_outfile: str) -> str:
@@ -96,3 +91,78 @@ def get_md5sum(file: Path) -> str:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def header_dict_from_args(args: list) -> dict:
+    """Generate a dict from cli args split on ":"
+
+    Arguments:
+        args -- cli args list
+
+    Returns:
+        Dict of key, values
+    """
+    header_dict = {}
+    for arg in args:
+        if ":" not in arg:
+            # skip because it's not a metadata mapping
+            pass
+        else:
+            key, value = arg.replace("--", "").split(":")
+            header_dict[key] = value
+    return header_dict
+
+
+def metadata_dict_from_args(args: list) -> dict:
+    """Generate a dict from cli args split on "="
+
+    Arguments:
+        args -- cli args list
+
+    Returns:
+        Dict of key, values
+    """
+    meta_dict = {}
+    for arg in args:
+        if "=" not in arg:
+            # skip because it's not a metadata mapping
+            pass
+        else:
+            key, value = arg.replace("--", "").split("=")
+            meta_dict[key] = value
+    return meta_dict
+
+
+def replace_dictionary_keys(data_dict: dict, replace_dict: dict) -> dict:
+    """Replace data_dict keys with values from replace_dict
+
+    Arguments:
+        data_dict -- dict to replace keys in
+        replace_dict -- dict mapping 'find' to 'replace' keys
+
+    Returns:
+        dict with keys replaced
+    """
+    return {replace_dict.get(k, k): v for k, v in data_dict.items()}
+
+
+def split_fields_on_delimiter(data_dict: dict,
+                              fields: tuple,
+                              delimiter: str = "|") -> dict:
+    """Split specified fields in dict on delimiter
+
+    Arguments:
+        data_dict -- dict to split fields in
+        fields -- fields to split
+
+    Keyword Arguments:
+        delimiter -- delimiter (default: {"|"})
+
+    Returns:
+        data_dict with fields split
+    """
+    return dict((k, v.split(delimiter))
+                if k in fields
+                else (k, v)
+                for k, v
+                in data_dict.items())

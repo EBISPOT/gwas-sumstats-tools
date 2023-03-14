@@ -4,18 +4,11 @@ import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from gwas_sumstats_tools.interfaces.data_table import (SumStatsTable,
-                                                       header_dict_from_args)
-from gwas_sumstats_tools.interfaces.metadata import (MetadataClient,
-                                                     metadata_dict_from_args,
-                                                     metadata_dict_from_gwas_cat,
-                                                     get_file_metadata)
 from gwas_sumstats_tools.validate import validate
 from gwas_sumstats_tools.read import read
-from gwas_sumstats_tools.utils import (set_data_outfile_name,
-                                       set_metadata_outfile_name,
-                                       parse_accession_id,
-                                       exit_if_no_data)
+from gwas_sumstats_tools.format import format
+from gwas_sumstats_tools.utils import (header_dict_from_args,
+                                       metadata_dict_from_args)
 
 
 app = typer.Typer(add_completion=False,
@@ -169,7 +162,7 @@ def ss_format(filename: Path = typer.Argument(...,
                                                             "that value")),
               metadata_from_gwas_cat: bool = typer.Option(False,
                                                           "--meta-gwas", "-g",
-                                                          help="Populate metadata from GWAS Catalog"),
+                                                          help="[italic]Internal use only[/italic]. Populate metadata from GWAS Catalog"),
               custom_header_map: bool = typer.Option(False,
                                                      "--custom-header-map", "-c",
                                                      help=("Provide a custom header mapping using "
@@ -180,50 +173,19 @@ def ss_format(filename: Path = typer.Argument(...,
     """
     [green]FORMAT[/green] a sumstats file by creating a new one from the existing one. Add/edit metadata.
     """
-    # Set data outfile name
-    ss_out = set_data_outfile_name(data_infile=filename,
-                                   data_outfile=data_outfile)
-    # Set metadata outfile name
-    m_out = set_metadata_outfile_name(data_outfile=str(filename),
-                                      metadata_outfile=metadata_outfile)
-    if minimal_to_standard:
-        m_out = set_metadata_outfile_name(data_outfile=ss_out,
-                                          metadata_outfile=metadata_outfile)
-        sst = SumStatsTable(filename)
-        exit_if_no_data(table=sst.sumstats)
-        print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
-        print(sst.sumstats)
-        if custom_header_map:
-            header_map = header_dict_from_args(args=extra_args.args)
-            sst.reformat_header(header_map=header_map)
-        else:
-            sst.reformat_header()
-        sst.normalise_missing_values()
-        print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
-        print(sst.sumstats)
-        print(f"[green]Formatting and writing sumstats data --> {ss_out}[/green]")
-        with Progress(SpinnerColumn(finished_text="Complete!"),
-                      TextColumn("[progress.description]{task.description}"),
-                      transient=True
-                      ) as progress:
-            progress.add_task(description="Processing...", total=None)
-            sst.to_file(outfile=ss_out)
-    # Get metadata
-    if generate_metadata:
-        print("[bold]\n---------- METADATA ----------\n[/bold]")
-        meta_dict = get_file_metadata(in_file=filename, out_file=ss_out)
-        if metadata_from_gwas_cat:
-            meta_dict = metadata_dict_from_gwas_cat(accession_id=parse_accession_id(filename=filename))
-        if metadata_edit_mode:
-            meta_dict.update(metadata_dict_from_args(args=extra_args.args))
-        ssm = MetadataClient(out_file=m_out,
-                             in_file=metadata_infile)
-        ssm.update_metadata(data_dict=meta_dict)
-        print(ssm)
-        print(f"[green]Writing metadata --> {m_out}[/green]")
-        ssm.to_file()
-    if not any([minimal_to_standard, generate_metadata]):
-        print("Nothing to do.")
+    header_map = header_dict_from_args(args=extra_args.args) \
+        if custom_header_map else {}
+    meta_dict = metadata_dict_from_args(args=extra_args.args) \
+        if metadata_edit_mode else {}
+    format(filename=filename,
+           data_outfile=data_outfile,
+           minimal_to_standard=minimal_to_standard,
+           generate_metadata=generate_metadata,
+           metadata_outfile=metadata_outfile,
+           metadata_infile=metadata_infile,
+           metadata_from_gwas_cat=metadata_from_gwas_cat,
+           header_map=header_map,
+           metadata_dict=meta_dict)
 
 
 if __name__ == "__main__":

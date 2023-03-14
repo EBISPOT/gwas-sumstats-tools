@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gwas-sumstats-tools"
-version = "0.1.2"
+version = "0.1.3a0"
 description = ""
 authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>"]
 readme = "README.md"
@@ -14,8 +14,6 @@ pyyaml = "^6.0"
 pydantic = "^1.10.4"
 typer = {extras = ["all"], version = "^0.7.0"}
 pandera = {extras = ["io"], version = "^0.13.4"}
-hypothesis = "^6.68.2"
-pytest-mock = "^3.10.0"
 
 [tool.poetry.scripts]
 gwas-ssf = "gwas_sumstats_tools.cli:app"
@@ -23,6 +21,8 @@ gwas-ssf = "gwas_sumstats_tools.cli:app"
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
 pytest = "^7.2.1"
+hypothesis = "^6.68.2"
+pytest-mock = "^3.10.0"
 
 [build-system]
 requires = ["poetry-core"]
