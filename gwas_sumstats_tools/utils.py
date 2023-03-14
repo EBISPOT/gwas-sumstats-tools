@@ -8,10 +8,15 @@ import typer
 import petl as etl
 from rich import print
 from requests.adapters import HTTPAdapter, Retry
+import importlib.metadata
 
 
 logging.basicConfig(level=logging.ERROR, format='(%(levelname)s): %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def get_version() -> str:
+    return importlib.metadata.version('gwas-sumstats-tools')
 
 
 def exit_if_no_data(table: Union[etl.Table, None]) -> None:

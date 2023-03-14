@@ -1,8 +1,10 @@
 from pathlib import Path
+from packaging import version
 from gwas_sumstats_tools.utils import (append_to_path,
                                        parse_genome_assembly,
                                        replace_dictionary_keys,
-                                       split_fields_on_delimiter)
+                                       split_fields_on_delimiter,
+                                       get_version)
 
 
 def test_append_to_path():
@@ -35,3 +37,7 @@ def test_split_fields_on_delimiter():
     data_dict = {'a': "1|2|3", 'b': 2}
     new_data_dict = split_fields_on_delimiter(data_dict, tuple("a"))
     assert new_data_dict["a"] == ["1", "2", "3"]
+
+
+def test_get_version():
+    assert version.parse(get_version())

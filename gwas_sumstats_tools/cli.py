@@ -8,7 +8,8 @@ from gwas_sumstats_tools.validate import validate
 from gwas_sumstats_tools.read import read
 from gwas_sumstats_tools.format import format
 from gwas_sumstats_tools.utils import (header_dict_from_args,
-                                       metadata_dict_from_args)
+                                       metadata_dict_from_args,
+                                       get_version)
 
 
 app = typer.Typer(add_completion=False,
@@ -186,6 +187,13 @@ def ss_format(filename: Path = typer.Argument(...,
            metadata_from_gwas_cat=metadata_from_gwas_cat,
            header_map=header_map,
            metadata_dict=meta_dict)
+
+
+@app.command("version")
+def ss_version():
+    """Print installed version and exit.
+    """
+    print(get_version())
 
 
 if __name__ == "__main__":
