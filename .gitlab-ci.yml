@@ -20,6 +20,7 @@ deploy_test:
   extends: .before_script_template
   stage: deploy
   script:
+    - poetry config repositories.testpypi https://test.pypi.org/legacy/
     - poetry build
     - poetry publish --repository=testpypi --username=$PYPI_USER --password=$PYPI_PWD 
   only:
