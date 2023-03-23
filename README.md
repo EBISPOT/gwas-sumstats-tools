@@ -1,7 +1,7 @@
 # GWAS SumStats Tools
 
 
-A basic toolkit for reading and formatting GWAS sumstats files from the GWAS Catalog.
+A simple toolkit for reading and formatting GWAS sumstats files from the GWAS Catalog.
 Built with:
 * [Petl](https://petl.readthedocs.io/en/stable/index.html)
 * [Pydantic](https://docs.pydantic.dev/)
@@ -28,6 +28,9 @@ There are three commands, `read`, `validate` and `format`.
   * Read metadata in from existing file: `--meta-in <file>`
   * Create metadata from the GWAS Catalog (internal use, requires authenticated API): `-g`
   * Edit/add the values to the metadata: `-e` with `--<FIELD>=<VALUE>`
+
+## Requirements
+- python >= 3.9
 
 ## Installation
 ```console
@@ -132,3 +135,7 @@ To run the tests:
 3. `cd gwas-sumstats-tools`
 4. `poetry install`
 5. `poetry run pytest`
+
+To make a change:
+branch from master -> PR to master -> poetry version -> git add pyproject.toml -> git commit -> git tag <version> -> git push origin master --tags
+If all the tests pass, this will publish to pypi.
