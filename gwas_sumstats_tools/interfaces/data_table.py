@@ -239,9 +239,9 @@ class SumStatsTable:
         if self.sumstats:
             table_to_validate = self._square_up_table(self._prep_table_for_validation())
             df = etl.todataframe(table_to_validate, nrows=nrows)
-            df = df.replace([None, "", "#NA", "NA", "N/A", "NaN"], np.nan)
+            df = df.replace([None, "", "#NA", "NA", "N/A", "NaN", "NR"], np.nan)
         return df
-    
+
     def _square_up_table(self, table: etl.Table, missing: str="#NA") -> etl.Table:
         """Square up a table with missing/extra values on rows.
 

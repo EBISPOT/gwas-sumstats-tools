@@ -7,16 +7,18 @@ Built with:
 * [Pydantic](https://docs.pydantic.dev/)
 * [Typer](https://typer.tiangolo.com/)
 
-There are three commands, `read`, `validate` and `format`.
+There are three commands, `validate`, `read` and `format`.
+
+
+`validate` is for:
+* Validating a summary statistic file using a dynamically generated schema
 
 `read` is for:
 * Previewing a data file: _no options_
 * Extracting the field headers: `-h`
 * Extracting all the metadata: `-M`
 * Extacting specific field, value pairs from the metada: `-m <field name>`
-
-`validate` is for:
-* Validating a summary statistic file using a dynamically generated schema
+* More functionality is to come...
 
 `format` is for:
 * Converting a minamally formatted sumstats data file to the standard format. This is not guaranteed to return a valid standard file, because manadatory data fields could be missing in the input. It simply does the following. `-s`
@@ -39,6 +41,8 @@ $ pip install gwas-sumstats-tools
 
 ## Usage
 
+<p align="center"><img src="gwas-demo.gif?raw=true"/></p>
+
 ```console
 $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 ```
@@ -49,8 +53,35 @@ $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `format`: Format a sumstats file and...
+* `validate`: Validate a sumstats file
+* `format`: Format a sumstats file
 * `read`: Read a sumstats file
+
+
+### `gwas-ssf validate`
+
+Validate a sumstats file
+
+
+**Usage**:
+
+```console
+$ gwas-ssf validate [OPTIONS] FILENAME
+```
+
+**Arguments**:
+
+* `FILENAME`: Input sumstats file. Must be TSV or CSV and may be gzipped [required]
+
+**Options**:
+
+* `-e, --errors-out`: Output erros to a csv file, <filename>.err.csv.gz
+* `-z, --p-zero`: Force p-values of zero to be allowable. Takes precedence over inferred value (-i)
+* `-n, --p-neg-log`: Force p-values to be validated as -log10. Takes precedence over inferred value (-i)
+* `-m, --min-rows`:  Minimum rows acceptable for the file [default: 100000]
+* `-i, --infer-from-metadata`: Infer validation options from the metadata file <filename>-meta.yaml. E.g. fields for analysis software and negative log10 p-values affect the data validation behaviour.
+* `--help`: Show this message and exit.
+
 
 ### `gwas-ssf read`
 
@@ -75,28 +106,6 @@ $ gwas-ssf read [OPTIONS] FILENAME
 * `--help`: Show this message and exit.
 
 
-### `gwas-ssf validate`
-
-Validate a sumstats file
-
-**Usage**:
-
-```console
-$ gwas-ssf validate [OPTIONS] FILENAME
-```
-
-**Arguments**:
-
-* `FILENAME`: Input sumstats file. Must be TSV or CSV and may be gzipped [required]
-
-**Options**:
-
-* `-e, --errors-out`: Output erros to a csv file, <filename>.err.csv.gz
-* `-z, --p-zero`: Force p-values of zero to be allowable. Takes precedence over inferred value (-i)
-* `-n, --p-neg-log`: Force p-values to be validated as -log10. Takes precedence over inferred value (-i)
-* `-m, --min-rows`:  Minimum rows acceptable for the file [default: 100000]
-* `-i, --infer-from-metadata`: Infer validation options from the metadata file <filename>-meta.yaml. E.g. fields for analysis software and negative log10 p-values affect the data validation behaviour.
-* `--help`: Show this message and exit.
 
 ### `gwas-ssf format`
 
