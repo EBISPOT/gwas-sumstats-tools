@@ -41,7 +41,7 @@ $ pip install gwas-sumstats-tools
 
 ## Usage
 
-<p align="center"><img src="gwas-demo.gif?raw=true"/></p>
+<p align="center"><img src="gwas-demo.gif"/></p>
 
 ```console
 $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
