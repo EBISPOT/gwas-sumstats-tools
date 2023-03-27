@@ -71,15 +71,14 @@ $ gwas-ssf validate [OPTIONS] FILENAME
 
 **Arguments**:
 
-* `FILENAME`: Input sumstats file. Must be TSV or CSV and may be gzipped [required]
+* `FILENAME`: Input sumstats file. Must be TSV (may be gzipped) [required]
 
 **Options**:
 
 * `-e, --errors-out`: Output erros to a csv file, <filename>.err.csv.gz
 * `-z, --p-zero`: Force p-values of zero to be allowable. Takes precedence over inferred value (-i)
-* `-n, --p-neg-log`: Force p-values to be validated as -log10. Takes precedence over inferred value (-i)
 * `-m, --min-rows`:  Minimum rows acceptable for the file [default: 100000]
-* `-i, --infer-from-metadata`: Infer validation options from the metadata file <filename>-meta.yaml. E.g. fields for analysis software and negative log10 p-values affect the data validation behaviour.
+* `-i, --infer-from-metadata`: Infer validation options from the metadata file <filename>-meta.yaml. E.g. a populated field for analysis software makes p-values of zero allowable.
 * `--help`: Show this message and exit.
 
 
