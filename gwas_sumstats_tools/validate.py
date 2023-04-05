@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 import petl as etl
 from pandera import errors
+from rich import print
 
 from gwas_sumstats_tools.schema.data_table import SumStatsSchema
 from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
@@ -15,12 +16,14 @@ class Validator(SumStatsTable):
                  pval_zero: bool = False,
                  minimum_rows: int = 100_000,
                  sample_size: int = 100_000,
+                 chunksize: int = 1_000_000,
                  **kwargs) -> None:
         super().__init__(sumstats_file=sumstats_file)
         self.pval_zero = pval_zero
         self.errors_table = None
         self.minimum_rows = minimum_rows
         self.sample_size = sample_size
+        self.chunksize = chunksize
         self.primary_error_type = None
         self.valid = None
 
@@ -43,19 +46,34 @@ class Validator(SumStatsTable):
         Returns:
             Validation status, message
         """
+        print("Validating extension")
         self.valid, message = self._validate_file_ext()
         if self.valid:
+            print("--> [green]Ok[/green]")
+            print("Validating column order")
             self.valid, message = self._validate_field_order()
         if self.valid:
+            print("--> [green]Ok[/green]")
             nrows = max(self.sample_size, self.minimum_rows)
+            print("Validating minimum row count")
             sample_df = self.as_pd_df(nrows=nrows)
             self.valid, message = self._minrow_check(df=sample_df)
         if self.valid:
-            self.valid, message = self._validate_df(sample_df,
-                                                    message=f"Validated the first {nrows} rows.")
+            print("--> [green]Ok[/green]")
+            print(f"Validating the first {nrows} rows")
+            self.valid, message = self._validate_df(sample_df)
         if self.valid:
-            full_df = self.as_pd_df()
-            self.valid, message = self._validate_df(full_df)
+            print("--> [green]Ok[/green]")
+            print("Validating the rest of the file")
+            try:
+                df_iter = self.as_pd_df(chunksize=self.chunksize,
+                                        skiprows=nrows)
+                for df in df_iter:
+                    self.valid, message = self._validate_df(df)
+                    if self.valid is False:
+                        break
+            except pd.errors.EmptyDataError:
+                print("Nothing left to validate")
         self._evaluate_errors()
         return self.valid, message
 
@@ -101,6 +119,7 @@ class Validator(SumStatsTable):
             Validation status, message
         """
         try:
+            dataframe = self.pval_to_mantissa_and_exponent(dataframe)
             self.schema().schema().validate(dataframe, lazy=True)
             valid = True
             message = "Data table is valid."
@@ -146,6 +165,7 @@ def validate(filename: Path,
              errors_file: bool = False,
              pval_zero: bool = False,
              minimum_rows: int = 100_000,
+             chunksize: int = 1_000_000,
              infer_from_metadata: bool = False) -> tuple[bool,
                                                          str,
                                                          Union[etl.Table, None],
@@ -176,7 +196,8 @@ def validate(filename: Path,
             print("Cannot infer options from metadata file, because metadata file cannot be found.")
     validator = Validator(pval_zero=pval_zero,
                           minimum_rows=minimum_rows,
-                          sumstats_file=filename)
+                          sumstats_file=filename,
+                          chunksize=chunksize)
     valid, message = validator.validate()
     if not valid:
         if validator.errors_table:

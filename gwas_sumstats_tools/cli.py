@@ -40,13 +40,19 @@ def ss_validate(filename: Path = typer.Argument(...,
                 minimum_rows: int = typer.Option(100_000,
                                                  "--min-rows", "-m",
                                                  help="Minimum rows acceptable for the file"),
+                chunkzize: int = typer.Option(1_000_000,
+                                              "--chunksize", "-s",
+                                              help=("Number of rows to store in memory at once. "
+                                                    "Increase this number for more speed at the cost "
+                                                    "of more memory. Decrease to save memory, at the "
+                                                    "cost of speed.")),
                 infer_from_metadata: bool = typer.Option(False,
-                                                   "--infer-from-metadata", "-i",
-                                                   help=("Infer validation options from the "
-                                                         "metadata file <filename>-meta.yaml. "
-                                                         "E.g. fields for analysis software and "
-                                                         "negative log10 p-values affect the data "
-                                                         "validation behaviour."))
+                                                         "--infer-from-metadata", "-i",
+                                                         help=("Infer validation options from the "
+                                                               "metadata file <filename>-meta.yaml. "
+                                                               "E.g. fields for analysis software and "
+                                                               "negative log10 p-values affect the data "
+                                                               "validation behaviour."))
                 ):
     """
     [green]VALIDATE[/green] a GWAS summary statistics data file
@@ -64,6 +70,7 @@ def ss_validate(filename: Path = typer.Argument(...,
                                 errors_file=errors_file,
                                 pval_zero=pval_zero,
                                 minimum_rows=minimum_rows,
+                                chunksize=chunkzize,
                                 infer_from_metadata=infer_from_metadata)
     print(f"Validation status: {valid}")
     print(message)
