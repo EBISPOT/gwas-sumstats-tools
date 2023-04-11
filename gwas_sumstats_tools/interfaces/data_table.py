@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Union
 import pandas as pd
+from pandas.io.parsers import TextFileReader
 import numpy as np
 import petl as etl
 
@@ -34,7 +35,6 @@ class SumStatsTable:
         self.filename = str(sumstats_file)
         self.delimiter = delimiter if delimiter else self._get_delimiter(sumstats_file)
         self.sumstats = self.from_file(infile=self.filename)
-        self.sumstats_df = None
 
     def reformat_header(self, header_map: dict = FIELD_MAP) -> etl.Table:
         """Reformats the headers according to the standard
@@ -66,13 +66,21 @@ class SumStatsTable:
         """
         try:
             self.sumstats = etl.fromcsv(self.filename, delimiter=self.delimiter)
-            if etl.nrows(self.head_table(nrows=1)) < 1:
+            if not self.is_table_content():
                 return None
             return self.sumstats
         except (IOError, UnicodeDecodeError) as exception:
             print(exception)
             return None
 
+    def is_table_content(self) -> bool:
+        """Bool for whether table content exists
+
+        Returns:
+            Boolean
+        """
+        return etl.nrows(self.head_table(nrows=1)) > 0
+    
     def to_file(self, outfile: Path) -> None:
         """Write table to TSV file
 
@@ -176,7 +184,7 @@ class SumStatsTable:
         Returns:
             tuple of the headers
         """
-        if self.sumstats:
+        if self.is_table_content():
             return etl.header(self.sumstats)
         return ()
 
@@ -188,7 +196,7 @@ class SumStatsTable:
         """
         field_4 = self._get_field_label_from_index(4)
         return field_4
-    
+
     def p_value_field(self) -> Union[str, None]:
         """Get the p_value field (field index 7).
 
@@ -219,35 +227,67 @@ class SumStatsTable:
                                     maxsplit=1)
         return table_w_split_p
 
+    def pval_to_mantissa_and_exponent(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create the mantissa and exponent columns from the pvalue field.
+        First a row needs to be appended (we use index -99) with the delimiter,
+        else the split cannot be done if no delimiters were found. The row is
+        removed by index before returning the dataframe.
+
+        Arguments:
+            df -- dataframe
+
+        Returns:
+            dataframe
+        """
+        mant_and_exp = ['_p_value_mantissa', '_p_value_exponent']
+        psplit_row = pd.Series({self.p_value_field(): '1000e1000'}, name=-99)
+        df = pd.concat([df, psplit_row.to_frame().T], ignore_index=False)
+        df[mant_and_exp] = (df[self.p_value_field()]
+                            .str.split(r"e|E",
+                                       regex=True,
+                                       n=1,
+                                       expand=True))
+        df = df.drop(index=-99)
+        return df
+
     def _prep_table_for_validation(self) -> etl.Table:
         table = etl.Table()
-        if self.sumstats:
+        if self.is_table_content():
             table = self._pval_to_mantissa_and_exponent(table=self.sumstats)
         return table
 
-    def as_pd_df(self, nrows: int = None) -> pd.DataFrame:
-        """Sumstats table as a Pandas dataframe
+    def as_pd_df(self,
+                 nrows: int = None,
+                 chunksize: int = None,
+                 skiprows: int = None) -> Union[pd.DataFrame, TextFileReader]:
+        """Sumstats table as a Pandas dataframe or dataframe
+        iterator (TextFileReader)
 
         Keyword Arguments:
             nrows -- Number of rows (default: {None, which means all rows})
+            chunksize -- Number of rows to store in mem at once
+            skiprows -- Number of rows to skip from start of file
 
         Returns:
-            Pandas dataframe
+            Pandas dataframe or iter
         """
-
         df = pd.DataFrame()
-        if self.sumstats:
-            table_to_validate = self._square_up_table(self._prep_table_for_validation())
-            df = etl.todataframe(table_to_validate, nrows=nrows)
-            df = df.replace([None, "", "#NA", "NA", "N/A", "NaN", "NR"], np.nan)
+        skip = range(1, skiprows) if skiprows else None
+        if self.is_table_content():
+            df = pd.read_table(self.filename,
+                               sep=self.delimiter,
+                               chunksize=chunksize,
+                               nrows=nrows,
+                               na_values=["", "#NA", "NA", "N/A", "NaN", "NR"],
+                               dtype=str,
+                               skiprows=skip
+                               )
         return df
 
-    def _square_up_table(self, table: etl.Table, missing: str="#NA") -> etl.Table:
+    def _square_up_table(self, table: etl.Table, missing: str = "#NA") -> etl.Table:
         """Square up a table with missing/extra values on rows.
 
         Returns:
             etl.Table
         """
         return etl.cat(table, missing=missing)
-
-
