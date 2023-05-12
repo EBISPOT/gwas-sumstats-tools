@@ -65,3 +65,4 @@ class SumStatsMetadata(BaseModel):
 
     class Config:
         title = 'GWAS Summary Statistics metadata schema'
+        use_enum_values = True
