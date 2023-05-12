@@ -151,6 +151,12 @@ def replace_dictionary_keys(data_dict: dict, replace_dict: dict) -> dict:
     return {replace_dict.get(k, k): v for k, v in data_dict.items()}
 
 
+def update_dict_if_not_set(data_dict: dict, field: str, value: any) -> dict:
+    if data_dict.get(field) is None:
+        data_dict[field] = value
+    return data_dict
+
+
 def split_fields_on_delimiter(data_dict: dict,
                               fields: tuple,
                               delimiter: str = "|") -> dict:

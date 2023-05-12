@@ -16,7 +16,8 @@ from gwas_sumstats_tools.utils import (download_with_requests,
                                        parse_genome_assembly,
                                        get_md5sum,
                                        replace_dictionary_keys,
-                                       split_fields_on_delimiter)
+                                       split_fields_on_delimiter,
+                                       update_dict_if_not_set)
 from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
 
 
@@ -163,7 +164,7 @@ def _parse_gwas_api_samples_response(response: bytes,
     return formatted_list
 
 
-def get_file_metadata(in_file: Path, out_file: str) -> dict:
+def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dict:
     """Get file related metadata
 
     Arguments:
@@ -173,15 +174,16 @@ def get_file_metadata(in_file: Path, out_file: str) -> dict:
     Returns:
         Metadata dict
     """
-    meta_dict = {}
-    accession_id = parse_accession_id(filename=in_file) 
-    meta_dict['gwas_id'] = accession_id
-    meta_dict['data_file_name'] = Path(out_file).name
-    meta_dict['file_type'] = 'GWAS-SFF v1.0'
-    meta_dict['genome_assembly'] = GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown')
-    meta_dict['data_file_md5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
-    meta_dict['date_last_modified'] = date.today()
-    meta_dict['gwas_catalog_api'] = GWAS_CAT_API_STUDIES_URL + accession_id
+    inferred_meta_dict = {}
+    inferred_meta_dict['gwas_id'] = parse_accession_id(filename=in_file)
+    inferred_meta_dict['data_file_name'] = Path(out_file).name
+    inferred_meta_dict['file_type'] = 'GWAS-SFF v1.0'
+    inferred_meta_dict['genome_assembly'] = GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown')
+    inferred_meta_dict['data_file_md5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
+    inferred_meta_dict['date_last_modified'] = date.today()
+    inferred_meta_dict['gwas_catalog_api'] = GWAS_CAT_API_STUDIES_URL + parse_accession_id(filename=in_file)
+    for field, value in inferred_meta_dict.items():
+        update_dict_if_not_set(meta_dict, field, value)
     return meta_dict
 
 
