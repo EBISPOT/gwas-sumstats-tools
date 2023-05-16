@@ -40,6 +40,8 @@ class MetadataClient:
     def from_file(self) -> None:
         """Create metadata from YAML file
         """
+        if self._in_file is None:
+            return None
         with open(self._in_file, "r") as fh:
             self._meta_dict = yaml.safe_load(fh)
             self.update_metadata(self._meta_dict)
