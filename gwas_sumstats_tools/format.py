@@ -64,6 +64,7 @@ class Formatter:
         1. custom_metadata map (overwrites anything below)
         2. metadata from the GWAS Catalog
         3. metadata from the original input file
+        4. metadata inferred from the datafile
 
         Keyword Arguments:
             from_gwas_cat -- update with data from GWAS catalog (default: {False})
@@ -74,7 +75,8 @@ class Formatter:
         """
         self.meta.from_file()
         meta_dict = get_file_metadata(in_file=self.data_infile,
-                                      out_file=self.data_outfile)
+                                      out_file=self.data_outfile,
+                                      meta_dict=self.meta.as_dict())
         if from_gwas_cat:
             accession_id = parse_accession_id(filename=self.data_infile)
             meta_dict.update(metadata_dict_from_gwas_cat(accession_id=accession_id))
