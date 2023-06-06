@@ -35,9 +35,20 @@ There are three commands, `validate`, `read` and `format`.
 - python >= 3.9
 
 ## Installation
+### Local installation with pip
 ```console
-$ pip install gwas-sumstats-tools
+$ pip3 install gwas-sumstats-tools
 ```
+### Run with Docker
+The following Docker command is the equivalent to running `gwas-ssf`. 
+```console
+$ docker run -it -v ${PWD}:/application ebispot/gwas-sumstats-tools:latest
+```
+Just append any subcommands or arguments e.g.:
+```console
+$ docker run -it -v ${PWD}:/application ebispot/gwas-sumstats-tools:latest validate
+```
+
 
 ## Usage
 
