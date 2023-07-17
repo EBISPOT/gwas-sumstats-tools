@@ -2,6 +2,7 @@ image: "python:3.9"
 
 stages:
   - test
+  - build
   - deploy
 
 variables:
