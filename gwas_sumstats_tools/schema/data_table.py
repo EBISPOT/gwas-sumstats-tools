@@ -11,6 +11,7 @@ from collections import OrderedDict
 from pandera import Column, DataFrameSchema, Check
 from pandera.dtypes import Float128
 
+import platform
 
 class SumStatsSchema:
     """Pandera DataFrameSchema interface for
@@ -38,7 +39,7 @@ class SumStatsSchema:
             ])
         }
     PVALUE_FIELD_DEFINITIONS = {
-        'p_value': Column(Float128, [
+        'p_value': Column(float if platform.system() == "Windows" else Float128, [
             Check.in_range(0, 1,
                            include_min=True,
                            error="Must be a value between 0 and 1, inclusive of 0")
