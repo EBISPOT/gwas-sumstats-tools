@@ -4,10 +4,9 @@ import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from gwas_sumstats_tools.validate import validate
-from gwas_sumstats_tools.read import read
-from gwas_sumstats_tools.format import format
-from gwas_sumstats_tools.utils import (header_dict_from_args,
+from gen_meta import gen_meta
+from format import format
+from utils import (header_dict_from_args,
                                        metadata_dict_from_args,
                                        get_version)
 
@@ -193,6 +192,51 @@ def ss_format(filename: Path = typer.Argument(...,
            metadata_infile=metadata_infile,
            metadata_from_gwas_cat=metadata_from_gwas_cat,
            header_map=header_map,
+           metadata_dict=meta_dict)
+
+@app.command("gen_meta",
+             no_args_is_help=True,
+             context_settings={"help_option_names": ["-h", "--help"],
+                               "allow_extra_args": True,
+                               "ignore_unknown_options": True})
+def ss_gen_meta(filename: Path = typer.Argument(...,
+                                              readable=True,
+                                              help="Input sumstats file. Must be TSV or CSV and may be gzipped"),
+              generate_metadata: bool = typer.Option(False,
+                                                     "--generate-metadata", "-m",
+                                                     help="Create the metadata file"),
+              metadata_outfile: Path = typer.Option(None,
+                                                    "--meta-out",
+                                                    writable=True,
+                                                    file_okay=True,
+                                                    help="Specify the metadata output file"),
+              metadata_infile: Path = typer.Option(None,
+                                                   "--meta-in",
+                                                   readable=True,
+                                                   exists=True,
+                                                   help="Specify a metadata file to read in"),
+              metadata_edit_mode: bool = typer.Option(False,
+                                                      "--meta-edit", "-e",
+                                                      help=("Enable metadata edit mode. "
+                                                            "Then provide params to edit in "
+                                                            "the `--<FIELD>=<VALUE>` format e.g. "
+                                                            "`--GWASID=GCST123456` to edit/add "
+                                                            "that value")),
+              metadata_from_gwas_cat: bool = typer.Option(False,
+                                                          "--meta-gwas", "-g",
+                                                          help="[italic]Internal use only[/italic]. Populate metadata from GWAS Catalog"),
+              extra_args: typer.Context = typer.Option(None)
+              ):
+    """
+    [green]FORMAT[/green] a sumstats file by creating a new one from the existing one. Add/edit metadata.
+    """
+    meta_dict = metadata_dict_from_args(args=extra_args.args) \
+        if metadata_edit_mode else {}
+    gen_meta(filename=filename,
+           generate_metadata=generate_metadata,
+           metadata_outfile=metadata_outfile,
+           metadata_infile=metadata_infile,
+           metadata_from_gwas_cat=metadata_from_gwas_cat,
            metadata_dict=meta_dict)
 
 

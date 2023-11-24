@@ -3,22 +3,28 @@ import json
 from typing import Union
 from datetime import date
 from pathlib import Path
+
+import sys
+sys.path.insert(0, '..')
+
 from pydantic import ValidationError
-from gwas_sumstats_tools.config import (GWAS_CAT_API_STUDIES_URL,
+from config import (GWAS_CAT_API_STUDIES_URL,
                                         GWAS_CAT_API_INGEST_STUDIES_URL,
                                         GWAS_CAT_STUDY_MAPPINGS,
+                                        REST_GWAS_CAT_STUDY_MAPPINGS,
                                         STUDY_FIELD_TO_SPLIT,
                                         SAMPLE_FIELD_TO_SPLIT,
                                         GWAS_CAT_SAMPLE_MAPPINGS,
+                                        REST_GWAS_CAT_SAMPLE_MAPPINGS,
                                         GENOME_ASSEMBLY_MAPPINGS)
-from gwas_sumstats_tools.utils import (download_with_requests,
+from utils import (download_with_requests,
                                        parse_accession_id,
                                        parse_genome_assembly,
                                        get_md5sum,
                                        replace_dictionary_keys,
                                        split_fields_on_delimiter,
                                        update_dict_if_not_set)
-from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
+from schema.metadata import SumStatsMetadata
 
 
 class MetadataClient:
@@ -82,7 +88,6 @@ class MetadataClient:
     def as_yaml(self, **kwargs) -> str:
         return yaml.dump(self.metadata.dict(**kwargs))
 
-
 def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
     """Extract metadat from the GWAS Catalog API
 
@@ -92,19 +97,55 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
     Returns:
         Metadata dict
     """
+    meta_dict={}
+    sample_list=[]
     study_url = GWAS_CAT_API_INGEST_STUDIES_URL + accession_id
+    sample_url = study_url + "/samples"
+    rest_url = GWAS_CAT_API_STUDIES_URL + accession_id
+
     study_response = download_with_requests(url=study_url)
-    meta_dict = _parse_gwas_api_study_response(study_response,
+    sample_response = download_with_requests(url=sample_url, params={"size": 100})
+    rest_response = download_with_requests(url=rest_url)
+
+    try:
+        ingest_dict = _parse_gwas_api_study_response(study_response,
                                          replace_dict=GWAS_CAT_STUDY_MAPPINGS,
                                          fields_to_split=STUDY_FIELD_TO_SPLIT)
-    sample_url = study_url + "/samples"
-    sample_response = download_with_requests(url=sample_url, params={"size": 100})
-    samples_list = _parse_gwas_api_samples_response(sample_response,
+        meta_dict.update(ingest_dict)
+    except:
+        pass
+
+    try:
+        if rest_response:
+            print(f"{rest_url} returned 200")
+        rest_dict= _parse_gwas_rest_study_response(rest_response,
+                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
+        meta_dict.update(rest_dict)
+    except:
+        pass
+    
+    print("rest_dict:",rest_dict)
+    
+    try:
+        ingest_samples_list = _parse_gwas_api_samples_response(sample_response,
                                                     replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
                                                     fields_to_split=SAMPLE_FIELD_TO_SPLIT)
-    meta_dict['samples'] = samples_list
-    return meta_dict
+        sample_list=ingest_samples_list
+    except:
+        pass
 
+    if not sample_list:
+        try:
+            rest_samples_list = _parse_gwas_rest_samples_response(rest_response,
+                                                    replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
+                                                    fields_to_split=SAMPLE_FIELD_TO_SPLIT)
+            sample_list=rest_samples_list
+        except:
+            print (f"Aample info of {accession_id} is missing in the REST API and IMGEST API")
+    
+    meta_dict['samples'] = sample_list
+    return meta_dict
 
 def _parse_gwas_api_study_response(response: bytes,
                                    replace_dict: dict = None,
@@ -122,7 +163,7 @@ def _parse_gwas_api_study_response(response: bytes,
     Returns:
         Dict of metadata
     """
-    result_dict = {}
+    result_dict = OrderedDict()
     if response:
         result_dict = json.loads(response.decode())
         if replace_dict:
@@ -130,6 +171,43 @@ def _parse_gwas_api_study_response(response: bytes,
                                                   replace_dict=replace_dict)
         if fields_to_split:
             result_dict = split_fields_on_delimiter(data_dict=result_dict,
+                                                   fields=fields_to_split)
+    return result_dict
+
+def _parse_gwas_rest_study_response(response: bytes,
+                                   replace_dict: dict = None,
+                                   fields_to_split: tuple = None
+                                   ) -> dict:
+    """Parse study repsonse from GWAS cat rest api
+
+    Arguments:
+        response -- response bytes
+
+    Keyword Arguments:
+        replace_dict -- Header mappings (default: {None})
+        fields_to_split -- fields to split (default: {None})
+
+    Returns:
+        Dict of metadata
+    """
+    result_dict={}
+    response_dict = json.loads(response.decode())
+    # study
+    result_dict["trait_description"]=response_dict['diseaseTrait'].get('trait')
+    result_dict["genotyping_technology"]="|".join(d.get("genotypingTechnology") for d in response_dict['genotypingTechnologies'])
+    
+    # extract EFO
+    efo_url=response_dict['_links']['efoTraits']['href']
+    efo_response =download_with_requests(url=efo_url)
+    if efo_response:
+        efo_info=json.loads(efo_response.decode())['_embedded']['efoTraits']
+        result_dict["ontology_mapping"]="|".join(d.get("shortForm") for d in efo_info)
+    
+    if replace_dict:
+        result_dict = replace_dictionary_keys(data_dict=result_dict,
+                                                  replace_dict=replace_dict)
+    if fields_to_split:
+        result_dict = split_fields_on_delimiter(data_dict=result_dict,
                                                     fields=fields_to_split)
     return result_dict
 
@@ -153,7 +231,8 @@ def _parse_gwas_api_samples_response(response: bytes,
     formatted_list = []
     if response:
         result_dict = json.loads(response.decode())
-        sample_list = result_dict["_embedded"].get('samples')
+        sample = result_dict["_embedded"].get('samples')
+        sample_list=[x for x in sample if x.get('stage') == 'discovery']
         if sample_list:
             for element in sample_list:
                 if replace_dict:
@@ -165,6 +244,43 @@ def _parse_gwas_api_samples_response(response: bytes,
                 formatted_list.append(element)
     return formatted_list
 
+def _parse_gwas_rest_samples_response(response: bytes,
+                                     replace_dict: dict = None,
+                                     fields_to_split: tuple = None
+                                     ) -> list:
+    """Parse the samples response from GWAS cat api
+
+    Arguments:
+        response -- responce bytes
+
+    Keyword Arguments:
+        replace_dict -- Header mappings (default: {None})
+        fields_to_split -- fields to split (default: {None})
+
+    Returns:
+        List of samples dicts
+    """
+    response_dict = json.loads(response.decode())
+    #case_control
+    sample_dict={}
+    if ("case" in response_dict['initialSampleSize'] ) and ("control" in response_dict['initialSampleSize']):
+        sample_dict["case_control_study"]="true"
+    formatted_list = []
+    ancestry=response_dict['ancestries']
+    sample_list=[x for x in ancestry if x.get('type') == 'initial']
+    if sample_list:
+        for element in sample_list:
+            element=dict((k,element[k]) for k in REST_GWAS_CAT_SAMPLE_MAPPINGS.keys() if k in element)
+            element['ancestralGroups']=[x.get('ancestralGroup') for x in element['ancestralGroups']]
+            element.update(sample_dict)
+            
+            if replace_dict:
+                element=replace_dictionary_keys(element,REST_GWAS_CAT_SAMPLE_MAPPINGS)
+            if fields_to_split:
+                element=split_fields_on_delimiter(element,REST_GWAS_CAT_SAMPLE_MAPPINGS)
+            formatted_list.append(element)
+
+    return formatted_list
 
 def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dict:
     """Get file related metadata
@@ -184,6 +300,7 @@ def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dic
     inferred_meta_dict['data_file_md5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
     inferred_meta_dict['date_last_modified'] = date.today()
     inferred_meta_dict['gwas_catalog_api'] = GWAS_CAT_API_STUDIES_URL + parse_accession_id(filename=in_file)
+    print("meta_dict:",type(meta_dict))
     for field, value in inferred_meta_dict.items():
         update_dict_if_not_set(meta_dict, field, value)
     return meta_dict

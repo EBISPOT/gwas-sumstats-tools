@@ -18,6 +18,7 @@ class SexEnum(str, Enum):
     male = 'M'
     female = 'F'
     combined = 'combined'
+    unknown='NR'
 
 
 class CoordinateSystemEnum(str, Enum):
@@ -36,6 +37,7 @@ class SampleMetadata(BaseModel):
     case_count: Optional[int] = None
     control_count: Optional[int] = None
     sample_size: int = None
+    sample_ancestry_category: List[str] = None
     sample_ancestry: List[str] = None
 
 
@@ -49,7 +51,7 @@ class SumStatsMetadata(BaseModel):
     data_file_md5sum: str = None
     is_harmonised: Optional[bool] = False
     is_sorted: Optional[bool] = False
-    date_last_modified: date = None
+    date_metadata_last_modified: date = None
     genome_assembly: str = None
     analysis_software: Optional[str] = None
     imputation_panel: Optional[str] = None
