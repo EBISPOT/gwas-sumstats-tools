@@ -77,7 +77,6 @@ def gen_meta(
     metadata_outfile: Path = None,
     metadata_infile: Path = None,
     metadata_from_gwas_cat: bool = False,
-    header_map: dict = None,
     metadata_dict: dict = None,
 ) -> None:
     gen_meta = Gen_meta(

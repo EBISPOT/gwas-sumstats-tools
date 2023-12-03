@@ -49,8 +49,7 @@ class SumStatsMetadata(BaseModel):
     date_metadata_last_modified: date = None
     # Trait Information
     trait_description: List[str] = None
-    ontology_mapping_id: Optional[List[str]] = None
-    ontology_mapping_term: Optional[List[str]] = None
+    ontology_mapping: Optional[List[str]] = None
     # Genotyping Information
     genome_assembly: str = None
     coordinate_system: CoordinateSystemEnum = None

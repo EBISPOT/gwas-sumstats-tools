@@ -204,7 +204,7 @@ def _parse_gwas_api_study_response(response: bytes,
     Returns:
         Dict of metadata
     """
-    result_dict = OrderedDict()
+    result_dict = {}
     if response:
         result_dict = json.loads(response.decode())
         if replace_dict:
