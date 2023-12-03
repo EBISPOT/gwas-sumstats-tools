@@ -66,6 +66,7 @@ $ gwas-ssf [OPTIONS] COMMAND [ARGS]...
 
 * `validate`: Validate a sumstats file
 * `format`: Format a sumstats file
+* `gen_meta`: generate meta-yaml file
 * `read`: Read a sumstats file
 
 
@@ -141,6 +142,30 @@ $ gwas-ssf format [OPTIONS] FILENAME
 * `-e, --meta-edit`: Enable metadata edit mode. Then provide params to edit in the `--<FIELD>=<VALUE>` format e.g. `--GWASID=GCST123456` to edit/add that value  [default: False]
 * `-g, --meta-gwas`: Populate metadata from GWAS Catalog  [default: False]
 * `-c, --custom-header-map`: Provide a custom header mapping using the `--<FROM>:<TO>` format e.g. `--chr:chromosome`  [default: False]
+* `--help`: Show this message and exit.
+
+### `gwas-ssf gen_meta`
+
+Generate a meta-yaml file for the existing sumstats file OR edit the existing meta-yaml file.
+
+**Usage**:
+
+```console
+$ gwas-ssf gen_meta [OPTIONS] FILENAME
+```
+**Example**:
+```console
+# Generate a meta-yaml file from GWAS API (-g) with customised fields (-e --file_type=pre-gwas-ssf) for GCST90278188.tsv files
+$ gwas-ssf gen_meta --meta-out GCST90278188.tsv-meta.yaml -g GCST90278188.tsv -e --file_type=pre-gwas-ssf
+```
+**Arguments**:
+
+* `FILENAME`: Input sumstats file. Must be TSV or CSV and may be gzipped  [required]
+
+**Options**:
+* `--meta-out PATH`: Specify the metadata output file
+*  `-g, --meta-gwas`: Populate metadata from GWAS Catalog  [default: False]
+* `-e, --meta-edit`: Enable metadata edit mode. Then provide params to edit in the `--<FIELD>=<VALUE>` format e.g. `--GWASID=GCST123456` to edit/add that value  [default: False]
 * `--help`: Show this message and exit.
 
 ## Development
