@@ -3,6 +3,8 @@ import json
 from typing import Union
 from datetime import date
 from pathlib import Path
+from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
+import ruamel.yaml
 
 import sys
 sys.path.insert(0, '..')
@@ -55,10 +57,20 @@ class MetadataClient:
     def to_file(self) -> None:
         """Write metadata to YAML file
         """
+        yaml_data =yaml.dump(self.metadata.dict(exclude_none=True), default_flow_style=False,sort_keys=False)
+        yaml_yaml=ruamel.yaml.YAML().load(str(yaml_data))
+        yaml_yaml.yaml_set_start_comment("Study meta-data")
+        yaml_yaml.yaml_set_comment_before_after_key('trait_description','\nTrait Information')
+        yaml_yaml.yaml_set_comment_before_after_key('genome_assembly','\nGenotyping Information')
+        yaml_yaml.yaml_set_comment_before_after_key('samples','\nSample Information')
+        yaml_yaml.yaml_set_comment_before_after_key('data_file_name','\nSummary Statistic information')
+        yaml_yaml.yaml_set_comment_before_after_key('is_harmonised','\nHarmonization status')
+
         with open(self._out_file, "w") as fh:
-            yaml.dump(self.metadata.dict(exclude_none=True),
-                      fh,
-                      encoding='utf-8')
+            yml = ruamel.yaml.YAML()
+            yml.indent(mapping=2, sequence=4, offset=2)
+            yml.dump(yaml_yaml,
+                      fh)
 
     def update_metadata(self, data_dict: dict) -> None:
         """Create a copy of the model and update (no validation occurs)
@@ -86,7 +98,38 @@ class MetadataClient:
         return self.metadata.dict()
 
     def as_yaml(self, **kwargs) -> str:
-        return yaml.dump(self.metadata.dict(**kwargs))
+        return yaml.dump(self.metadata.dict(**kwargs),sort_keys=False,default_flow_style=False)
+    
+    def yscbak(self, key, before=None, indent=0, after=None, after_indent=None):
+        """
+        expects comment (before/after) to be without `#` and possible have multiple lines
+        """
+        from ruamel.yaml.error import Mark
+        from ruamel.yaml.tokens import CommentToken
+        
+        def comment_token(s, mark):
+            # handle empty lines as having no comment
+            return CommentToken(('# ' if s else '') + s + '\n', mark, None)
+        
+        if after_indent is None:
+            after_indent = indent + 2
+        if before and before[-1] == '\n':
+            before = before[:-1]  # strip final newline if there
+        if after and after[-1] == '\n':
+            after = after[:-1]  # strip final newline if there
+        start_mark = Mark(None, None, None, indent, None, None)
+        c = self.ca.items.setdefault(key, [None, [], None, None])
+        if before:
+            for com in before.split('\n'):
+                c[1].append(comment_token(com, start_mark))
+        if after:
+            start_mark = Mark(None, None, None, after_indent, None, None)
+            if c[3] is None:
+                c[3] = []
+            for com in after.split('\n'):
+                c[3].append(comment_token(com, start_mark))
+    if not hasattr(ruamel.yaml.comments.CommentedMap,'yaml_set_comment_before_after_key'):
+        ruamel.yaml.comments.CommentedMap.yaml_set_comment_before_after_key = yscbak
 
 def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
     """Extract metadat from the GWAS Catalog API
@@ -124,8 +167,6 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
         meta_dict.update(rest_dict)
     except:
         pass
-    
-    print("rest_dict:",rest_dict)
     
     try:
         ingest_samples_list = _parse_gwas_api_samples_response(sample_response,
@@ -202,7 +243,6 @@ def _parse_gwas_rest_study_response(response: bytes,
     if efo_response:
         efo_info=json.loads(efo_response.decode())['_embedded']['efoTraits']
         result_dict["ontology_mapping"]="|".join(d.get("shortForm") for d in efo_info)
-    
     if replace_dict:
         result_dict = replace_dictionary_keys(data_dict=result_dict,
                                                   replace_dict=replace_dict)
@@ -295,12 +335,11 @@ def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dic
     inferred_meta_dict = {}
     inferred_meta_dict['gwas_id'] = parse_accession_id(filename=in_file)
     inferred_meta_dict['data_file_name'] = Path(out_file).name
-    inferred_meta_dict['file_type'] = 'GWAS-SFF v1.0'
+    inferred_meta_dict['file_type'] = 'GWAS-SSF v1.0'
     inferred_meta_dict['genome_assembly'] = GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown')
     inferred_meta_dict['data_file_md5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
-    inferred_meta_dict['date_last_modified'] = date.today()
+    inferred_meta_dict['date_metadata_last_modified'] = date.today()
     inferred_meta_dict['gwas_catalog_api'] = GWAS_CAT_API_STUDIES_URL + parse_accession_id(filename=in_file)
-    print("meta_dict:",type(meta_dict))
     for field, value in inferred_meta_dict.items():
         update_dict_if_not_set(meta_dict, field, value)
     return meta_dict

@@ -4,8 +4,8 @@ import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from gen_meta import gen_meta
 from format import format
+from gen_meta import gen_meta
 from utils import (header_dict_from_args,
                                        metadata_dict_from_args,
                                        get_version)

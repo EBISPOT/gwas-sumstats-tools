@@ -56,7 +56,7 @@ class Gen_meta:
         Returns:
             metadata object
         """
-        self.meta.from_file()
+
         meta_dict = get_file_metadata(
             in_file=self.data_infile,
             out_file=self.data_infile,
