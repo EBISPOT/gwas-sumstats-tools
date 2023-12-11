@@ -151,14 +151,6 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
     rest_response = download_with_requests(url=rest_url)
 
     try:
-        ingest_dict = _parse_gwas_api_study_response(study_response,
-                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
-                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
-        meta_dict.update(ingest_dict)
-    except:
-        pass
-
-    try:
         if rest_response:
             print(f"{rest_url} returned 200")
         rest_dict= _parse_gwas_rest_study_response(rest_response,
@@ -167,7 +159,15 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
         meta_dict.update(rest_dict)
     except:
         pass
-    
+      
+    try:
+        ingest_dict = _parse_gwas_api_study_response(study_response,
+                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
+        meta_dict.update(ingest_dict)
+    except:
+        pass
+
     try:
         ingest_samples_list = _parse_gwas_api_samples_response(sample_response,
                                                     replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
