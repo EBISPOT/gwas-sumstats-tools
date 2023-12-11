@@ -155,7 +155,15 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
         meta_dict.update(rest_dict)
     except:
         pass
-    
+      
+    try:
+        ingest_dict = _parse_gwas_api_study_response(study_response,
+                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
+        meta_dict.update(ingest_dict)
+    except:
+        pass
+
     try:
         ingest_dict = _parse_gwas_api_study_response(study_response,
                                          replace_dict=GWAS_CAT_STUDY_MAPPINGS,
