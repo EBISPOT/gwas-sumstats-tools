@@ -4,9 +4,11 @@ import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from format import format
-from gen_meta import gen_meta
-from utils import (header_dict_from_args,
+from gwas_sumstats_tools.gen_meta import gen_meta
+from gwas_sumstats_tools.validate import validate
+from gwas_sumstats_tools.read import read
+from gwas_sumstats_tools.format import format
+from gwas_sumstats_tools.utils import (header_dict_from_args,
                                        metadata_dict_from_args,
                                        get_version)
 

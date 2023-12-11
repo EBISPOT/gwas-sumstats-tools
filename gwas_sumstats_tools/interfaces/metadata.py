@@ -3,14 +3,10 @@ import json
 from typing import Union
 from datetime import date
 from pathlib import Path
-from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 import ruamel.yaml
 
-import sys
-sys.path.insert(0, '..')
-
 from pydantic import ValidationError
-from config import (GWAS_CAT_API_STUDIES_URL,
+from gwas_sumstats_tools.config import (GWAS_CAT_API_STUDIES_URL,
                                         GWAS_CAT_API_INGEST_STUDIES_URL,
                                         GWAS_CAT_STUDY_MAPPINGS,
                                         REST_GWAS_CAT_STUDY_MAPPINGS,
@@ -19,14 +15,14 @@ from config import (GWAS_CAT_API_STUDIES_URL,
                                         GWAS_CAT_SAMPLE_MAPPINGS,
                                         REST_GWAS_CAT_SAMPLE_MAPPINGS,
                                         GENOME_ASSEMBLY_MAPPINGS)
-from utils import (download_with_requests,
+from gwas_sumstats_tools.utils import (download_with_requests,
                                        parse_accession_id,
                                        parse_genome_assembly,
                                        get_md5sum,
                                        replace_dictionary_keys,
                                        split_fields_on_delimiter,
                                        update_dict_if_not_set)
-from schema.metadata import SumStatsMetadata
+from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
 
 
 class MetadataClient:
@@ -151,20 +147,20 @@ def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
     rest_response = download_with_requests(url=rest_url)
 
     try:
-        ingest_dict = _parse_gwas_api_study_response(study_response,
-                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
-                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
-        meta_dict.update(ingest_dict)
-    except:
-        pass
-
-    try:
         if rest_response:
             print(f"{rest_url} returned 200")
         rest_dict= _parse_gwas_rest_study_response(rest_response,
                                          replace_dict=GWAS_CAT_STUDY_MAPPINGS,
                                          fields_to_split=STUDY_FIELD_TO_SPLIT)
         meta_dict.update(rest_dict)
+    except:
+        pass
+    
+    try:
+        ingest_dict = _parse_gwas_api_study_response(study_response,
+                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
+        meta_dict.update(ingest_dict)
     except:
         pass
     
