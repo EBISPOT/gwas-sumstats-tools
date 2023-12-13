@@ -32,7 +32,7 @@ Models
 
 class SampleMetadata(BaseModel):
     sample_ancestry_category: List[str] = None
-    sample_ancestry: List[str] = None
+    sample_ancestry: Optional[List[str]] = None
     sample_size: int = None
     ancestry_method: Optional[List[str]] = None
     case_control_study: Optional[bool] = None
