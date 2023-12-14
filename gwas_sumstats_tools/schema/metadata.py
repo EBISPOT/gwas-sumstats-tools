@@ -1,6 +1,7 @@
 """
 A pydantic (https://docs.pydantic.dev/) schema that can be 
 used by python projects for defining the metadata model.
+Keep the same scheme with https://github.com/EBISPOT/gwas-summary-statistics-standard/blob/master/schema/metadata-yamale-schema.yaml
 """
 
 from pydantic import (BaseModel,
@@ -31,9 +32,9 @@ Models
 
 
 class SampleMetadata(BaseModel):
-    sample_ancestry_category: List[str] = None
+    sample_ancestry_category: Optional[List[str]] = None
     sample_ancestry: Optional[List[str]] = None
-    sample_size: int = None
+    sample_size: Optional[int] = None
     ancestry_method: Optional[List[str]] = None
     case_control_study: Optional[bool] = None
     case_count: Optional[int] = None
@@ -45,23 +46,23 @@ class SumStatsMetadata(BaseModel):
     gwas_id: Optional[constr(regex=r'^GCST\d+$')] = None
     author_notes: Optional[str] = None
     gwas_catalog_api: Optional[str] = None
-    date_metadata_last_modified: date = None
+    date_metadata_last_modified: date
     # Trait Information
-    trait_description: List[str] = None
+    trait_description: Optional[List[str]] = None
     ontology_mapping: Optional[List[str]] = None
     # Genotyping Information
-    genome_assembly: str = None
-    coordinate_system: CoordinateSystemEnum = None
-    genotyping_technology: List[str] = None
+    genome_assembly: str
+    coordinate_system: Optional[CoordinateSystemEnum] = None
+    genotyping_technology: Optional[List[str]] = None
     imputation_panel: Optional[str] = None
     imputation_software: Optional[str] = None
     # Sample Information
-    samples: List[SampleMetadata] = None
+    samples: Optional[List[SampleMetadata]] = None
     sex: Optional[SexEnum] = None
     # Summary Statistic information:
-    data_file_name: str = None
-    file_type: str = None
-    data_file_md5sum: str = None
+    data_file_name: str
+    file_type: str
+    data_file_md5sum: str
     analysis_software: Optional[str] = None
     adjusted_covariates: Optional[List[str]] = None
     minor_allele_freq_lower_limit: Optional[float] = None
