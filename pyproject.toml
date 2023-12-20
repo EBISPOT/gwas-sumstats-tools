@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "gwas_sumstats_tools"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.12"
 petl = "^1.7.12"
 requests = "^2.28.2"
 pyyaml = "^6.0"
@@ -15,6 +15,7 @@ pydantic = "^1.10.4"
 typer = {extras = ["all"], version = "^0.7.0"}
 pandera = {extras = ["io"], version = "^0.13.4"}
 pandas = "^2.0.2"
+ruamel-yaml = "^0.18.5"
 
 [tool.poetry.scripts]
 gwas-ssf = "gwas_sumstats_tools.cli:app"
