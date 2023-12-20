@@ -56,7 +56,7 @@ TEST_METADATA = {
     "data_file_md5sum": "32ce41c3dca4cd9f463a0ce7351966fd",
     "is_harmonised": False,
     "is_sorted": False,
-    "date_last_modified": "2023-02-09",
+    "date_metadata_last_modified": "2023-02-09",
     "genome_assembly": "GRCh37",
     "coordinate_system": "1-based",
     "sex": "combined"
