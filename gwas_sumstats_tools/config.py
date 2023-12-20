@@ -34,23 +34,37 @@ GWAS_CAT_STUDY_MAPPINGS = {
     "imputationPanel": "imputation_panel",
     "imputationSoftware": "imputation_software",
     "adjustedCovariates": "adjusted_covariates",
-    "ontologyMapping": "ontology_mapping",
+    "ontologyMapping": "efo_trait",
     "readme_file": "author_notes",
     "readme_text": "author_notes",
     "coordinateSystem": "coordinate_system",
     "sex": "sex",
 }
 
+REST_GWAS_CAT_STUDY_MAPPINGS = {
+    "genotypingTechnologies": "genotyping_technology",
+    "diseaseTrait": "trait_description",
+    "shortForm": "ontology_mapping",
+    "initialSampleSize": "case_control_study",
+}
+
 GWAS_CAT_SAMPLE_MAPPINGS = {
     "size": "sample_size",
-    "ancestry": "sample_ancestry",
+    "ancestry_category": "sample_ancestry_category",
+    "ancestry": "sample_ancestry", 
     "ancestryMethod": "ancestry_method",
     "caseControlStudy": "case_control_study",
     "caseCount": "case_count",
     "controlCount": "control_count",
 }
 
+REST_GWAS_CAT_SAMPLE_MAPPINGS = {
+    "numberOfIndividuals": "sample_size",
+    "ancestralGroups": "sample_ancestry_category",
+}
+
 GENOME_ASSEMBLY_MAPPINGS = {"36": "GRCh36", "37": "GRCh37", "38": "GRCh38"}
+
 
 STUDY_FIELD_TO_SPLIT = (
     "genotyping_technology",
@@ -59,4 +73,5 @@ STUDY_FIELD_TO_SPLIT = (
     "adjusted_covariates",
 )
 
-SAMPLE_FIELD_TO_SPLIT = ("ancestry_method", "sample_ancestry")
+
+SAMPLE_FIELD_TO_SPLIT = ("ancestry_method", "sample_ancestry_category","sample_ancestry")
