@@ -2,7 +2,7 @@
 name = "gwas-sumstats-tools"
 version = "1.0.6"
 description = ""
-authors = ["yueji <yueji@ebi.ac.uk>"]
+authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>"]
 readme = "README.md"
 packages = [{include = "gwas_sumstats_tools"}]
 
