@@ -43,7 +43,7 @@ build:
    - echo "$DOCKER_HUB_PASSWORD" > dhpw.txt
    - docker login -u "${DOCKER_HUB_USER}" --password-stdin < dhpw.txt docker.io
    - docker pull $CI_REGISTRY_IMAGE:latest
-   - docker build --cache-from $CI_REGISTRY_IMAGE:latest -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+   - docker build --network=host --cache-from $CI_REGISTRY_IMAGE:latest -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
   tags:
     - gwas
