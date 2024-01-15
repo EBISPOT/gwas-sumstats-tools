@@ -26,7 +26,7 @@ GWAS_CAT_API_INGEST_STUDIES_URL = _env_variable_else(
 
 GWAS_CAT_STUDY_MAPPINGS = {
     "genotyping_technology": "genotyping_technology",
-    "traitDescription": "trait_description",
+    "trait": "trait_description",
     "effect_allele_frequency_lower_limit": "minor_allele_freq_lower_limit",
     "minor_allele_frequency_lower_limit": "minor_allele_freq_lower_limit",
     "summary_statistics_assembly": "genome_assembly",
@@ -34,7 +34,7 @@ GWAS_CAT_STUDY_MAPPINGS = {
     "imputationPanel": "imputation_panel",
     "imputationSoftware": "imputation_software",
     "adjustedCovariates": "adjusted_covariates",
-    "ontologyMapping": "efo_trait",
+    "efo_trait": "ontology_mapping",
     "readme_file": "author_notes",
     "readme_text": "author_notes",
     "coordinateSystem": "coordinate_system",

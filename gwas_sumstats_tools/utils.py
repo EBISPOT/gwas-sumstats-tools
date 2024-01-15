@@ -172,7 +172,8 @@ def split_fields_on_delimiter(data_dict: dict,
     Returns:
         data_dict with fields split
     """
-    return dict((k, v.split(delimiter))
+    print ("data_dict:",data_dict)
+    return dict((k, [x.strip() for x in v.split(delimiter)])
                 if k in fields
                 else (k, v)
                 for k, v
