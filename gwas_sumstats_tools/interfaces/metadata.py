@@ -127,62 +127,83 @@ class MetadataClient:
     if not hasattr(ruamel.yaml.comments.CommentedMap,'yaml_set_comment_before_after_key'):
         ruamel.yaml.comments.CommentedMap.yaml_set_comment_before_after_key = yscbak
 
-def metadata_dict_from_gwas_cat(accession_id: str) -> dict:
+def metadata_dict_from_gwas_cat(
+    accession_id: str, is_bypass_rest_api: bool = False
+) -> dict:
     """Extract metadat from the GWAS Catalog API
 
     Arguments:
-        accession_id -- GWAS Catalog accession ID
+        accession_id(str): GWAS Catalog accession ID
+        is_bypass_rest_api(bool, optional): A flag indicating whether the request comes from the sumstats
+            service. If True, the function bypasses querying the REST API for additional study metadata.
+            Defaults to False, which means the REST API response will be included in the metadata dict.
 
     Returns:
         Metadata dict
     """
-    meta_dict={}
-    sample_list=[]
+    meta_dict = {}
+    sample_list = []
     study_url = GWAS_CAT_API_INGEST_STUDIES_URL + accession_id
     sample_url = study_url + "/samples"
     rest_url = GWAS_CAT_API_STUDIES_URL + accession_id
 
     study_response = download_with_requests(url=study_url)
     sample_response = download_with_requests(url=sample_url, params={"size": 100})
-    rest_response = download_with_requests(url=rest_url)
+
+    if not is_bypass_rest_api:
+        rest_response = download_with_requests(url=rest_url)
+
+        try:
+            if rest_response:
+                print(f"{rest_url} returned 200")
+            rest_dict = _parse_gwas_rest_study_response(
+                rest_response,
+                replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+                fields_to_split=STUDY_FIELD_TO_SPLIT,
+            )
+            meta_dict.update(rest_dict)
+        except Exception as e:
+            print(f"Error processing REST API response: {e}")
+            pass
 
     try:
-        if rest_response:
-            print(f"{rest_url} returned 200")
-        rest_dict= _parse_gwas_rest_study_response(rest_response,
-                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
-                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
-        meta_dict.update(rest_dict)
-    except:
-        pass
-
-    try:
-        ingest_dict = _parse_gwas_api_study_response(study_response,
-                                         replace_dict=GWAS_CAT_STUDY_MAPPINGS,
-                                         fields_to_split=STUDY_FIELD_TO_SPLIT)
+        ingest_dict = _parse_gwas_api_study_response(
+            study_response,
+            replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+            fields_to_split=STUDY_FIELD_TO_SPLIT,
+        )
         meta_dict.update(ingest_dict)
-    except:
+    except Exception as e:
+        print(f"Error processing Ingest API response: {e}")
         pass
-    
+
     try:
-        ingest_samples_list = _parse_gwas_api_samples_response(sample_response,
-                                                    replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
-                                                    fields_to_split=SAMPLE_FIELD_TO_SPLIT)
-        sample_list=ingest_samples_list
-    except:
+        ingest_samples_list = _parse_gwas_api_samples_response(
+            sample_response,
+            replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
+            fields_to_split=SAMPLE_FIELD_TO_SPLIT,
+        )
+        sample_list = ingest_samples_list
+    except Exception as e:
+        print(f"Error processing Ingest Samples API response: {e}")
         pass
 
     if not sample_list:
         try:
-            rest_samples_list = _parse_gwas_rest_samples_response(rest_response,
-                                                    replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
-                                                    fields_to_split=SAMPLE_FIELD_TO_SPLIT)
-            sample_list=rest_samples_list
-        except:
-            print (f"Aample info of {accession_id} is missing in the REST API and IMGEST API")
-    
-    meta_dict['samples'] = sample_list
+            rest_samples_list = _parse_gwas_rest_samples_response(
+                rest_response,
+                replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
+                fields_to_split=SAMPLE_FIELD_TO_SPLIT,
+            )
+            sample_list = rest_samples_list
+        except Exception as e:
+            print(
+                f"Ample info of {accession_id} is missing in the REST API and INGEST API: {e}"
+            )
+
+    meta_dict["samples"] = sample_list
     return meta_dict
+
 
 def _parse_gwas_api_study_response(response: bytes,
                                    replace_dict: dict = None,
