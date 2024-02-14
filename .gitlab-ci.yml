@@ -30,7 +30,7 @@ deploy_test:
   script:
     - poetry config repositories.testpypi https://test.pypi.org/legacy/
     - poetry build
-    - poetry publish --repository=testpypi --username=$PYPI_USER --password=$PYPI_PWD 
+    - poetry publish --repository=testpypi --username=$PYPI_API_TOKEN_USERNAME --password=$PYPI_API_TOKEN_PASSWORD 
   only:
     - tags
 
@@ -76,6 +76,6 @@ deploy_prod:
   stage: deploy
   script:
     - poetry build
-    - poetry publish --username=$PYPI_USER --password=$PYPI_PWD
+    - poetry publish --username=$PYPI_API_TOKEN_USERNAME --password=$PYPI_API_TOKEN_PASSWORD
   only:
     - tags
