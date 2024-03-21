@@ -8,6 +8,7 @@ import ruamel.yaml
 from pydantic import ValidationError
 from gwas_sumstats_tools.config import (GWAS_CAT_API_STUDIES_URL,
                                         GWAS_CAT_API_INGEST_STUDIES_URL,
+                                        GWAS_CAT_API_INGEST_STUDIES_URL_SANDBOX,
                                         GWAS_CAT_STUDY_MAPPINGS,
                                         REST_GWAS_CAT_STUDY_MAPPINGS,
                                         STUDY_FIELD_TO_SPLIT,
@@ -128,7 +129,9 @@ class MetadataClient:
         ruamel.yaml.comments.CommentedMap.yaml_set_comment_before_after_key = yscbak
 
 def metadata_dict_from_gwas_cat(
-    accession_id: str, is_bypass_rest_api: bool = False
+    accession_id: str, 
+    is_bypass_rest_api: bool = False, 
+    is_sandbox: bool = False,
 ) -> dict:
     """Extract metadat from the GWAS Catalog API
 
@@ -137,6 +140,8 @@ def metadata_dict_from_gwas_cat(
         is_bypass_rest_api(bool, optional): A flag indicating whether the request comes from the sumstats
             service. If True, the function bypasses querying the REST API for additional study metadata.
             Defaults to False, which means the REST API response will be included in the metadata dict.
+        is_sandbox(bool, optional): A A flag indicating whether the request comes from the sandbox sumstats
+            service.
 
     Returns:
         Metadata dict
@@ -144,6 +149,8 @@ def metadata_dict_from_gwas_cat(
     meta_dict = {}
     sample_list = []
     study_url = GWAS_CAT_API_INGEST_STUDIES_URL + accession_id
+    if is_sandbox:
+        study_url = GWAS_CAT_API_INGEST_STUDIES_URL_SANDBOX + accession_id
     sample_url = study_url + "/samples"
     rest_url = GWAS_CAT_API_STUDIES_URL + accession_id
 
