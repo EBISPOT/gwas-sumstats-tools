@@ -24,6 +24,11 @@ GWAS_CAT_API_INGEST_STUDIES_URL = _env_variable_else(
     "https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/",
 )
 
+GWAS_CAT_API_INGEST_STUDIES_URL_SANDBOX = _env_variable_else(
+    "GWAS_CAT_API_INGEST_STUDIES_URL_SANDBOX",
+    "https://wwwdev.ebi.ac.uk/gwas/ingest/api/v2/studies/",
+)
+
 GWAS_CAT_STUDY_MAPPINGS = {
     "genotyping_technology": "genotyping_technology",
     "traitDescription": "trait_description",
