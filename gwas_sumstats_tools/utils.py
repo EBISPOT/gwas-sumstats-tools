@@ -59,11 +59,16 @@ def download_with_requests(url,
     Arguments:
         url -- request url
         params -- requests parameters
-        headers -- request headers
+        headers -- request headers, modified to include cache-control
 
     Return:
         Content from URL if status code is 200 or None
     """
+    if headers is None:
+        headers = {}
+
+    headers.update({'Cache-Control': 'no-cache', 'Pragma': 'no-cache'})
+
     s = requests.Session()
     retries = Retry(total=5, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504])
     s.mount(url, HTTPAdapter(max_retries=retries))
