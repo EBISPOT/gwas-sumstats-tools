@@ -269,7 +269,7 @@ def _parse_ingest_study_response(
     # study
     trait_description = response.get("diseaseTrait", {}).get("trait")
     if trait_description:
-        response_parsed["trait_description"] = trait_description
+        response_parsed["trait_description"] = [trait_description]
 
     # # extract EFO
     # efo_url=response['_links']['efoTraits']['href']
