@@ -192,6 +192,8 @@ def metadata_dict_from_gwas_cat(
             fields_to_split=STUDY_FIELD_TO_SPLIT,
         )
         meta_dict.update(ingest_dict)
+        if not meta_dict.get("trait_description") and meta_dict.get("trait"):
+            meta_dict.update({"trait_description": meta_dict.get("trait")})
     except Exception as e:
         print(f"Error processing Ingest API response: {e}")
         pass
