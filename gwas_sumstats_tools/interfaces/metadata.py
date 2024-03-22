@@ -172,6 +172,18 @@ def metadata_dict_from_gwas_cat(
         except Exception as e:
             print(f"Error processing REST API response: {e}")
             pass
+    else:
+        try:
+            rest_dict = _parse_ingest_study_response(
+                study_response,
+                replace_dict=GWAS_CAT_STUDY_MAPPINGS,
+                fields_to_split=STUDY_FIELD_TO_SPLIT,
+            )
+            print(f"Ingest Study Response ::: {rest_dict=}")
+            meta_dict.update(rest_dict)
+        except Exception as e:
+            print(f"Error processing REST API response: {e}")
+            pass
 
     try:
         ingest_dict = _parse_gwas_api_study_response(
@@ -238,6 +250,35 @@ def _parse_gwas_api_study_response(response: bytes,
             result_dict = split_fields_on_delimiter(data_dict=result_dict,
                                                    fields=fields_to_split)
     return result_dict
+
+
+def _parse_ingest_study_response(
+    response: bytes,
+    replace_dict: dict = None,
+    fields_to_split: tuple = None
+) -> dict:
+    response_parsed = {}
+    response = json.loads(response.decode())
+
+    # study
+    trait_description = response.get("diseaseTrait", {}).get("trait", "")
+    if trait_description:
+        response_parsed["trait_description"] = trait_description
+
+    # # extract EFO
+    # efo_url=response['_links']['efoTraits']['href']
+    # efo_response =download_with_requests(url=efo_url)
+    # if efo_response:
+    #     efo_info=json.loads(efo_response.decode())['_embedded']['efoTraits']
+    #     response_parsed["ontology_mapping"]="|".join(d.get("shortForm") for d in efo_info)
+    # if replace_dict:
+    #     response_parsed = replace_dictionary_keys(data_dict=response_parsed,
+    #                                               replace_dict=replace_dict)
+    # if fields_to_split:
+    #     response_parsed = split_fields_on_delimiter(data_dict=response_parsed,
+    #                                                 fields=fields_to_split)
+    return response_parsed
+
 
 def _parse_gwas_rest_study_response(response: bytes,
                                    replace_dict: dict = None,
