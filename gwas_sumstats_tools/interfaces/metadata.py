@@ -271,18 +271,23 @@ def _parse_ingest_study_response(
     if trait_description:
         response_parsed["trait_description"] = [trait_description]
 
-    # # extract EFO
-    # efo_url=response['_links']['efoTraits']['href']
-    # efo_response =download_with_requests(url=efo_url)
-    # if efo_response:
-    #     efo_info=json.loads(efo_response.decode())['_embedded']['efoTraits']
-    #     response_parsed["ontology_mapping"]="|".join(d.get("shortForm") for d in efo_info)
-    # if replace_dict:
-    #     response_parsed = replace_dictionary_keys(data_dict=response_parsed,
-    #                                               replace_dict=replace_dict)
-    # if fields_to_split:
-    #     response_parsed = split_fields_on_delimiter(data_dict=response_parsed,
-    #                                                 fields=fields_to_split)
+    # extract EFO
+    response_parsed["ontology_mapping"] = "|".join(
+        d.get("shortForm") 
+        for d in response.get("efoTraits", [])
+    )
+
+    if replace_dict:
+        response_parsed = replace_dictionary_keys(
+            data_dict=response_parsed,
+            replace_dict=replace_dict,
+        )
+    if fields_to_split:
+        response_parsed = split_fields_on_delimiter(
+            data_dict=response_parsed,
+            fields=fields_to_split,
+        )
+
     return response_parsed
 
 
