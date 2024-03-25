@@ -269,7 +269,7 @@ def _parse_ingest_study_response(
     # study
     trait_description = response.get("diseaseTrait", {}).get("trait")
     if trait_description:
-        response_parsed["trait_description"] = [trait_description]
+        response_parsed["trait_description"] = trait_description
 
     # extract EFO
     response_parsed["ontology_mapping"] = "|".join(
@@ -277,11 +277,19 @@ def _parse_ingest_study_response(
         for d in response.get("efoTraits", [])
     )
 
+    print("######################################################")
+    print(f"{response_parsed=}")
+    print(f"{replace_dict=}")
     if replace_dict:
         response_parsed = replace_dictionary_keys(
             data_dict=response_parsed,
             replace_dict=replace_dict,
         )
+
+    print('------------------------------------------------------')
+    print(f"{response_parsed=}")
+    print(f"{fields_to_split=}")
+    print("######################################################")
     if fields_to_split:
         response_parsed = split_fields_on_delimiter(
             data_dict=response_parsed,
