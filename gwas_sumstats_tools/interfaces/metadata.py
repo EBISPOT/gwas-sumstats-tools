@@ -197,7 +197,7 @@ def metadata_dict_from_gwas_cat(
         d = meta_dict.get("trait_description")
         t = meta_dict.get("trait")
         if not d and t:
-            meta_dict.update({"trait_description": t})
+            meta_dict.update({"trait_description": [t]})
     except Exception as e:
         print(f"Error processing Ingest API response: {e}")
         pass
