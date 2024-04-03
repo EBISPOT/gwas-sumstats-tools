@@ -8,9 +8,7 @@ from gwas_sumstats_tools.gen_meta import gen_meta
 from gwas_sumstats_tools.validate import validate
 from gwas_sumstats_tools.read import read
 from gwas_sumstats_tools.format import format
-from gwas_sumstats_tools.utils import (header_dict_from_args,
-                                       metadata_dict_from_args,
-                                       get_version)
+from gwas_sumstats_tools.utils import (header_dict_from_args, metadata_dict_from_args,get_version)
 
 
 app = typer.Typer(add_completion=False,
@@ -132,6 +130,7 @@ def ss_read(filename: Path = typer.Argument(...,
              context_settings={"help_option_names": ["-h", "--help"],
                                "allow_extra_args": True,
                                "ignore_unknown_options": True})
+
 def ss_format(filename: Path = typer.Argument(...,
                                               readable=True,
                                               help="Input sumstats file. Must be TSV or CSV and may be gzipped"),
@@ -140,6 +139,16 @@ def ss_format(filename: Path = typer.Argument(...,
                                                 writable=True,
                                                 file_okay=True,
                                                 help="Output sumstats file"),
+              config_outfile: Path = typer.Option(None,
+                                                    "--config-out",
+                                                    writable=True,
+                                                    file_okay=True,
+                                                    help="Specify the configure json output file"),
+              config_infile: Path = typer.Option(None,
+                                                   "--config-in",
+                                                   readable=True,
+                                                   exists=True,
+                                                   help="Specify a configure json file to read in"),                              
               minimal_to_standard: bool = typer.Option(False,
                                                  "--minimal2standard", "-s",
                                                  help=("Try to convert a valid, minimally formatted file "
@@ -149,52 +158,29 @@ def ss_format(filename: Path = typer.Argument(...,
                                                        "`chromosome` and `base_pair_location`. Validity "
                                                        "of the new file is not guaranteed because mandatory "
                                                        "data could be missing from the original file.")),
-              generate_metadata: bool = typer.Option(False,
-                                                     "--generate-metadata", "-m",
-                                                     help="Create the metadata file"),
-              metadata_outfile: Path = typer.Option(None,
-                                                    "--meta-out",
-                                                    writable=True,
-                                                    file_okay=True,
-                                                    help="Specify the metadata output file"),
-              metadata_infile: Path = typer.Option(None,
-                                                   "--meta-in",
-                                                   readable=True,
-                                                   exists=True,
-                                                   help="Specify a metadata file to read in"),
-              metadata_edit_mode: bool = typer.Option(False,
-                                                      "--meta-edit", "-e",
-                                                      help=("Enable metadata edit mode. "
-                                                            "Then provide params to edit in "
-                                                            "the `--<FIELD>=<VALUE>` format e.g. "
-                                                            "`--GWASID=GCST123456` to edit/add "
-                                                            "that value")),
-              metadata_from_gwas_cat: bool = typer.Option(False,
-                                                          "--meta-gwas", "-g",
-                                                          help="[italic]Internal use only[/italic]. Populate metadata from GWAS Catalog"),
-              custom_header_map: bool = typer.Option(False,
-                                                     "--custom-header-map", "-c",
-                                                     help=("Provide a custom header mapping using "
-                                                           "the `--<FROM>:<TO>` format e.g. "
-                                                           "`--chr:chromosome`")),
+              generate_config: bool = typer.Option(False,
+                                                     "--generate_config", "-g",
+                                                     help=("To generate the configure file for the file"
+                                                           "needed to be formatted")),
+              apply_config: bool = typer.Option(False,
+                                                     "--apply_config", "-a",
+                                                     help=("Apply the given configure file to the file")),
+              test_config: bool = typer.Option(False,
+                                                     "--test_config", "-a",
+                                                     help=("Test the given configure file to the first 5 rows of the file")),
               extra_args: typer.Context = typer.Option(None)
               ):
     """
     [green]FORMAT[/green] a sumstats file by creating a new one from the existing one. Add/edit metadata.
     """
-    header_map = header_dict_from_args(args=extra_args.args) \
-        if custom_header_map else {}
-    meta_dict = metadata_dict_from_args(args=extra_args.args) \
-        if metadata_edit_mode else {}
     format(filename=filename,
            data_outfile=data_outfile,
            minimal_to_standard=minimal_to_standard,
-           generate_metadata=generate_metadata,
-           metadata_outfile=metadata_outfile,
-           metadata_infile=metadata_infile,
-           metadata_from_gwas_cat=metadata_from_gwas_cat,
-           header_map=header_map,
-           metadata_dict=meta_dict)
+           config_outfile=config_outfile,
+           config_infile=config_infile,
+           generate_config=generate_config,
+           apply_config=apply_config,
+           test_config=test_config)
 
 @app.command("gen_meta",
              no_args_is_help=True,

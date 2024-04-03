@@ -42,13 +42,26 @@ class SumStatsTable:
         Returns:
             etl.Table
         """
-        self.rename_headers(header_map=header_map)
+        self.sumstats.rename_headers(header_map=header_map)
         missing_headers = self._get_missing_headers()
         if missing_headers:
             self._add_missing_headers(missing_headers)
         header_order = self._set_header_order()
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self.sumstats
+    
+    def map_header(self) -> etl.Table:
+        """Reformats the headers according to the standard
+
+        Returns:
+            etl.Table
+        """
+        missing_headers = self._get_missing_headers()
+        if missing_headers:
+            self._add_missing_headers(missing_headers)
+        header_order = self._set_header_order()
+        self.sumstats = etl.cut(self.sumstats, *header_order)
+        return self
 
     def from_file(self, infile: str) -> Union[etl.Table, None]:
         """Try to read the file in to a Table.
@@ -91,6 +104,10 @@ class SumStatsTable:
 
     def head_table(self, nrows: int = 10) -> etl.Table:
         return etl.head(self.sumstats, n=nrows)
+    
+    def example_table(self, nrows: int = 5) -> etl.Table:
+        self.sumstats = etl.head(self.sumstats, n=nrows)
+        return self
 
     def _get_delimiter(self, filepath: Path) -> str:
         """Get delimiter from file path
@@ -103,7 +120,12 @@ class SumStatsTable:
         """
         if not isinstance(filepath, Path):
             filepath = Path(filepath)
-        return ',' if '.csv' in filepath.suffixes else '\t'
+        if '.csv' in filepath.suffixes:
+            return ','
+        elif '.txt' in filepath.suffixes:
+            return '\s+'
+        else:
+            return '\t'
 
     def rename_headers(self, header_map: dict) -> etl.Table:
         """Rename headers according to the header map
@@ -117,7 +139,7 @@ class SumStatsTable:
         """
         filtered_header_map = {k: v for k, v in header_map.items() if k in self.header()}
         self.sumstats = etl.rename(self.sumstats, filtered_header_map)
-        return self.sumstats
+        return self
 
     def normalise_missing_values(self) -> etl.Table:
         self.sumstats = etl.replaceall(self.sumstats, 'NA', '#NA')
@@ -291,3 +313,48 @@ class SumStatsTable:
             etl.Table
         """
         return etl.cat(table, missing=missing)
+    
+    def split_columns_by_separator(self, field, separator: str, newfields: list,include_original:bool) -> etl.Table:
+        """
+        split(table, field, pattern, newfields=None, include_original=False, maxsplit=0, flags=0)
+        """
+        self.sumstats = etl.split(self.sumstats,field,separator,newfields,include_original=include_original)
+        return self
+    
+    def split_capture(self, field, pattern, newfields: list,include_original:bool):
+        """
+        petl.sub(table, field, pattern, repl, count=0, flags=0)
+        OR 
+        petl.capture(table, field, pattern, newfields=None, include_original=False, flags=0)
+        Convenience function to convert values under the given field using a regular expression substitution. See also re.sub().
+        """
+        self.sumstats = etl.capture(self.sumstats, field, pattern, newfields, include_original=include_original)
+        return self
+    
+    def find_and_replace(self, field, find, replace) -> etl.Table:
+        """
+        petl.replace(table, field, a, b)
+        Only applied to the colunns but not the header
+
+        petl.sub(table, field, pattern, repl, count=0, flags=0)
+        pattern can be str or regex
+        """
+        self.sumstats = etl.sub(self.sumstats, field, find, replace, count=0, flags=0)
+        return self
+    
+    def extract(self, field, pattern, newfield):
+        """
+        capture function to extract regex pattern to original column
+        """
+        regexs=f"({pattern})"
+        newfields=[newfield]
+        self.sumstats = etl.capture(self.sumstats, field, regexs, newfields, include_original=False)
+        return self
+
+    def _covert_value (self, table: etl.Table, field, value, replace) -> etl.Table:
+        """
+        petl.transform.conversions.convert()
+        """
+        return etl.convert(table,field,'replace',value,replace)
+    
+    
