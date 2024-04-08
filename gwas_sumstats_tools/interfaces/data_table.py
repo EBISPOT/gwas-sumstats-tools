@@ -123,7 +123,7 @@ class SumStatsTable:
         if '.csv' in filepath.suffixes:
             return ','
         elif '.txt' in filepath.suffixes:
-            return '\s+'
+            return ' '
         else:
             return '\t'
 

@@ -16,6 +16,7 @@ typer = {extras = ["all"], version = "^0.7.0"}
 pandera = {version = "^0.13.4"}
 pandas = "1.5.3"
 ruamel-yaml = "0.17.32"
+bsub = "^0.3.5"
 
 [tool.poetry.scripts]
 gwas-ssf = "gwas_sumstats_tools.cli:app"

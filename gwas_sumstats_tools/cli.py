@@ -166,8 +166,17 @@ def ss_format(filename: Path = typer.Argument(...,
                                                      "--apply_config", "-a",
                                                      help=("Apply the given configure file to the file")),
               test_config: bool = typer.Option(False,
-                                                     "--test_config", "-a",
+                                                     "--test_config", "-t",
                                                      help=("Test the given configure file to the first 5 rows of the file")),
+              batch_apply: Path = typer.Option(None,
+                                                     "--batch_apply", "-b",
+                                                     help=("Apply configure files to the corresponding files")),
+              lsf: bool = typer.Option(False,
+                                                     "--lsf",
+                                                     help=("running the batch process via subitting jobs via LSF")),
+              slurm: bool = typer.Option(False,
+                                                     "--test_config", "-s",
+                                                     help=("running the batch process via subitting job via Slurm")),
               extra_args: typer.Context = typer.Option(None)
               ):
     """
@@ -180,7 +189,10 @@ def ss_format(filename: Path = typer.Argument(...,
            config_infile=config_infile,
            generate_config=generate_config,
            apply_config=apply_config,
-           test_config=test_config)
+           test_config=test_config,
+           batch_apply=batch_apply,
+           lsf=lsf,
+           slurm=slurm)
 
 @app.command("gen_meta",
              no_args_is_help=True,
