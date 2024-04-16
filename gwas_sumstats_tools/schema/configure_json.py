@@ -4,10 +4,10 @@ import json
 
 class FileConfig (BaseModel):
     outFileSuffix: str = Field(default="formatted_")
-    md5: bool = Field(default=False)
-    convertNegLog10Pvalue: bool = Field(default=False)
     fieldSeparator: str = Field(default="tab")
     removeComments: str = Field(default=None)
+    naValue: str = Field(default=None)
+    convertNegLog10Pvalue: bool = Field(default=False)
 
 class SplitConfig (BaseModel):
     field: Optional[str]=None

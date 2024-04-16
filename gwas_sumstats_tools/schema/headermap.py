@@ -362,6 +362,7 @@ header_mapper = {
         'Position_b37',
         'Position_hg19',
         'Pos_GRCh37',
+        'GENPOS'
         ],
     # Chromosome and base pair location
     # ================================
@@ -545,7 +546,8 @@ header_mapper = {
         'FREQ_A1',
         'Coded_freq',
         'Effect-allele-frequency',
-        'Freq1'
+        'Freq1',
+        'A1FREQ'
         ],
     
     # Number of studies

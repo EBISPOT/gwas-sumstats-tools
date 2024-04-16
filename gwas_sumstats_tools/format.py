@@ -3,8 +3,10 @@ import petl as etl
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 import json,re,os,subprocess
+from bsub import bsub
 
 from gwas_sumstats_tools.schema.headermap import header_mapper
+from gwas_sumstats_tools.schema.pre_defined_configure import pre_defined_configure
 from gwas_sumstats_tools.schema.configure_json import Formatconfig
 
 from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
@@ -21,27 +23,48 @@ class Formatter:
         self,
         data_infile: Path,
         data_outfile : Path = None,
+        remove_comments: str = None,
+        delimiter: str = None,
         config_infile: Path = None,
         config_outfile: Path = None,
         config_dict: dict = {},
         format_data: bool = False,
+        analysis_software: str = None,
     ) -> None:
         
         self.format_data = format_data
         self.data_infile = Path(data_infile)
         self.data_outfile = Path(data_outfile) if data_outfile else None
-        self.data = (
-            SumStatsTable(sumstats_file=self.data_infile) if self.data_infile else None
-        )
 
-        self.config_infile = Path(config_infile) if config_infile else None
         self.config_outfile = Path(config_outfile) if config_outfile else None
         self.config = Formatconfig.construct()
-        self.config_dict = self._from_config() if self.config_infile else config_dict
+        self.config_infile = Path(config_infile) if config_infile else None
 
+        if self.config_infile:
+            self.config_dict = self._from_config()
+        elif analysis_software in pre_defined_configure.keys():
+            self.config_dict = pre_defined_configure[analysis_software]
+        else:
+            self.config_dict = config_dict
+        
+        print("this is the dict used for config",self.config_dict)
+
+        if delimiter:
+            self.delimiter=delimiter
+        elif self.config_dict:
+            self.delimiter=self.config_dict["fileConfig"]["fieldSeparator"]
+        else:
+            self.delimiter=None
+        
+        self.na=self.config_dict["fileConfig"]["naValue"] if self.config_infile else None
+        self.removecomments = self.config_dict["fileConfig"]["removeComments"] if self.config_infile else remove_comments
+        self.data = (
+            SumStatsTable(sumstats_file=self.data_infile, delimiter=self.delimiter, removecomments=self.removecomments) if self.data_infile else None
+        )
         self.columns_in = list(self.data.header())
-        self.delimiter=self.config_dict["fileConfig"]["fieldSeparator"] if self.config_infile else self.data.delimiter
-        print ("format delimiter is:","'",self.data.delimiter,"'",)
+    
+    def from_config(self):
+        return self
 
     def generate_config(self):
         """
@@ -65,7 +88,9 @@ class Formatter:
         test_in=self.data.example_table()
         test_split_table=self.split(config=self.config_dict,data=test_in)
         test_edit_table=self.edit(config=self.config_dict,data=test_split_table)
-        test_formatted_data=test_edit_table.map_header()
+        test_filled_table=test_edit_table.normalise_missing_values(na_value=self.na)
+        test_formatted_data=test_filled_table.map_header()
+        
         return test_formatted_data
     
     def _set_data_outfile_name(self) -> str:
@@ -185,9 +210,9 @@ class Formatter:
         """
         fileConfig={
             "outFileSuffix": None,
-            "md5":False,
-            "convertNegLog10Pvalue": False,
             "fieldSeparator": self.delimiter,
+            "naValue": None,
+            "convertNegLog10Pvalue": False,
             "removeComments": False
         }
         format_config = {"fileConfig":fileConfig,"columnConfig":col_config}
@@ -216,8 +241,11 @@ class Formatter:
         """
         split_table=self.split(config=self.config_dict,data=self.data)
         edit_table=self.edit(config=self.config_dict,data=split_table)
-        formatted_data=edit_table.map_header()
-        print(formatted_data.sumstats)
+        filled_table=edit_table.normalise_missing_values(na_value=self.na)
+        formatted_data=filled_table.map_header()
+
+        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]==True:
+            formatted_data=formatted_data.convert_neg_log10_pvalue()
         return formatted_data
     
     def split(self, config, data):
@@ -257,7 +285,10 @@ class Formatter:
         edit_table=data
         rename_dict={}
         for col in edit_config:
-             rename_dict.update({col['field']:col['rename']})
+             if col['rename'] is not None:
+                 rename_dict.update({col['field']:col['rename']})
+             else:
+                 rename_dict.update({col['field']:col['field']})
              if col['field'] is not None:
                   if col['extract'] is not None:
                        edit_table=edit_table.extract(
@@ -282,7 +313,7 @@ class Formatter:
         self.formating().to_file(self.data_outfile)
 #----------------------------out of the class----------------------------------------------
 
-def lsf_apply_config(file_info, memory):
+def lsf_apply_config(config_infile, analysis_software, file_info, memory):
     """
     LSF job submission by bsub package, this function activate unless the --batch_apply=true and --lsf
     """
@@ -290,13 +321,20 @@ def lsf_apply_config(file_info, memory):
                M="{}".format(str(memory)),
                R="rusage[mem={}]".format(str(memory)),
                N="")
-    command = f"gwas-ssf format {file_info[0]} --apply_config --config-in {file_info[1]} -o {file_info[2]}"
+    if config_infile:
+        command = f"gwas-ssf format {file_info[0]} --apply_config --config_in {config_infile} -o {file_info[1]}"
+    elif analysis_software in pre_defined_configure.keys():
+        command = f"gwas-ssf format {file_info[0]} --apply_config --analysis_software {analysis_software} -o {file_info[1]}"
+    else:
+        print(">>> Cannot find configure file or analysis software. Please check your --config_in or --analysis_software.")
+        os.sys.exit(1)
+        
     print(">>>> Submitting job to cluster, job id below")
     print(sub(command).job_id)
     print(" Formatted files, md5sums and configs will appear in "
           "the same directory as the input file.")
 
-def slurm_apply_config(file_info, memory):
+def slurm_apply_config(config_infile, analysis_software, file_info, memory):
     """
     slurm job submission, this function activate unless the --batch_apply=true and --slurm
     """
@@ -316,7 +354,13 @@ def slurm_apply_config(file_info, memory):
         file.write("#SBATCH --time=01:00:00\n")
         file.write(f"#SBATCH --output={output_file}\n")
         file.write(f"#SBATCH --error={error_file}\n")
-        file.write(f"gwas-ssf format {file_info[0]} --apply_config --config-in {file_info[1]} -o {file_info[2]}\n")
+        if config_infile:
+            file.write(f"gwas-ssf format {file_info[0]} --apply_config --config_in {config_infile} -o {file_info[1]}\n")
+        elif analysis_software in pre_defined_configure.keys():
+            file.write(f"gwas-ssf format {file_info[0]} --apply_config --analysis_software {analysis_software} -o {file_info[1]}\n")
+        else:
+            print(">>> Cannot find configure file or analysis software. Please check your --config_in or --analysis_software.")
+            os.sys.exit(1)
 
     # Make the script executable
     os.chmod(sbatch_script_path, 0o755)
@@ -348,75 +392,84 @@ def slurm_apply_config(file_info, memory):
     print(
         "Formatted files, md5sums and configs will appear in the same directory as the input file."
     )
+
 # --------------------------cluster option finish---------------------------------------------------
 def format(
     filename: Path,
     data_outfile: Path = None,
     minimal_to_standard: bool = False,
     generate_config: bool = False,
+    remove_comments: str = None,
+    delimiter: str = None,
     config_dict: dict = None,
     config_outfile: Path = None,
     config_infile: Path = None,
+    analysis_software: str = None,
     apply_config: bool = False,
     test_config: bool = False,
-    batch_apply: Path = None,
+    batch_apply: bool = None,
     lsf: bool = False,
     slurm: bool = False,
 ) -> None:
-    formatter = Formatter(
+    if batch_apply:
+        if not config_infile and analysis_software not in pre_defined_configure.keys():
+                 print(f"[red]Cannot format file without --config_in [file] or --analysis_software {analysis_software} [/red]")
+                 os.sys.exit(1)
+
+        to_format_file=etl.fromcsv(filename,delimiter="\t")
+        files_info=[list(row) for row in to_format_file]
+        if lsf:
+            for file_info in files_info:
+                lsf_apply_config(config_infile, analysis_software, file_info, "4G")
+        elif slurm:
+            for file_info in files_info:
+                slurm_apply_config(config_infile, analysis_software, file_info,"4G")
+        else:
+            for file_info in files_info:
+                subprocess.run(["gwas-ssf", "format", file_info[0], "--apply_config", "--config_in", config_infile, "-o", file_info[1]])
+    else:
+        formatter = Formatter(
         data_infile=filename,
         data_outfile=data_outfile,
         config_dict=config_dict,
         config_infile=config_infile,
         config_outfile=config_outfile,
         format_data=minimal_to_standard,
+        remove_comments=remove_comments,
+        analysis_software=analysis_software,
+        delimiter=delimiter
     )
-    if minimal_to_standard:
-        exit_if_no_data(table=formatter.data.sumstats)
-        print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
-        print(formatter.data.sumstats)
-        if header_map:
-            formatter.data.reformat_header(header_map=header_map)
-        else:
-            formatter.data.reformat_header()
-        formatter.data.normalise_missing_values()
-        print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
-        print(formatter.data.sumstats)
-        print(
+        
+        if minimal_to_standard:
+             exit_if_no_data(table=formatter.data.sumstats)
+             print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
+             print(formatter.data.sumstats)
+             formatter.data.reformat_header() 
+             formatter.data.normalise_missing_values()
+             print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
+             print(formatter.data.sumstats)
+             print(
             f"[green]Formatting and writing sumstats data --> {str(formatter.data_outfile)}[/green]"
         )
-        with Progress(
+             with Progress(
             SpinnerColumn(finished_text="Complete!"),
             TextColumn("[progress.description]{task.description}"),
             transient=True,
         ) as progress:
-            progress.add_task(description="Processing...", total=None)
-            formatter.data.to_file(outfile=formatter.data_outfile)   
-    if generate_config:
-        if config_outfile:
-            print(f"[green]Writing config --> {str(config_outfile)}[/green]")
-            formatter.to_json_file()
-        else:
-            print(f"[yellow]Note: No config_outfile specified. Configure file will not be saved as a file without --config-out [/yellow]")
-            config=formatter.generate_config_template()
-            return config
-    elif apply_config:
-        print("I am running at here")
-        if batch_apply:
-            to_format_file=etl.fromcsv(batch_apply,delimiter="\t")
-            files_info=[list(row) for row in to_format_file]
-            if lsf:
-                for file_info in files_info:
-                     lsf_apply_config(file_info, "3G")
-            elif slurm:
-                for file_info in files_info:
-                     slurm_apply_config(file_info)
+                 progress.add_task(description="Processing...", total=None)
+                 formatter.data.to_file(outfile=formatter.data_outfile)   
+                    
+        if generate_config:
+            if config_outfile:
+                print(f"[green]Writing config --> {str(config_outfile)}[/green]")
+                formatter.to_json_file()
             else:
-                 for file_info in files_info:
-                      subprocess.run(["gwas-ssf format", file_info[0], "--apply_config", "--config-in", file_info[1], "-o", file_info[2]])      
-        else:
-            if not config_infile and not config_dict:
-                 print("[red]Cannot format file without --config-in [file] or --config_dict string [/red]")
+                print(f"[yellow]Note: No config_outfile specified. Configure file will not be saved as a file without --config-out [/yellow]")
+                config=formatter.generate_config_template()
+                return config
+        elif apply_config:
+            if not config_infile and not config_dict and analysis_software not in pre_defined_configure.keys():
+                 print(f"[red]Cannot format file without --config-in [file] or --config_dict string or --analysis_software {analysis_software} [/red]")
                  os.sys.exit(1)
             if data_outfile:
                  print(f"[green]Writing formatted data --> {str(data_outfile)}[/green]")
@@ -424,9 +477,10 @@ def format(
             else:
                  print(f"[yellow]Note: No data_outfile specified. Data will not be saved as a file without --ss-out [/yellow]")
                  formatter.formating()
-    elif test_config:
-         test_out=formatter.test_config()
-         return test_out
-    
-    if not any([minimal_to_standard, generate_config, apply_config, test_config]):
+                 print(formatter.data.sumstats)
+        elif test_config:
+            test_out=formatter.test_config()
+            return test_out
+        
+        if not any([minimal_to_standard, generate_config, apply_config, test_config]):
          print("Nothing to do.")
