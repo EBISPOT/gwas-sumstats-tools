@@ -148,9 +148,11 @@ def metadata_dict_from_gwas_cat(
     """
     meta_dict = {}
     sample_list = []
+    ### DEV ONLY ###### 
+    # if is_sandbox:
+    #     study_url = GWAS_CAT_API_INGEST_STUDIES_URL_SANDBOX + accession_id
+    ###################
     study_url = GWAS_CAT_API_INGEST_STUDIES_URL + accession_id
-    if is_sandbox:
-        study_url = GWAS_CAT_API_INGEST_STUDIES_URL_SANDBOX + accession_id
     sample_url = study_url + "/samples"
     rest_url = GWAS_CAT_API_STUDIES_URL + accession_id
 
