@@ -36,7 +36,7 @@ class SumStatsTable:
         self.filename = str(sumstats_file)
         self.delimiter = delimiter if delimiter else self._get_delimiter(sumstats_file)
         self.removecomments = removecomments if removecomments else None
-        self.sumstats = self.from_file(infile=self.filename,removecomments=self.removecomments)
+        self.sumstats = self.from_file()
         
 
     def reformat_header(self, header_map: dict = FIELD_MAP) -> etl.Table:
@@ -66,7 +66,7 @@ class SumStatsTable:
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self
 
-    def from_file(self, infile: str, removecomments: str = None) -> Union[etl.Table, None]:
+    def from_file(self) -> Union[etl.Table, None]:
         """Try to read the file in to a Table.
         Files can be TAB seperated and optionally compressed
         with (B)GZIP. There could be cases where an input file 

@@ -46,11 +46,9 @@ class Formatter:
             self.config_dict = pre_defined_configure[analysis_software]
         else:
             self.config_dict = config_dict
-        
-        print("this is the dict used for config",self.config_dict)
 
         if delimiter:
-            self.delimiter=delimiter
+            self.delimiter=delimiter.encode().decode('unicode_escape')
         elif self.config_dict:
             self.delimiter=self.config_dict["fileConfig"]["fieldSeparator"]
         else:

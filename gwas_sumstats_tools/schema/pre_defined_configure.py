@@ -1,6 +1,3 @@
-#------------SNPtest----------------
-#snptest = {}
-
 #----------------REGENIE----------------
 regenie = {
     "fileConfig": {
@@ -99,90 +96,6 @@ boltlmm = {
     },
     "columnConfig": {
         "split": [
-            {
-                "field": "SNP",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "CHR",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "BP",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "GENPOS",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "ALLELE1",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "ALLELE0",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "A1FREQ",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "INFO",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "BETA",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "SE",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "P_BOLT_LMM_INF",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            },
-            {
-                "field": "P_BOLT_LMM",
-                "separator": None,
-                "capture": None,
-                "new_field": None,
-                "include_original": None
-            }
         ],
         "edit": [
             {
@@ -273,14 +186,95 @@ boltlmm = {
     }
 }
 
-#----------------METAL----------------
-#metal = {}
-
-
+#----------------SNPTEST----------------
+snptest = {
+    "fileConfig": {
+        "outFileSuffix": None,
+        "fieldSeparator": " ",
+        "naValue": None,
+        "convertNegLog10Pvalue": False,
+        "removeComments": "#"
+    },
+    "columnConfig": {
+        "split": [
+        ],
+        "edit": [
+            {
+                "field": "alternate_ids",
+                "rename": "variant_id",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "rsid",
+                "rename": "rsid",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "chromosome",
+                "rename": "chromosome",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "position",
+                "rename": "base_pair_location",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "alleleA",
+                "rename": "other_allele",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "alleleB",
+                "rename": "effect_allele",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "all_total",
+                "rename": "n",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "frequentist_add_pvalue",
+                "rename": "p_value",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "frequentist_add_beta_1",
+                "rename": "beta",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "frequentist_add_se_1",
+                "rename": "standard_error",
+                "find": None,
+                "replace": None,
+                "extract": None
+            }
+        ]
+    }
+}
 #----------------pre_defined_configure----------------
 pre_defined_configure={
-    #"SNPtest": snptest,
-    #"METAL": metal
     "REGENIE": regenie,
-    "BOLT-LMM": boltlmm
+    "BOLT-LMM": boltlmm,
+    "SNPTEST": snptest
 }
