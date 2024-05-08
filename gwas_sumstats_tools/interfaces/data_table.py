@@ -45,7 +45,7 @@ class SumStatsTable:
         Returns:
             etl.Table
         """
-        self.sumstats.rename_headers(header_map=header_map)
+        self.rename_headers(header_map=header_map)
         missing_headers = self._get_missing_headers()
         if missing_headers:
             self._add_missing_headers(missing_headers)
@@ -152,11 +152,12 @@ class SumStatsTable:
         return self
 
     def normalise_missing_values(self,na_value:str) -> etl.Table:
-        if na_value is not None:
-            self.sumstats = etl.replaceall(self.sumstats, na_value, '#NA')
         self.sumstats = etl.replaceall(self.sumstats, 'NA', '#NA')
         self.sumstats = etl.replaceall(self.sumstats, None, '#NA')
         self.sumstats = etl.replaceall(self.sumstats, '', '#NA')
+        
+        if na_value is not None:
+            self.sumstats = etl.replaceall(self.sumstats, na_value, '#NA')   
         return self
     
     def convert_neg_log10_pvalue(self) -> etl.Table:

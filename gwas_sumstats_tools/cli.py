@@ -166,7 +166,7 @@ def ss_format(filename: Path = typer.Argument(...,
                                                    exists=True,
                                                    help="Specify the analysis software used for generating the summary statistic data"),                           
               minimal_to_standard: bool = typer.Option(False,
-                                                 "--minimal2standard", "-s",
+                                                 "--minimal2standard",
                                                  help=("Try to convert a valid, minimally formatted file "
                                                        "to the standard format."
                                                        "This assumes the file at least has `p_value` "

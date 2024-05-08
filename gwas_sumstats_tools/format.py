@@ -54,8 +54,9 @@ class Formatter:
         else:
             self.delimiter=None
         
-        self.na=self.config_dict["fileConfig"]["naValue"] if self.config_infile else None
-        self.removecomments = self.config_dict["fileConfig"]["removeComments"] if self.config_infile else remove_comments
+        self.na=self.config_dict["fileConfig"]["naValue"] if self.config_dict else None
+        self.removecomments = self.config_dict["fileConfig"]["removeComments"] if self.config_dict else remove_comments
+        print("format",self.removecomments)
         self.data = (
             SumStatsTable(sumstats_file=self.data_infile, delimiter=self.delimiter, removecomments=self.removecomments) if self.data_infile else None
         )
@@ -207,11 +208,11 @@ class Formatter:
         append file configure, split and edit dict into json format
         """
         fileConfig={
-            "outFileSuffix": None,
+            "outFileSuffix": "formatted_",
             "fieldSeparator": self.delimiter,
             "naValue": None,
             "convertNegLog10Pvalue": False,
-            "removeComments": False
+            "removeComments": None
         }
         format_config = {"fileConfig":fileConfig,"columnConfig":col_config}
         print(json.dumps(format_config, indent=4))
@@ -437,13 +438,12 @@ def format(
         analysis_software=analysis_software,
         delimiter=delimiter
     )
-        
         if minimal_to_standard:
              exit_if_no_data(table=formatter.data.sumstats)
              print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
              print(formatter.data.sumstats)
              formatter.data.reformat_header() 
-             formatter.data.normalise_missing_values()
+             formatter.data.normalise_missing_values(None)
              print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
              print(formatter.data.sumstats)
              print(

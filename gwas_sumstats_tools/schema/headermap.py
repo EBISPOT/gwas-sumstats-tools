@@ -268,6 +268,21 @@ known_header_transformations = {
 
 header_mapper = {
 
+    #RSID
+    # ==========
+    'rsid': [
+        'rs',
+        'rsid',
+        'rs_number',
+        'rs_numbers',
+        'id',
+        'id_dbsnp49',
+        'snp_rsid',
+        'rsID',
+        'RSID',
+        'rs_id'
+        ],
+
     # Variant ID
     # ==========
     'variant_id': [
@@ -275,14 +290,7 @@ header_mapper = {
         '#SNP',
         'markername',
         'marker',
-        'rs',
-        'rsid',
-        'rs_number',
-        'rs_numbers',
         'assay_name',
-        'id',
-        'id_dbsnp49',
-        'snp_rsid',
         'MARKER',
         'snpid',
         'oldid',
@@ -290,10 +298,7 @@ header_mapper = {
         'SNP',
         'íd',
         'MarkerName',
-        'rsID',
-        'RSID',
         'MARKERNAME',
-        'rs_id'
         ],
 
     # P-value

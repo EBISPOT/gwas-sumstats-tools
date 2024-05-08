@@ -272,9 +272,125 @@ snptest = {
         ]
     }
 }
+
+#----------------SAIGE------------------
+saige={
+    "fileConfig": {
+        "outFileSuffix": None,
+        "fieldSeparator": "\t",
+        "naValue": None,
+        "convertNegLog10Pvalue": False,
+        "removeComments": None
+    },
+    "columnConfig": {
+        "split": [
+        ],
+        "edit": [
+            {
+                "field": "CHR",
+                "rename": "chromosome",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "POS",
+                "rename": "base_pair_location",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "MarkerID",
+                "rename": "variant_id",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "Allele1",
+                "rename": "other_allele",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "Allele2",
+                "rename": "effect_allele",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "AC_Allele2",
+                "rename": "effect_allele_count",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "AF_Allele2",
+                "rename": "effect_allele_frequency",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "MissingRate",
+                "rename": "MissingRate",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "BETA",
+                "rename": "beta",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "SE",
+                "rename": "standard_error",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "Tstat",
+                "rename": "Tstat",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "var",
+                "rename": "var",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "p.value",
+                "rename": "p_value",
+                "find": None,
+                "replace": None,
+                "extract": None
+            },
+            {
+                "field": "N",
+                "rename": "n",
+                "find": None,
+                "replace": None,
+                "extract": None
+            }
+        ]
+    }
+}
 #----------------pre_defined_configure----------------
 pre_defined_configure={
     "REGENIE": regenie,
     "BOLT-LMM": boltlmm,
-    "SNPTEST": snptest
+    "SNPTEST": snptest,
+    "SAIGE": saige
 }
