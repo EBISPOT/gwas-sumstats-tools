@@ -40,6 +40,8 @@ class Formatter:
         self.config = Formatconfig.construct()
         self.config_infile = Path(config_infile) if config_infile else None
 
+        self.analysis_software = analysis_software if analysis_software in pre_defined_configure.keys() else None
+
         if self.config_infile:
             self.config_dict = self._from_config()
         elif analysis_software in pre_defined_configure.keys():
@@ -52,11 +54,11 @@ class Formatter:
         elif self.config_dict:
             self.delimiter=self.config_dict["fileConfig"]["fieldSeparator"]
         else:
-            self.delimiter=None
+            self.delimiter=self._get_delimiter(self.data_infile)
         
         self.na=self.config_dict["fileConfig"]["naValue"] if self.config_dict else None
         self.removecomments = self.config_dict["fileConfig"]["removeComments"] if self.config_dict else remove_comments
-        print("format",self.removecomments)
+        
         self.data = (
             SumStatsTable(sumstats_file=self.data_infile, delimiter=self.delimiter, removecomments=self.removecomments) if self.data_infile else None
         )
@@ -69,7 +71,10 @@ class Formatter:
         """
         Generate config file, either only print the config in json format (for weassembly to read) or save in a file
         """
-        if self.config_outfile():
+        if self.analysis_software in pre_defined_configure.keys():
+            config_dict=pre_defined_configure[self.analysis_software]  
+            return config_dict
+        elif self.config_outfile():
             return self.to_json_file()
         else:
             return self.generate_config_template()
@@ -203,6 +208,26 @@ class Formatter:
         columnConfig={"split":splitConfig,"edit":editConfig}
         return columnConfig
     
+    def _get_delimiter(self, filepath: Path) -> str:
+        """Get delimiter from file path
+
+        Arguments:
+            filepath -- Input file path
+
+        Returns:
+            delimiter, either ',' or '\t'
+        """
+        if not isinstance(filepath, Path):
+            filepath = Path(filepath)
+        if '.csv' in filepath.suffixes:
+            return ','
+        elif '.txt' in filepath.suffixes:
+            return ' '
+        elif '.tsv' in filepath.suffixes:
+            return '\t'
+        else:
+            return None
+        
     def generate_json_config (self,col_config):
         """
         append file configure, split and edit dict into json format
@@ -212,7 +237,7 @@ class Formatter:
             "fieldSeparator": self.delimiter,
             "naValue": None,
             "convertNegLog10Pvalue": False,
-            "removeComments": None
+            "removeComments": self.removecomments
         }
         format_config = {"fileConfig":fileConfig,"columnConfig":col_config}
         print(json.dumps(format_config, indent=4))
@@ -311,11 +336,8 @@ class Formatter:
         print(self.data_outfile)
         self.formating().to_file(self.data_outfile)
 #----------------------------out of the class----------------------------------------------
-
+# LSF job submission by bsub package, this function activate unless the --batch_apply=true and --lsf
 def lsf_apply_config(config_infile, analysis_software, file_info, memory):
-    """
-    LSF job submission by bsub package, this function activate unless the --batch_apply=true and --lsf
-    """
     sub = bsub("gwas_ssf",
                M="{}".format(str(memory)),
                R="rusage[mem={}]".format(str(memory)),
@@ -333,10 +355,9 @@ def lsf_apply_config(config_infile, analysis_software, file_info, memory):
     print(" Formatted files, md5sums and configs will appear in "
           "the same directory as the input file.")
 
+# slurm job submission, this function activate unless the --batch_apply=true and --slurm
 def slurm_apply_config(config_infile, analysis_software, file_info, memory):
-    """
-    slurm job submission, this function activate unless the --batch_apply=true and --slurm
-    """
+
     # Define output and error file paths
     output_file = "slurm-%j.out"  # %j will be replaced with the job ID
     error_file = "slurm-%j.err"  # %j will be replaced with the job ID
@@ -391,7 +412,7 @@ def slurm_apply_config(config_infile, analysis_software, file_info, memory):
     print(
         "Formatted files, md5sums and configs will appear in the same directory as the input file."
     )
-
+    
 # --------------------------cluster option finish---------------------------------------------------
 def format(
     filename: Path,
@@ -463,7 +484,7 @@ def format(
                 formatter.to_json_file()
             else:
                 print(f"[yellow]Note: No config_outfile specified. Configure file will not be saved as a file without --config-out [/yellow]")
-                config=formatter.generate_config_template()
+                config=formatter.generate_config()
                 return config
         elif apply_config:
             if not config_infile and not config_dict and analysis_software not in pre_defined_configure.keys():

@@ -15,13 +15,19 @@ class Reader():
     """
     def __init__(self,
                  sumstats_file: Path = None,
+                 delimiter: str = None,
+                 remove_comments: str = None,
                  metadata_file: Path = None) -> None:
         if not metadata_file and isinstance(sumstats_file, Path):
             metadata_file = sumstats_file.with_suffix(sumstats_file.suffix + "-meta.yaml")
-        self.data = SumStatsTable(sumstats_file=sumstats_file) \
-            if sumstats_file else None
-        self.meta = MetadataClient(in_file=metadata_file) \
-            if metadata_file else None
+
+        self.delimiter=delimiter.encode().decode('unicode_escape') if delimiter else None
+        
+        self.removecomments = remove_comments if remove_comments else None
+
+        self.data = SumStatsTable(sumstats_file=sumstats_file, delimiter=self.delimiter, removecomments=self.removecomments) if sumstats_file else None
+        
+        self.meta = MetadataClient(in_file=metadata_file) if metadata_file else None
 
     def file_header(self) -> Union[SumStatsTable.header, None]:
         """Get the file header
@@ -85,7 +91,9 @@ def read(filename: Path,
          metadata_infile: Path = None,
          get_header: bool = False,
          get_all_metadata: bool = False,
-         get_metadata: list = None):
+         get_metadata: list = None,
+         remove_comments: str = None,
+         delimiter: str = None):
     """Driver function for the Reader class
 
     Arguments:
@@ -101,6 +109,8 @@ def read(filename: Path,
         _description_
     """
     reader = Reader(sumstats_file=filename,
+                    delimiter=delimiter,
+                    remove_comments=remove_comments,
                     metadata_file=metadata_infile)
     exit_if_no_data(reader.data.sumstats)
     if get_header:

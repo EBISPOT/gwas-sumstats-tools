@@ -111,12 +111,25 @@ def ss_read(filename: Path = typer.Argument(...,
                                                              "--get-metadata", "-m",
                                                              help=("Get metadata for the "
                                                                    "specified fields e.g. "
-                                                                   "`-m genomeAssembly -m isHarmonised"))
+                                                                   "`-m genomeAssembly -m isHarmonised")),
+            remove_comments: str = typer.Option(None,
+                                                     "--remove_comments", "-r",
+                                                     help=("remove the comments in the file")),
+            delimiter: str = typer.Option(None,
+                                                    "--delimiter", "-d",
+                                                    writable=True,
+                                                    file_okay=True,
+                                                    help="Specify the delimiter in the file,if not specified," 
+                                                    "we can automatically detect the delimiter as whitespace if your is *.txt file,"
+                                                    "or comma if your is *.csv file; or tab if your is *.tsv.gz file."
+                                                    "Otherwise, please specific the delimiter which can help to recognise the column correctly.")
             ):
     """
     [green]READ[/green] a sumstats file
     """
     result, message = read(filename=filename,
+                           delimiter=delimiter,
+                           remove_comments=remove_comments,
                            metadata_infile=metadata_infile,
                            get_header=get_header,
                            get_all_metadata=get_all_metadata,
@@ -142,7 +155,7 @@ def ss_format(filename: Path = typer.Argument(...,
                                                     "we can automatically detect the delimiter as whitespace if your is *.txt file,"
                                                     "or comma if your is *.csv file; or tab if your is *.tsv.gz file."
                                                     "Otherwise, please specific the delimiter which can help to recognise the column correctly."),
-              remove_comments: str = typer.Option(False,
+              remove_comments: str = typer.Option(None,
                                                      "--remove_comments", "-r",
                                                      help=("remove the comments in the file")),
               data_outfile: Path = typer.Option(None,
