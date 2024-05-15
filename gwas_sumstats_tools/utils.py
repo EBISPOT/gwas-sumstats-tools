@@ -86,7 +86,7 @@ def download_with_requests(url,
 
 
 def append_to_path(path: Path, to_add: str) -> Path:
-    return path.parent / (path.name + to_add)
+    return path.parent / (path.stem + to_add)
 
 
 def set_metadata_outfile_name(data_outfile: str, metadata_outfile: str) -> str:
