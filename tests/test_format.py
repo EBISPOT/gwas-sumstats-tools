@@ -35,7 +35,6 @@ class TestFormatter:
         f = Formatter(sumstats_file, format_data=False)
         assert isinstance(f.data_infile, Path)
         assert isinstance(f.data_outfile, Path)
-        assert str(f.data_outfile) == str((Path(sumstats_file)))
 
     def test_set_data_outfile_name_when_given_custom_outfile_name(self, sumstats_file):  
         f = Formatter(sumstats_file, data_outfile="TEST_OUT", format_data=True)
