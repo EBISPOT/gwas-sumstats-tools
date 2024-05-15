@@ -34,8 +34,6 @@ class Formatter:
         
         self.format_data = format_data
         self.data_infile = Path(data_infile)
-        self.data_outfile = Path(data_outfile) if data_outfile else None
-
         self.config_outfile = Path(config_outfile) if config_outfile else None
         self.config = Formatconfig.construct()
         self.config_infile = Path(config_infile) if config_infile else None
@@ -49,6 +47,10 @@ class Formatter:
         else:
             self.config_dict = config_dict
 
+        self.data_outfile = Path(
+            self._set_data_outfile_name() if not data_outfile else data_outfile
+        )
+        
         if delimiter:
             self.delimiter=delimiter.encode().decode('unicode_escape')
         elif self.config_dict:
@@ -107,18 +109,23 @@ class Formatter:
         Returns:
             data outfile name string
         """
-        if self.data_outfile:
-            return self.data_outfile
-        else:
+        if self.format_data:
             accession_id = parse_accession_id(filename=self.data_infile)
-            suffix=self.config_dict["fileConfig"]["outFileSuffix"] if self.config_dict["fileConfig"]["outFileSuffix"] else "-formatted"
             if accession_id:
-                self.data_outfile = accession_id + suffix+ ".tsv.gz"
+                self.data_outfile = accession_id + ".tsv.gz"
             else:
                 self.data_outfile = append_to_path(
-                    self.data_infile, suffix + ".tsv"
+                    self.data_infile, "-FORMATTED.tsv.gz"
                 )
-            return self.data_outfile
+        elif self.config_dict["fileConfig"]["outputSuffix"]:
+            self.data_outfile = append_to_path(
+                    self.data_infile, self.config_dict["fileConfig"]["outputSuffix"]
+                )
+        else:
+            self.data_outfile = append_to_path(
+                    self.data_infile, "-FORMATTED.tsv.gz"
+                )
+        return self.data_outfile
         
     def _set_config_outfile_name(self) -> str:
         """Set the configure outfile name.
