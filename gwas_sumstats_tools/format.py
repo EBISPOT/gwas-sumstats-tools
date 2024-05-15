@@ -119,7 +119,7 @@ class Formatter:
                 )
         elif self.config_dict["fileConfig"]["outputSuffix"]:
             self.data_outfile = append_to_path(
-                    self.data_infile, self.config_dict["fileConfig"]["outputSuffix"]
+                    self.data_infile, self.config_dict["fileConfig"]["outFileSuffix""]
                 )
         else:
             self.data_outfile = append_to_path(
@@ -502,8 +502,8 @@ def format(
                  print(f"[green]Writing formatted data --> {str(data_outfile)}[/green]")
                  formatter.data_to_file()
             else:
-                 print(f"[yellow]Note: No data_outfile specified. Data will not be saved as a file without --ss-out [/yellow]")
-                 formatter.formating()
+                 print(f"[yellow]Note: No data_outfile specified. Data will be saved in the same folder as the input [/yellow]")
+                 formatter.data_to_file()
                  print(formatter.data.sumstats)
         elif test_config:
             print(f"[green]Writing formatted data")
