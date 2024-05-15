@@ -74,7 +74,7 @@ class Formatter:
         if self.analysis_software in pre_defined_configure.keys():
             config_dict=pre_defined_configure[self.analysis_software]  
             return config_dict
-        elif self.config_outfile():
+        elif self.config_outfile:
             return self.to_json_file()
         else:
             return self.generate_config_template()
@@ -337,6 +337,7 @@ class Formatter:
         self.formating().to_file(self.data_outfile)
 #----------------------------out of the class----------------------------------------------
 # LSF job submission by bsub package, this function activate unless the --batch_apply=true and --lsf
+
 def lsf_apply_config(config_infile, analysis_software, file_info, memory):
     sub = bsub("gwas_ssf",
                M="{}".format(str(memory)),
@@ -412,7 +413,7 @@ def slurm_apply_config(config_infile, analysis_software, file_info, memory):
     print(
         "Formatted files, md5sums and configs will appear in the same directory as the input file."
     )
-    
+
 # --------------------------cluster option finish---------------------------------------------------
 def format(
     filename: Path,
