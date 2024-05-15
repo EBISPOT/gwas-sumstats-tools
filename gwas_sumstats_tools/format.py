@@ -506,7 +506,9 @@ def format(
                  formatter.formating()
                  print(formatter.data.sumstats)
         elif test_config:
+            print(f"[green]Writing formatted data")
             test_out=formatter.test_config()
+            print(test_out.sumstats)
             return test_out
         
         if not any([minimal_to_standard, generate_config, apply_config, test_config]):
