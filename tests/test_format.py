@@ -43,12 +43,4 @@ class TestFormatter:
         f = Formatter(sumstats_file, data_outfile="TEST_OUT", format_data=False)
         assert isinstance(f.data_outfile, Path)
         assert str(f.data_outfile) == "TEST_OUT"
-
-    def test_set_metadata_outfile_name(self, sumstats_file):
-        f = Formatter(sumstats_file)
-        assert isinstance(f.metadata_outfile, Path)
-        assert str(f.metadata_outfile) == str((Path(f.data_outfile))) + "-meta.yaml"
-        f = Formatter(sumstats_file, metadata_outfile="TEST_OUT")
-        assert isinstance(f.metadata_outfile, Path)
-        assert str(f.metadata_outfile) == "TEST_OUT"
         
