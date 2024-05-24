@@ -117,7 +117,7 @@ class Formatter:
                 self.data_outfile = append_to_path(
                     self.data_infile, "-FORMATTED.tsv.gz"
                 )
-        elif self.config_dict["fileConfig"]["outputSuffix"]:
+        elif self.config_dict.get("fileConfig", {}).get("outFileSuffix", None):
             self.data_outfile = append_to_path(
                     self.data_infile, self.config_dict["fileConfig"]["outFileSuffix"]
                 )
