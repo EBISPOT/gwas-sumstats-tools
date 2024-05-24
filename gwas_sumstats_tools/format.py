@@ -119,7 +119,7 @@ class Formatter:
                 )
         elif self.config_dict["fileConfig"]["outputSuffix"]:
             self.data_outfile = append_to_path(
-                    self.data_infile, self.config_dict["fileConfig"]["outFileSuffix""]
+                    self.data_infile, self.config_dict["fileConfig"]["outFileSuffix"]
                 )
         else:
             self.data_outfile = append_to_path(
