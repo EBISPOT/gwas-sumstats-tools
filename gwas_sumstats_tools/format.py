@@ -45,7 +45,7 @@ class Formatter:
         elif analysis_software in pre_defined_configure.keys():
             self.config_dict = pre_defined_configure[analysis_software]
         else:
-            self.config_dict = config_dict
+            self.config_dict = config_dict or {}
 
         self.data_outfile = Path(
             self._set_data_outfile_name() if not data_outfile else data_outfile
