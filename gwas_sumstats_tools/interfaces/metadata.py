@@ -154,7 +154,11 @@ def metadata_dict_from_gwas_cat(
     study_response = download_with_requests(url=study_url)
     sample_response = download_with_requests(url=sample_url, params={"size": 100})
 
-    if not is_bypass_rest_api:
+    # Old studies get 404 from Ingest API,
+    # e.g. 
+    # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST008396
+    # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST002047
+    if not study_response or not is_bypass_rest_api:
         rest_response = download_with_requests(url=rest_url)
 
         try:
