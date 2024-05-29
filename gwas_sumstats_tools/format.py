@@ -45,7 +45,7 @@ class Formatter:
         elif analysis_software in pre_defined_configure.keys():
             self.config_dict = pre_defined_configure[analysis_software]
         else:
-            self.config_dict = config_dict
+            self.config_dict = config_dict or {}
 
         self.data_outfile = Path(
             self._set_data_outfile_name() if not data_outfile else data_outfile
@@ -117,9 +117,9 @@ class Formatter:
                 self.data_outfile = append_to_path(
                     self.data_infile, "-FORMATTED.tsv.gz"
                 )
-        elif self.config_dict["fileConfig"]["outputSuffix"]:
+        elif self.config_dict.get("fileConfig", {}).get("outFileSuffix", None):
             self.data_outfile = append_to_path(
-                    self.data_infile, self.config_dict["fileConfig"]["outFileSuffix""]
+                    self.data_infile, self.config_dict["fileConfig"]["outFileSuffix"]
                 )
         else:
             self.data_outfile = append_to_path(
