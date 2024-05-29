@@ -214,6 +214,8 @@ def metadata_dict_from_gwas_cat(
         pass
 
     if not sample_list:
+        print(f'Sample list from Ingest API: {sample_list}')
+        print('Fall back on the REST API.')
         try:
             rest_response = download_with_requests(url=rest_url)
             rest_samples_list = _parse_gwas_rest_samples_response(
@@ -278,19 +280,12 @@ def _parse_ingest_study_response(
         for d in response.get("efoTraits", [])
     )
 
-    print("######################################################")
-    print(f"{response_parsed=}")
-    print(f"{replace_dict=}")
     if replace_dict:
         response_parsed = replace_dictionary_keys(
             data_dict=response_parsed,
             replace_dict=replace_dict,
         )
 
-    print('------------------------------------------------------')
-    print(f"{response_parsed=}")
-    print(f"{fields_to_split=}")
-    print("######################################################")
     if fields_to_split:
         response_parsed = split_fields_on_delimiter(
             data_dict=response_parsed,
