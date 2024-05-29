@@ -144,9 +144,8 @@ def metadata_dict_from_gwas_cat(
     """
     meta_dict = {}
     sample_list = []
-    ### DEV ONLY ###### 
+    # DEV ONLY #######################################
     # if sandbox, then update URL_API_INGEST in config
-    ###################
     study_url = URL_API_INGEST + accession_id
     sample_url = study_url + "/samples"
     rest_url = GWAS_CAT_API_STUDIES_URL + accession_id
@@ -216,6 +215,7 @@ def metadata_dict_from_gwas_cat(
 
     if not sample_list:
         try:
+            rest_response = download_with_requests(url=rest_url)
             rest_samples_list = _parse_gwas_rest_samples_response(
                 rest_response,
                 replace_dict=GWAS_CAT_SAMPLE_MAPPINGS,
