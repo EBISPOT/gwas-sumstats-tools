@@ -1,6 +1,6 @@
 # GWAS SumStats Tools
 
-You can access comprehensive documentation for using gwas-sumstat-tools at this link: [GWAS SumStats Tools Documentation](https://ebispot.github.io/gwas-sumstats-tools-Documentation/#/).
+You can access comprehensive documentation for using gwas-sumstat-tools at this link: [GWAS SumStats Tools Documentation](https://ebispot.github.io/gwas-sumstats-tools-documentation/#/).
 
 ## Overview:
 There are four commands, `read`, `format` `validate` and `gen_meta` (`gen_meta` function is currently only accessible to internal GWAS catalog users.)
