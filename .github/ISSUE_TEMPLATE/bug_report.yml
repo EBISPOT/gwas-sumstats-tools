@@ -1,0 +1,51 @@
+name: Bug Report
+description: File a bug report.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug with our GWAS sumstats formating and validation tool. To help us diagnose and fix the issue, please follow the instructions below to provide the necessary information.
+  - type: textarea
+    id: system
+    attributes:
+      label: System information
+      description: |
+        * OS _(eg. CentOS Linux, macOS, Linux Mint)_
+        * Version of `gwas-sumstats-tools` _(eg. v1.0.20)_
+        * Hardware _(eg. HPC, Desktop, Cloud)_
+  - type: textarea
+    id: issue_description
+    attributes:
+      label: Description of the Issue
+      description: Please provide a detailed description of the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: error_message
+    attributes:
+      label: Error Message
+      description: Paste the relevant error message and logs here.
+  - type: textarea
+    id: command_used
+    attributes:
+      label: Command used and terminal output
+      description: Steps to reproduce the behaviour. Please paste the command you used to launch the pipeline and the output from your terminal.
+      render: console
+      placeholder: |
+        $ gwas-ssf format $file --apply_config ...
+
+        Some output where something broke
+  - type: textarea
+    id: input_file
+    attributes:
+      label: First 10 Rows of the Input File
+      description: Please provide the first 10 rows of the input file used in your analysis.
+  - type: textarea
+    id: files
+    attributes:
+      label: Relevant files
+      description: |
+        Please drag and drop the relevant files here. Create a `.zip` archive if the extension is not allowed.
+        Your verbose log file `.nextflow.log` is often useful _(this is a hidden file in the directory where you launched the pipeline)_ as well as relevant process log files (`.command.log`, `.command.err`, `.command.out`).
