@@ -181,8 +181,10 @@ To run the tests:
 1. [install poetry](https://python-poetry.org/docs/#installation)
 2. `git clone https://github.com/EBISPOT/gwas-sumstats-tools.git`
 3. `cd gwas-sumstats-tools`
+3. `python3 -m venv env`
+3. `pip install poetry`
 4. `poetry install`
-5. `poetry run pytest`
+5. `poetry run pytest -s`
 
 To make a change:
 branch from master -> PR to master -> poetry version -> git add pyproject.toml -> git commit -> git tag <version> -> git push origin master --tags
