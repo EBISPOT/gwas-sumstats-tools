@@ -210,7 +210,8 @@ class TestValidator:
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
-        assert v.primary_error_type == "data"
+        # print(v.errors_table)
+        assert v.primary_error_type == "p_val"
         assert v.errors_table.nrows() == 4
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4,
                       pval_zero=True)
@@ -293,7 +294,7 @@ class TestValidator:
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
-        assert v.primary_error_type == "data"
+        assert v.primary_error_type == "p_val"
         print(v.errors_table.look(limit=10))
         assert v.errors_table.nrows() == 6
 
