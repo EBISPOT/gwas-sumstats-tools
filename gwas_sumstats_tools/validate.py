@@ -159,6 +159,8 @@ class Validator(SumStatsTable):
                 self.primary_error_type = 'headers' 
             elif 'Column' in self.errors_table['schema_context']:
                 self.primary_error_type = 'data'
+                if '_p_value_mantissa' in self.errors_table['column']:
+                    self.primary_error_type = 'p_val'                    
 
 
 def validate(filename: Path,

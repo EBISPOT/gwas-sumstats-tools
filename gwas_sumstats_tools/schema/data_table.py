@@ -39,6 +39,7 @@ class SumStatsSchema:
             ])
         }
     PVALUE_FIELD_DEFINITIONS = {
+        # 'p_value': Column(float, [
         'p_value': Column(float if platform.system() == "Windows" else Float128, [
             Check.in_range(0, 1,
                            include_min=True,
