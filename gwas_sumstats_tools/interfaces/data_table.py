@@ -60,6 +60,7 @@ class SumStatsTable:
             etl.Table
         """
         missing_headers = self._get_missing_headers()
+        print("missing_headers",missing_headers)
         if missing_headers:
             self._add_missing_headers(missing_headers)
         header_order = self._set_header_order()
@@ -161,7 +162,10 @@ class SumStatsTable:
         return self
     
     def convert_neg_log10_pvalue(self) -> etl.Table:
-        self.sumstats = etl.convert(self.sumstats, 'p_value', lambda x: 10**(-float(x)))
+        self.sumstats = etl.convert(self.sumstats, 'neg_log_10_p_value', lambda x: 10**(-float(x)))
+        self.sumstats = etl.cutout(self.sumstats, 'p_value')
+        self.sumstats = etl.rename(self.sumstats,'neg_log_10_p_value','p_value')
+        print(self.sumstats)
         return self
 
     def _get_missing_headers(self) -> set:

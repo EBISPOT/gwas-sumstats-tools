@@ -99,6 +99,9 @@ class Formatter:
         test_filled_table=test_edit_table.normalise_missing_values(na_value=self.na)
         test_formatted_data=test_filled_table.map_header()
         
+        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]==True:
+            test_formatted_data=test_formatted_data.convert_neg_log10_pvalue()
+            
         return test_formatted_data
     
     def _set_data_outfile_name(self) -> str:
@@ -381,7 +384,7 @@ def slurm_apply_config(config_infile, analysis_software, file_info, memory):
     with open(sbatch_script_path, "w") as file:
         file.write("#!/bin/bash\n")
         file.write(f"#SBATCH --mem={memory}\n")
-        file.write("#SBATCH --time=01:00:00\n")
+        file.write("#SBATCH --time=05:00:00\n")
         file.write(f"#SBATCH --output={output_file}\n")
         file.write(f"#SBATCH --error={error_file}\n")
         if config_infile:

@@ -25,6 +25,11 @@ class CoordinateSystemEnum(str, Enum):
     zero = '0-based'
     one = '1-based'
 
+class FiletypeSystemEnum(str, Enum):
+    gwas_ssf_v1 = 'GWAS-SSF v1.0'
+    pre_gwas_ssf = 'pre-GWAS-SSF'
+    non_gwas_ssf = 'non-GWAS-SSF'
+
 
 """
 Models
@@ -61,7 +66,7 @@ class SumStatsMetadata(BaseModel):
     sex: Optional[SexEnum] = None
     # Summary Statistic information:
     data_file_name: str
-    file_type: str
+    file_type: FiletypeSystemEnum
     data_file_md5sum: str
     analysis_software: Optional[str] = None
     adjusted_covariates: Optional[List[str]] = None

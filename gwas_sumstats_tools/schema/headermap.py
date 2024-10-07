@@ -331,6 +331,16 @@ header_mapper = {
         'P-value',
         'P-val'
         ],
+    
+    # neg_1og_10_p_value
+    # =======
+    'neg_1og_10_p_value': [
+        'neg_log10_pvalue',
+        'neg_log_pvalue',
+        'log_pvalue',
+        '-log10_p',
+        'log_pvalue'
+        ],
 
     # Chromosome
     # ==========
