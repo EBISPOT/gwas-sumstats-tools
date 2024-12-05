@@ -406,7 +406,7 @@ def _parse_gwas_rest_samples_response(response: bytes,
 
     return formatted_list
 
-def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dict:
+def get_file_metadata(in_file: Path, out_file: str, meta_dict: Optional[dict] = None) -> dict:
     """Get file related metadata
 
     Arguments:
@@ -416,6 +416,8 @@ def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dic
     Returns:
         Metadata dict
     """
+    meta_dict = meta_dict if meta_dict else {}
+
     inferred_meta_dict = {}
     inferred_meta_dict['gwas_id'] = parse_accession_id(filename=in_file)
     inferred_meta_dict['data_file_name'] = Path(out_file).name
