@@ -36,7 +36,7 @@ class MetadataClient:
             in_file -- Input metadata YAML file (default: {None})
             out_file -- Output metadata YAML file (default: {None})
         """
-        self.metadata = SumStatsMetadata.construct()
+        self.metadata = SumStatsMetadata()
         self._meta_dict = meta_dict
         self._in_file = in_file
         self._out_file = out_file
