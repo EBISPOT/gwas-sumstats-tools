@@ -67,8 +67,8 @@ class SumStatsMetadata(BaseModel):
     adjusted_covariates: Optional[List[str]] = None
     minor_allele_freq_lower_limit: Optional[float] = None
     # Harmonization status
-    is_harmonised: Optional[bool] = False
-    is_sorted: Optional[bool] = False
+    is_harmonised: Optional[bool] = None
+    is_sorted: Optional[bool] = None
     harmonisation_reference: Optional[str] = None
     
     class Config:
