@@ -1,6 +1,6 @@
 import yaml
 import json
-from typing import Union
+from typing import Optional, Union
 from datetime import date
 from pathlib import Path
 import ruamel.yaml
@@ -26,18 +26,22 @@ from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
 
 
 class MetadataClient:
-    def __init__(self, meta_dict: dict = {},
-                 in_file: Path = None,
-                 out_file: Path = None) -> None:
-        """SumStats Metadata client
+    def __init__(
+        self, 
+        meta_dict: Optional[dict] = None, 
+        in_file: Optional[Path] = None, 
+        out_file: Optional[Path] = None
+    ) -> None:
+        """
+        SumStats Metadata client
 
         Keyword Arguments:
-            meta_dict -- Dict of metadata (default: {None})
-            in_file -- Input metadata YAML file (default: {None})
-            out_file -- Output metadata YAML file (default: {None})
+            meta_dict -- Dict of metadata (default: None)
+            in_file -- Input metadata YAML file (default: None)
+            out_file -- Output metadata YAML file (default: None)
         """
         self.metadata = SumStatsMetadata.construct()
-        self._meta_dict = meta_dict
+        self._meta_dict = meta_dict if meta_dict else {}
         self._in_file = in_file
         self._out_file = out_file
 
@@ -402,7 +406,7 @@ def _parse_gwas_rest_samples_response(response: bytes,
 
     return formatted_list
 
-def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dict:
+def get_file_metadata(in_file: Path, out_file: str, meta_dict: Optional[dict] = None) -> dict:
     """Get file related metadata
 
     Arguments:
@@ -412,6 +416,8 @@ def get_file_metadata(in_file: Path, out_file: str, meta_dict: dict = {}) -> dic
     Returns:
         Metadata dict
     """
+    meta_dict = meta_dict if meta_dict else {}
+
     inferred_meta_dict = {}
     inferred_meta_dict['gwas_id'] = parse_accession_id(filename=in_file)
     inferred_meta_dict['data_file_name'] = Path(out_file).name
