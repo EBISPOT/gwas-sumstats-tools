@@ -195,3 +195,6 @@ Built with:
 * [Petl](https://petl.readthedocs.io/en/stable/index.html)
 * [Pydantic](https://docs.pydantic.dev/)
 * [Typer](https://typer.tiangolo.com/)
+
+## Citation:
+If you use the NHGRI-EBI GWAS Catalog tool in your research, please refer to the "[How to Cite the NHGRI-EBI GWAS Catalog, Data, or Diagrams](https://www.ebi.ac.uk/gwas/docs/about#:~:text=How%20to%20cite%20the%20NHGRI%2DEBI%20GWAS%20Catalog%2C%20data%20therein%20or%20diagram%3A)" section on our website for proper citation guidelines.
