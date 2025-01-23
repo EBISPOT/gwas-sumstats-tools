@@ -155,12 +155,32 @@ class Validator(SumStatsTable):
         """
 
         if self.errors_table:
+            # print(self.errors_table)            
             if 'DataFrameSchema' in self.errors_table['schema_context']:
                 self.primary_error_type = 'headers' 
             elif 'Column' in self.errors_table['schema_context']:
                 self.primary_error_type = 'data'
-                if '_p_value_mantissa' in self.errors_table['column']:
-                    self.primary_error_type = 'p_val'                    
+
+                # Sample self.errors_table
+                # (
+                #     # Header
+                #     ('schema_context', 'column', 'check', 'check_number', 'failure_case', 'index'),
+                #     # Data
+                #     ('Column', '_p_value_mantissa', 'Must be greater than 0', 0, 0.0, 0),
+                #     ('Column', '_p_value_mantissa', 'Must be greater than 0', 0, 0.0, 1),
+                #     ('Column', '_p_value_mantissa', 'not_nullable', None, nan, 2), 
+                # )
+
+                # Unless specific error with p-val appears in errors table,
+                # return 'data' error.
+                if any(
+                    row[0] == 'Column' and
+                    row[1] == '_p_value_mantissa' and
+                    row[2] == 'Must be greater than 0' and
+                    row[4] == 0
+                    for row in self.errors_table[1:]  # Skip the header row
+                ):
+                    self.primary_error_type = 'p_val'
 
 
 def validate(filename: Path,
@@ -196,6 +216,7 @@ def validate(filename: Path,
                 pval_zero = True if ssm.as_dict().get('analysisSoftware') is not None else False
         else:
             print("Cannot infer options from metadata file, because metadata file cannot be found.")
+
     validator = Validator(pval_zero=pval_zero,
                           minimum_rows=minimum_rows,
                           sumstats_file=filename,
