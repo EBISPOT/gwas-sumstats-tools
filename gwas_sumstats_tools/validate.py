@@ -46,31 +46,32 @@ class Validator(SumStatsTable):
         Returns:
             Validation status, message
         """
-        print("Validating extension")
+        print("Validating extension...")
         self.valid, message = self._validate_file_ext()
 
         if self.valid:
             print("--> [green]Ok[/green]")
-            print("Validating column order")
+            print("Validating column order...")
             self.valid, message = self._validate_field_order()
 
         if self.valid:
             print("--> [green]Ok[/green]")
-            print(f"Validating the chromosomes")
+            print(f"Validating the chromosomes...")
             self.valid, message = self._validate_chromosomes()
+            print(f"    [dim][grey](note: {message})[/grey][/dim]") 
         if self.valid:
             print("--> [green]Ok[/green]")
             nrows = max(self.sample_size, self.minimum_rows)
-            print("Validating minimum row count")
+            print("Validating minimum row count...")
             sample_df = self.as_pd_df(nrows=nrows)
             self.valid, message = self._minrow_check(df=sample_df)
         if self.valid:
             print("--> [green]Ok[/green]")
-            print(f"Validating the first {nrows} rows")
+            print(f"Validating the first {nrows} rows...")
             self.valid, message = self._validate_df(sample_df)
         if self.valid:
             print("--> [green]Ok[/green]")
-            print("Validating the rest of the file")
+            print("Validating the rest of the file...")
             try:
                 df_iter = self.as_pd_df(chunksize=self.chunksize,
                                         skiprows=nrows)
