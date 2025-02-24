@@ -48,12 +48,12 @@ class Validator(SumStatsTable):
         """
         print("Validating extension")
         self.valid, message = self._validate_file_ext()
-        """
+
         if self.valid:
             print("--> [green]Ok[/green]")
             print("Validating column order")
             self.valid, message = self._validate_field_order()
-        """
+
         if self.valid:
             print("--> [green]Ok[/green]")
             print(f"Validating the chromosomes")
@@ -128,16 +128,20 @@ class Validator(SumStatsTable):
             chr_column=etl.values(table,'chromosome')
             
             unique_chr = set(chr_column)
-            valid_chromosomes = set(map(str, range(1, 23)))
+            autosomes_chromosomes=set(map(str, range(1, 23)))
+            optional_chromosomes = set(map(str, range(23, 26)))
             
-            missing_chromosomes=sorted(valid_chromosomes-unique_chr, key=int)
-
-        if len(missing_chromosomes)>0:
-
-            return False, (f"Chromosome column mising values:{missing_chromosomes}")
-        
-        return True, "This file contains all autosomes: chromosomes 1-22."
-
+            missing_autosomes = sorted(autosomes_chromosomes - unique_chr, key=int)
+            missing_optional = sorted(optional_chromosomes - unique_chr, key=int)
+            
+            if unique_chr == {"23"}:
+                return True, "This file only contains chromosome X."
+            if missing_autosomes:
+                return False, f"Chromosome column missing values: {missing_autosomes}"
+            if missing_optional:
+                return True, f"All autosomes exist. Optional chromosomes {missing_optional} do not exist."
+            
+            return True, "All chromosomes, including X, Y, and MT, exist."
     
     def _validate_df(self,
                      dataframe: pd.DataFrame,
