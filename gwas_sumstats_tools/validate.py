@@ -46,25 +46,32 @@ class Validator(SumStatsTable):
         Returns:
             Validation status, message
         """
-        print("Validating extension")
+        print("Validating extension...")
         self.valid, message = self._validate_file_ext()
+
         if self.valid:
             print("--> [green]Ok[/green]")
-            print("Validating column order")
+            print("Validating column order...")
             self.valid, message = self._validate_field_order()
+
+        if self.valid:
+            print("--> [green]Ok[/green]")
+            print(f"Validating the chromosomes...")
+            self.valid, message = self._validate_chromosomes()
+            print(f"    [dim][grey](note: {message})[/grey][/dim]") 
         if self.valid:
             print("--> [green]Ok[/green]")
             nrows = max(self.sample_size, self.minimum_rows)
-            print("Validating minimum row count")
+            print("Validating minimum row count...")
             sample_df = self.as_pd_df(nrows=nrows)
             self.valid, message = self._minrow_check(df=sample_df)
         if self.valid:
             print("--> [green]Ok[/green]")
-            print(f"Validating the first {nrows} rows")
+            print(f"Validating the first {nrows} rows...")
             self.valid, message = self._validate_df(sample_df)
         if self.valid:
             print("--> [green]Ok[/green]")
-            print("Validating the rest of the file")
+            print("Validating the rest of the file...")
             try:
                 df_iter = self.as_pd_df(chunksize=self.chunksize,
                                         skiprows=nrows)
@@ -105,6 +112,38 @@ class Validator(SumStatsTable):
                        f"Headers required: {required_order}")
         return valid, message
 
+    def _validate_chromosomes(self) -> tuple[bool, str]:
+        """Check if the chromosome column contains only integers 1-22.
+        
+        Args:
+        sself.sumstats: petl read input sumstat files
+        
+        Returns:
+        tuple[bool, str]: Validation status and error message.
+          """
+    
+        if "chromosome" not in self.header():
+            return False, "Chromosome column is missing from the input file."
+        else:
+            table=etl.convert(self.sumstats,'chromosome', str)
+            chr_column=etl.values(table,'chromosome')
+            
+            unique_chr = set(chr_column)
+            autosomes_chromosomes=set(map(str, range(1, 23)))
+            optional_chromosomes = set(map(str, range(23, 26)))
+            
+            missing_autosomes = sorted(autosomes_chromosomes - unique_chr, key=int)
+            missing_optional = sorted(optional_chromosomes - unique_chr, key=int)
+            
+            if unique_chr == {"23"}:
+                return True, "This file only contains chromosome X."
+            if missing_autosomes:
+                return False, f"Chromosome column missing values: {missing_autosomes}"
+            if missing_optional:
+                return True, f"All autosomes exist. Optional chromosomes {missing_optional} do not exist."
+            
+            return True, "All chromosomes, including X, Y, and MT, exist."
+    
     def _validate_df(self,
                      dataframe: pd.DataFrame,
                      message: str = "Data table is invalid") -> tuple[bool, str]:
