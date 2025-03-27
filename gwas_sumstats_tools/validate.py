@@ -138,6 +138,7 @@ class Validator(SumStatsTable):
             if unique_chr == {"23"}:
                 return True, "This file only contains chromosome X."
             if missing_autosomes:
+                self.primary_error_type = "missing_chromsomes"
                 return False, f"Chromosome column missing values: {missing_autosomes}"
             if missing_optional:
                 return True, f"All autosomes exist. Optional chromosomes {missing_optional} do not exist."

@@ -100,9 +100,9 @@ def test_validate_df(sumstats_file):
 
 def test_minrow_check(sumstats_file):
     sumstats_file.to_file()
-    v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=5)
+    v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=30)
     df = v.as_pd_df()
-    assert v._minrow_check(df) == (False, f"The file has fewer than the minimum rows required: {len(df)} < 5.")
+    assert v._minrow_check(df) == (False, f"The file has fewer than the minimum rows required: {len(df)} < 30.")
     v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
     assert v._minrow_check(df) == (True, None)
 
@@ -206,7 +206,7 @@ class TestValidator:
         assert v.primary_error_type == "field order"
 
     def test_zero_pvalue(self, sumstats_file):
-        sumstats_file.replace_data("p_value", [0, 0, 0, 0])
+        sumstats_file.replace_values("p_value", [0, 0, 0, 0])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -220,7 +220,7 @@ class TestValidator:
     def test_neg_log_pvalue(self, sumstats_file):
         sumstats_file.replace_header_and_data(header_from="p_value",
                                               header_to="neg_log_10_p_value",
-                                              data_to=[10, 2, 3, 4])
+                                              data_to=[10, 2, 3, 4] + [i for i in range(1,23)])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is True
@@ -228,14 +228,14 @@ class TestValidator:
     def test_zero_neg_log_pvalue(self, sumstats_file):
         sumstats_file.replace_header_and_data(header_from="p_value",
                                               header_to="neg_log_10_p_value",
-                                              data_to=[0, 0, 2, 3])
+                                              data_to=[0, 0, 2, 3] + [i for i in range(1,23)])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4,
                       pval_zero=True)
         assert v.validate()[0] is True
 
     def test_validate_bad_rsid(self, sumstats_file):
-        sumstats_file.replace_data("rsid", [0, 1, "daf", "adf"])
+        sumstats_file.replace_values("rsid", [0, 1, "daf", "adf"])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -243,15 +243,14 @@ class TestValidator:
         assert v.errors_table.nrows() == 4
 
     def test_invalid_chromosome(self, sumstats_file):
-        sumstats_file.replace_data("chromosome", [0, 26, "CHR1", None])
+        sumstats_file.replace_values("chromosome", [0, 26, "CHR1", None])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
-        assert v.primary_error_type == "data"
-        assert v.errors_table.nrows() == 5
+        assert v.primary_error_type == "missing_chromsomes"
 
     def test_invalid_position(self, sumstats_file):
-        sumstats_file.replace_data("base_pair_location", [0, "pos", None, -2])
+        sumstats_file.replace_values("base_pair_location", [0, "pos", None, -2])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -259,7 +258,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 5
 
     def test_invalid_effect_allele(self, sumstats_file):
-        sumstats_file.replace_data("effect_allele", ["D", "I", "N", None])
+        sumstats_file.replace_values("effect_allele", ["D", "I", "N", None])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -267,7 +266,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 4
 
     def test_invalid_standard_error(self, sumstats_file):
-        sumstats_file.replace_data("standard_error", ["str", None, "a", "b"])
+        sumstats_file.replace_values("standard_error", ["str", None, "a", "b"])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -276,7 +275,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 5
     
     def test_invalid_effect_allele_frequency(self, sumstats_file):
-        sumstats_file.replace_data("effect_allele_frequency", ["str", None, -1, 1.1])
+        sumstats_file.replace_values("effect_allele_frequency", ["str", None, -1, 1.1])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -284,13 +283,13 @@ class TestValidator:
         assert v.errors_table.nrows() == 4
 
     def test_pvalue_scientific_notation(self, sumstats_file):
-        sumstats_file.replace_data("p_value", ["1E-90000", "20e-2", "1e-90000", "200e-100"])
+        sumstats_file.replace_values("p_value", ["1E-90000", "20e-2", "1e-90000", "200e-100"])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is True
 
     def test_invalid_pvalue_data_invalid(self, sumstats_file):
-        sumstats_file.replace_data("p_value", [5, 2, -1, None])
+        sumstats_file.replace_values("p_value", [5, 2, -1, None])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -299,7 +298,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 6
 
     def test_invalid_pvalue_invalid(self, sumstats_file):
-        sumstats_file.replace_data("p_value", ["1E+90000", 0, '0', 0.0])
+        sumstats_file.replace_values("p_value", ["1E+90000", 0, '0', 0.0])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -308,7 +307,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 4
 
     def test_invalid_rsid(self, sumstats_file):
-        sumstats_file.replace_data("rsid", ["str", None, 1, "123"])
+        sumstats_file.replace_values("rsid", ["str", None, 1, "123"])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -316,7 +315,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 3
 
     def test_invalid_ref(self, sumstats_file):
-        sumstats_file.replace_data("ref_allele", ["str", None, 1, "A"])
+        sumstats_file.replace_values("ref_allele", ["str", None, 1, "A"])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -324,7 +323,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 3
 
     def test_invalid_ci(self, sumstats_file):
-        sumstats_file.replace_data("ci_upper", ["str", None, 1, "A"])
+        sumstats_file.replace_values("ci_upper", ["str", None, 1, "A"])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -333,7 +332,7 @@ class TestValidator:
         assert v.errors_table.nrows() == 3
 
     def test_invalid_info(self, sumstats_file):
-        sumstats_file.replace_data("info", ["a", None, 1.1, -1])
+        sumstats_file.replace_values("info", ["a", None, 1.1, -1])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -342,17 +341,17 @@ class TestValidator:
         assert v.errors_table.nrows() == 3
         
     def test_invalid_n(self, sumstats_file):
-        sumstats_file.replace_data("n", ["a", None, 1.1, -1])
+        sumstats_file.replace_values("n", ["a", None, 1.1, -1])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
         assert v.primary_error_type == "data"
         print(v.errors_table.look(limit=10))
         assert v.errors_table.nrows() == 5
-
+# ---------------- p_value check ---------------------------------------------
     def test_pval_zero_true_1(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 0.2, 0])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 0.2, 0])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -365,7 +364,7 @@ class TestValidator:
 
     def test_pval_zero_true_2(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, -3, 0.2])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, -3, 0.2])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -378,7 +377,7 @@ class TestValidator:
 
     def test_pval_zero_true_3(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 5, 0.2])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 5, 0.2])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -391,7 +390,7 @@ class TestValidator:
 
     def test_pval_zero_true_4(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 1, 0.2])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 1, 0.2])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -404,8 +403,8 @@ class TestValidator:
 
     def test_pval_zero_true_5(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 0, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 0, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -418,8 +417,8 @@ class TestValidator:
 
     def test_pval_zero_true_6(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, -3, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, -3, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -432,8 +431,8 @@ class TestValidator:
 
     def test_pval_zero_true_7(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 5, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 5, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -446,8 +445,8 @@ class TestValidator:
 
     def test_pval_zero_true_8(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 1, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 1, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -460,8 +459,8 @@ class TestValidator:
 
     def test_pval_zero_true_9(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 0.1, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 0.1, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -474,8 +473,8 @@ class TestValidator:
 
     def test_pval_zero_true_10(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, "1E+90000", 0.2])
-        # sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, "1E+90000", 0.2])
+        # sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with pval_zero=True
@@ -490,8 +489,8 @@ class TestValidator:
 
     def test_pval_zero_true_11(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, '#NA', 0.2])
-        # sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, '#NA', 0.2])
+        # sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -506,7 +505,7 @@ class TestValidator:
 
     def test_pval_zero_false_1(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 0.2, 0])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 0.2, 0])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -519,7 +518,7 @@ class TestValidator:
 
     def test_pval_zero_false_1_2(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 0.00, 0.4])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 0.00, 0.4])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -532,7 +531,7 @@ class TestValidator:
 
     def test_pval_zero_false_2(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, -3, 0.2])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, -3, 0.2])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -545,7 +544,7 @@ class TestValidator:
 
     def test_pval_zero_false_3(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 5, 0.2])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 5, 0.2])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -558,7 +557,7 @@ class TestValidator:
 
     def test_pval_zero_false_4(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 1, 0.2])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 1, 0.2])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -571,8 +570,8 @@ class TestValidator:
 
     def test_pval_zero_false_5(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 0, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 0, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -585,8 +584,8 @@ class TestValidator:
 
     def test_pval_zero_false_6(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, -3, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, -3, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -599,8 +598,8 @@ class TestValidator:
 
     def test_pval_zero_false_7(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 5, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 5, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -613,8 +612,8 @@ class TestValidator:
 
     def test_pval_zero_false_8(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 1, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 1, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -627,8 +626,8 @@ class TestValidator:
 
     def test_pval_zero_false_9(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, 0.1, 0.2])
-        sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, 0.1, 0.2])
+        sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -641,8 +640,8 @@ class TestValidator:
 
     def test_pval_zero_false_10(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, "1E+90000", 0.2])
-        # sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, "1E+90000", 0.2])
+        # sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
@@ -657,8 +656,8 @@ class TestValidator:
 
     def test_pval_zero_false_11(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
-        sumstats_file.replace_data("p_value", [0.3, 0.1, '#NA', 0.2])
-        # sumstats_file.replace_data("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
+        sumstats_file.replace_values("p_value", [0.3, 0.1, '#NA', 0.2])
+        # sumstats_file.replace_values("rsid", ['rs185339560', 'rs11250701', '.', 'rs7085086'])
         sumstats_file.to_file()
 
         # Initialize the Validator with 
