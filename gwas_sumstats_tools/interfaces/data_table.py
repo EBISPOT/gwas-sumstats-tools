@@ -311,7 +311,11 @@ class SumStatsTable:
             Pandas dataframe or iter
         """
         df = pd.DataFrame()
-        skip = range(1, skiprows) if skiprows else None
+        if skiprows:
+            # Skip the header row (0) and the requested number of data rows.
+            skip = range(1, skiprows + 1) if isinstance(skiprows, int) else skiprows
+        else:
+            skip = None
         if self.is_table_content():
             df = pd.read_table(self.filename,
                                sep=self.delimiter,

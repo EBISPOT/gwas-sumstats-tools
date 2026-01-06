@@ -64,6 +64,7 @@ class Validator(SumStatsTable):
             nrows = max(self.sample_size, self.minimum_rows)
             print("Validating minimum row count...")
             sample_df = self.as_pd_df(nrows=nrows)
+            offset = len(sample_df)
             self.valid, message = self._minrow_check(df=sample_df)
         if self.valid:
             print("--> [green]Ok[/green]")
@@ -75,8 +76,13 @@ class Validator(SumStatsTable):
             try:
                 df_iter = self.as_pd_df(chunksize=self.chunksize,
                                         skiprows=nrows)
+
+                offset = nrows + 2  # +2 for header and 0-indexing
                 for df in df_iter:
+                    df = df.reset_index(drop=True)
+                    df.index += offset
                     self.valid, message = self._validate_df(df)
+                    offset += len(df)
                     if self.valid is False:
                         break
             except pd.errors.EmptyDataError:
@@ -165,7 +171,16 @@ class Validator(SumStatsTable):
             self.errors_table = None
             self.primary_error_type = None
         except errors.SchemaErrors as err:
-            self.errors_table = etl.fromdataframe(err.failure_cases) if len(err.failure_cases) > 0 else None
+            failure_cases = err.failure_cases
+            if len(failure_cases) > 0:
+                # Sort primarily by error type (schema context), then by row index and column
+                failure_cases = failure_cases.sort_values(
+                    by=["schema_context", "index", "column"],
+                    kind="mergesort"
+                )
+                self.errors_table = etl.fromdataframe(failure_cases)
+            else:
+                self.errors_table = None
             valid = False
         return valid, message
 
