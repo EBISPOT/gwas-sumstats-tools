@@ -24,6 +24,7 @@ class SexEnum(str, Enum):
 class CoordinateSystemEnum(str, Enum):
     zero = '0-based'
     one = '1-based'
+    unknown = 'NR'
 
 
 """
