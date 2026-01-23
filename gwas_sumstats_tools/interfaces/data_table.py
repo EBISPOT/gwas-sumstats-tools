@@ -311,7 +311,7 @@ class SumStatsTable:
             Pandas dataframe or iter
         """
         df = pd.DataFrame()
-        if skiprows:
+        if skiprows is not None:
             # Keep the header row (0) and skip the nrows previous step already read.
             skip = list(range(1, skiprows + 1))
         else:
