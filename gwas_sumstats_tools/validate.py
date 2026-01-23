@@ -64,7 +64,6 @@ class Validator(SumStatsTable):
             nrows = max(self.sample_size, self.minimum_rows)
             print("Validating minimum row count...")
             sample_df = self.as_pd_df(nrows=nrows)
-            offset = len(sample_df)
             self.valid, message = self._minrow_check(df=sample_df)
         if self.valid:
             print("--> [green]Ok[/green]")
