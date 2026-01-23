@@ -313,7 +313,7 @@ class SumStatsTable:
         df = pd.DataFrame()
         if skiprows:
             # Keep the header row (0) and skip the nrows previous step already read.
-            skip = range(1, skiprows + 1) 
+            skip = list(range(1, skiprows + 1))
         else:
             skip = None
         if self.is_table_content():
