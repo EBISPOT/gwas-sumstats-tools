@@ -15,19 +15,19 @@ def _env_variable_else(env_var_name: str, default: str) -> str:
     return value if value else default
 
 
-GWAS_CAT_API_STUDIES_URL = _env_variable_else(
-    "GWAS_CAT_API_STUDIES_URL", "https://www.ebi.ac.uk/gwas/rest/api/studies/"
+REST_API_STUDIES_URL = _env_variable_else(
+    "REST_API_STUDIES_URL", "https://www.ebi.ac.uk/gwas/rest/api/v2/studies/"
 )
 
-URL_API_INGEST = _env_variable_else(
-    "URL_API_INGEST",
+INGEST_API_STUDIES_URL = _env_variable_else(
+    "INGEST_API_STUDIES_URL",
     "https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/",
     # if sandbox, then use
     # "https://wwwdev.ebi.ac.uk/gwas/ingest/api/v2/studies/",
 )
 
-
-GWAS_CAT_STUDY_MAPPINGS = {
+# ingest api studies entity
+INGEST_API_STUDY_MAPPINGS = {
     "genotyping_technology": "genotyping_technology",
     "traitDescription": "trait_description",
     "effect_allele_frequency_lower_limit": "minor_allele_freq_lower_limit",
@@ -44,14 +44,8 @@ GWAS_CAT_STUDY_MAPPINGS = {
     "sex": "sex",
 }
 
-REST_GWAS_CAT_STUDY_MAPPINGS = {
-    "genotypingTechnologies": "genotyping_technology",
-    "diseaseTrait": "trait_description",
-    "shortForm": "ontology_mapping",
-    "initialSampleSize": "case_control_study",
-}
-
-GWAS_CAT_SAMPLE_MAPPINGS = {
+# ingest api sample entity
+INGEST_API_SAMPLE_MAPPINGS = {
     "size": "sample_size",
     "ancestry_category": "sample_ancestry_category",
     "ancestry": "sample_ancestry", 
@@ -61,9 +55,18 @@ GWAS_CAT_SAMPLE_MAPPINGS = {
     "controlCount": "control_count",
 }
 
-REST_GWAS_CAT_SAMPLE_MAPPINGS = {
-    "numberOfIndividuals": "sample_size",
-    "ancestralGroups": "sample_ancestry_category",
+# For the rest API, all information in one endpoint, studies 
+
+REST_API_STUDY_MAPPINGS = {
+    "genotyping_technologies": "genotyping_technology",
+    "disease_trait": "trait_description",
+    "efo_traits": "ontology_mapping",
+}
+
+# REST ancestries entity
+REST_API_SAMPLE_MAPPINGS = {
+    "number_of_individuals": "sample_size",
+    "ancestral_groups": "sample_ancestry_category"
 }
 
 GENOME_ASSEMBLY_MAPPINGS = {"36": "GRCh36", "37": "GRCh37", "38": "GRCh38"}
@@ -74,6 +77,7 @@ STUDY_FIELD_TO_SPLIT = (
     "trait_description",
     "ontology_mapping",
     "adjusted_covariates",
+    "sample_ancestry_category"
 )
 
 
