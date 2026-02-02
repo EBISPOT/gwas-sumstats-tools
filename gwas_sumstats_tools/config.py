@@ -39,7 +39,6 @@ INGEST_API_STUDY_MAPPINGS = {
     "imputationSoftware": "imputation_software",
     "adjustedCovariates": "adjusted_covariates",
     "ontologyMapping": "efo_trait",
-    "efo_trait": "efo_trait",
     "readme_file": "author_notes",
     "readme_text": "author_notes",
     "coordinateSystem": "coordinate_system",

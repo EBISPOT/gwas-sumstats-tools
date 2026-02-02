@@ -160,7 +160,7 @@ def metadata_dict_from_gwas_cat(
     # e.g. 
     # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST008396, GCST90086118, GCST002047 - single ancestry
 
-    # Study is dict: Try rest api firstly: evey study should have rest api entry
+    # Try rest api firstly: evey study should have rest api entry
     # genotyping_technology, trait_description and ontology_mapping is available at here
     if not is_bypass_rest_api:
         rest_study_response = download_with_requests(url=rest_study_url)
@@ -271,8 +271,6 @@ def _parse_ingest_study_response(
             data_dict=result_dict,
             fields=fields_to_split,
         )
-    
-    print(f"response_parsed_after: {result_dict}")
     return result_dict
 
 
