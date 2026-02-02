@@ -164,7 +164,7 @@ def update_dict_if_not_set(data_dict: dict, field: str, value: any) -> dict:
 
 def split_fields_on_delimiter(data_dict: dict,
                               fields: tuple,
-                              delimiter: str = "|") -> dict:
+                              delimiter: str = "|,") -> dict:
     """Split specified fields in dict on delimiter
 
     Arguments:
@@ -172,14 +172,18 @@ def split_fields_on_delimiter(data_dict: dict,
         fields -- fields to split
 
     Keyword Arguments:
-        delimiter -- delimiter (default: {"|"})
+        delimiter -- delimiter(s) (default: {"|,"} splits on both)
+        "array_manufacturer" : "Illumina|Affymetrix"
+        "efo_trait" : "EFO_0004348,EFO_0004528,EFO_0004527,EFO_0004526,EFO_0004305,EFO_0005192",
 
     Returns:
         data_dict with fields split
     """
+    split_fn = lambda s: [x for x in re.split(r"[|,]", s) if x != ""]
     return dict(
-        (k, v.split(delimiter))
-        if k in fields
+        (k, split_fn(v))
+        # v1 is str (e.g. "A|B") needs split and v2 is a list while no need split. it not always need to split but keep the function in case.
+        if k in fields and isinstance(v, str)
         else (k, v)
         for k, v
         in data_dict.items()

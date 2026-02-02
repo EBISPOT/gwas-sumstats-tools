@@ -30,6 +30,7 @@ INGEST_API_STUDIES_URL = _env_variable_else(
 INGEST_API_STUDY_MAPPINGS = {
     "genotyping_technology": "genotyping_technology",
     "traitDescription": "trait_description",
+    "trait": "trait_description",
     "effect_allele_frequency_lower_limit": "minor_allele_freq_lower_limit",
     "minor_allele_frequency_lower_limit": "minor_allele_freq_lower_limit",
     "summary_statistics_assembly": "genome_assembly",
@@ -38,6 +39,7 @@ INGEST_API_STUDY_MAPPINGS = {
     "imputationSoftware": "imputation_software",
     "adjustedCovariates": "adjusted_covariates",
     "ontologyMapping": "efo_trait",
+    "efo_trait": "efo_trait",
     "readme_file": "author_notes",
     "readme_text": "author_notes",
     "coordinateSystem": "coordinate_system",

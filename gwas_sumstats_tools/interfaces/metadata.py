@@ -156,39 +156,39 @@ def metadata_dict_from_gwas_cat(
     rest_study_url = REST_API_STUDIES_URL + accession_id
     rest_ancestry_url =  rest_study_url + "/ancestries"
 
-    ingest_study_response = download_with_requests(url=ingest_study_url)
-    ingest_sample_response = download_with_requests(url=ingest_sample_url, params={"size": 100})
     # Old studies get 404 from Ingest API,
     # e.g. 
-    # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST008396
-    # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST002047
+    # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST008396, GCST90086118, GCST002047 - single ancestry
 
     # Study is dict: Try rest api firstly: evey study should have rest api entry
     # genotyping_technology, trait_description and ontology_mapping is available at here
     if not is_bypass_rest_api:
         rest_study_response = download_with_requests(url=rest_study_url)
-        try:
-            print(f"{rest_study_url} returned 200")
-            rest_study_dict = _parse_gwas_rest_study_response(
-                rest_study_response,
-                replace_dict=REST_API_STUDY_MAPPINGS,
-                fields_to_split=STUDY_FIELD_TO_SPLIT,
-            )
-            meta_dict.update(rest_study_dict)
-        except Exception as e:
-            print(f"Error processing REST API response: {e}")
+        if rest_study_response:  # Add this check
+            try:
+                print(f"{rest_study_url} returned 200")
+                rest_study_dict = _parse_gwas_rest_study_response(
+                    rest_study_response,
+                    replace_dict=REST_API_STUDY_MAPPINGS,
+                    fields_to_split=STUDY_FIELD_TO_SPLIT,
+                )
+                meta_dict.update(rest_study_dict)
+            except Exception as e:
+                print(f"Error processing REST API response: {e}")
             pass
-    
+   
+    ingest_study_response = download_with_requests(url=ingest_study_url)
+    ingest_sample_response = download_with_requests(url=ingest_sample_url, params={"size": 100})
     # Ingest API as a internal API, will provide more detailed information if available. Overlapped fields will be overwrite by the ingest API info.
     if ingest_study_response:
         try:
             print(f"{ingest_study_url} returned 200")
+
             ingest_study_dict = _parse_ingest_study_response(
                 ingest_study_response,
                 replace_dict=INGEST_API_STUDY_MAPPINGS,
                 fields_to_split=STUDY_FIELD_TO_SPLIT,
             )
-            print(f"Ingest Study Response ::: {ingest_study_dict=}")
             meta_dict.update(ingest_study_dict)
             
             # Update trait_description (both "trait" and "trait_description" fields exist in some studies)
@@ -220,18 +220,19 @@ def metadata_dict_from_gwas_cat(
         print(f'Sample list from Ingest API: {sample_list}')
         print('Fall back on the REST API.')
         rest_sample_response = download_with_requests(url=rest_ancestry_url)
-        try:
-            print(f"{rest_ancestry_url} returned 200")
-            rest_samples_list = _parse_gwas_rest_samples_response(
-                rest_sample_response,
-                replace_dict=REST_API_SAMPLE_MAPPINGS,
-                fields_to_split=SAMPLE_FIELD_TO_SPLIT,
-            )
-            sample_list = rest_samples_list
-        except Exception as e:
-            print(
-                f"Ample info of {accession_id} is missing in the REST API and INGEST API: {e}"
-            )
+        if rest_sample_response:
+            try:
+                print(f"{rest_ancestry_url} returned 200")
+                rest_samples_list = _parse_gwas_rest_samples_response(
+                    rest_sample_response,
+                    replace_dict=REST_API_SAMPLE_MAPPINGS,
+                    fields_to_split=SAMPLE_FIELD_TO_SPLIT,
+                )
+                sample_list = rest_samples_list
+            except Exception as e:
+                print(
+                    f"Sample info of {accession_id} is missing in the REST API and INGEST API: {e}"
+                )
 
     meta_dict["samples"] = sample_list
     return meta_dict
@@ -241,33 +242,38 @@ def _parse_ingest_study_response(
     replace_dict: dict = None,
     fields_to_split: tuple = None
 ) -> dict:
-    response_parsed = {}
-    response = json.loads(response.decode())
+    result_dict = {}
 
-    # study
-    trait_description = response.get("diseaseTrait", {}).get("trait")
+    if response:
+        result_dict= json.loads(response.decode())
+
+    # handling variable trait: trait_description, trait or diseaseTrait (diseaseTrait is high priority)
+    trait_description = result_dict.get("diseaseTrait", {}).get("trait")
     if trait_description:
-        response_parsed["trait_description"] = trait_description
+        result_dict.update({"trait_description": [trait_description]})
 
-    # extract EFO
-    response_parsed["ontology_mapping"] = "|".join(
+    # handling variable EFO mapping:
+    efo_mapping =  "|".join(
         d.get("shortForm") 
-        for d in response.get("efoTraits", [])
+        for d in result_dict.get("efoTraits", [])
     )
+    if efo_mapping:
+        result_dict.update({"ontology_mapping": efo_mapping})
 
     if replace_dict:
-        response_parsed = replace_dictionary_keys(
-            data_dict=response_parsed,
+        result_dict= replace_dictionary_keys(
+            data_dict=result_dict,
             replace_dict=replace_dict,
         )
 
     if fields_to_split:
-        response_parsed = split_fields_on_delimiter(
-            data_dict=response_parsed,
+        result_dict = split_fields_on_delimiter(
+            data_dict=result_dict,
             fields=fields_to_split,
         )
-
-    return response_parsed
+    
+    print(f"response_parsed_after: {result_dict}")
+    return result_dict
 
 
 def _parse_gwas_rest_study_response(response: bytes,
@@ -395,7 +401,7 @@ def get_file_metadata(in_file: Path, out_file: str, meta_dict: Optional[dict] = 
     inferred_meta_dict['genome_assembly'] = GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown')
     inferred_meta_dict['data_file_md5sum'] = get_md5sum(out_file) if Path(out_file).exists() else None
     inferred_meta_dict['date_metadata_last_modified'] = date.today()
-    inferred_meta_dict['gwas_catalog_api'] = INGEST_API_STUDIES_URL + parse_accession_id(filename=in_file)
+    inferred_meta_dict['gwas_catalog_api'] = REST_API_STUDIES_URL + parse_accession_id(filename=in_file)
     for field, value in inferred_meta_dict.items():
         update_dict_if_not_set(meta_dict, field, value)
     return meta_dict
