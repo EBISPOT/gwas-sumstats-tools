@@ -179,7 +179,7 @@ def split_fields_on_delimiter(data_dict: dict,
     """
     return dict(
         (k, v.split(delimiter))
-        if k in fields and isinstance(v, str)
+        if k in fields
         else (k, v)
         for k, v
         in data_dict.items()
