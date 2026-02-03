@@ -290,7 +290,7 @@ def _parse_gwas_rest_study_response(response: bytes,
     result_dict={}
     response_dict = json.loads(response.decode())
     # study
-    result_dict["trait_description"]=response_dict['disease_trait']
+    result_dict["trait_description"]=[response_dict['disease_trait']]
     # multiple genotyping technology example: GCST005544
     result_dict["genotyping_technology"]="|".join(response_dict['genotyping_technologies'])
     
