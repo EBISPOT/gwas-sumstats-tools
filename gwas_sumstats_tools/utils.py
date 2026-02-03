@@ -164,8 +164,9 @@ def update_dict_if_not_set(data_dict: dict, field: str, value: any) -> dict:
 
 def split_fields_on_delimiter(data_dict: dict,
                               fields: tuple,
-                              delimiter: str = "|,") -> dict:
-    """Split specified fields in dict on delimiter
+                              delimiter: str = r"[|,]") -> dict:
+    """
+    Split specified fields in dict on delimiter
 
     Arguments:
         data_dict -- dict to split fields in
@@ -179,7 +180,7 @@ def split_fields_on_delimiter(data_dict: dict,
     Returns:
         data_dict with fields split
     """
-    split_fn = lambda s: [x for x in re.split(r"[|,]", s) if x != ""]
+    split_fn = lambda s: [x for x in re.split(delimiter, s) if x != ""]
     return dict(
         (k, split_fn(v))
         # v1 is str (e.g. "A|B") needs split and v2 is a list while no need split. it not always need to split but keep the function in case.
