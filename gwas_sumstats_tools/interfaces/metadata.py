@@ -197,7 +197,6 @@ def metadata_dict_from_gwas_cat(
                 meta_dict.update({"trait_description": [t]})
         except Exception as e:
             print(f"Error processing REST API response: {e}")
-            pass
     
     # Sample info is a list and here will be ingest api information firstly, if it does not exist, then fall back on the rest api.
     sample_list = []
@@ -212,7 +211,6 @@ def metadata_dict_from_gwas_cat(
             sample_list = ingest_samples_list
         except Exception as e:
             print(f"Error processing Ingest Samples API response: {e}")
-            pass
     
     # fallback to rest api samples info
     if not sample_list and not is_bypass_rest_api:
