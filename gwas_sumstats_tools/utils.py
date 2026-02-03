@@ -180,10 +180,12 @@ def split_fields_on_delimiter(data_dict: dict,
     Returns:
         data_dict with fields split
     """
-    split_fn = lambda s: [x for x in re.split(delimiter, s) if x != ""]
+    def split_fn(s: str) -> list:
+        return [x for x in re.split(delimiter, s) if x != ""]
+        
     return dict(
         (k, split_fn(v))
-        # v1 is str (e.g. "A|B") needs split and v2 is a list while no need split. it not always need to split but keep the function in case.
+        # v1 is str (e.g. "A|B") needs split and v2 is a list while no need split. It does not always need to be split, but keep the function in case.
         if k in fields and isinstance(v, str)
         else (k, v)
         for k, v
