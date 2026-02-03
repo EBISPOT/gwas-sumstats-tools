@@ -365,7 +365,8 @@ def _parse_gwas_rest_samples_response(ancestry_response: bytes = None,
     if sample_list:
         for element in sample_list:
             element=dict((k,element[k]) for k in REST_API_SAMPLE_MAPPINGS.keys() if k in element)
-            element['ancestral_groups']=[x.get('ancestral_group') for x in element['ancestral_groups']]
+            if 'ancestral_groups' in element:
+                element['ancestral_groups']=[x.get('ancestral_group') for x in element['ancestral_groups']]
             
             if replace_dict:
                 element=replace_dictionary_keys(data_dict=element,
