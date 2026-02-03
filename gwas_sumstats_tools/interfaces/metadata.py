@@ -160,7 +160,7 @@ def metadata_dict_from_gwas_cat(
     # e.g. 
     # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST008396, GCST90086118, GCST002047 - single ancestry
 
-    # Try rest api firstly: evey study should have rest api entry
+    # Try the rest api firstly: Every study should have a rest api entry
     # genotyping_technology, trait_description and ontology_mapping is available at here
     if not is_bypass_rest_api:
         rest_study_response = download_with_requests(url=rest_study_url)
@@ -175,11 +175,10 @@ def metadata_dict_from_gwas_cat(
                 meta_dict.update(rest_study_dict)
             except Exception as e:
                 print(f"Error processing REST API response: {e}")
-            pass
    
     ingest_study_response = download_with_requests(url=ingest_study_url)
     ingest_sample_response = download_with_requests(url=ingest_sample_url, params={"size": 100})
-    # Ingest API as a internal API, will provide more detailed information if available. Overlapped fields will be overwrite by the ingest API info.
+    # Ingest API as an internal API, will provide more detailed information if available. Overlapped fields will be overwrite by the ingest API info.
     if ingest_study_response:
         try:
             print(f"{ingest_study_url} returned 200")
