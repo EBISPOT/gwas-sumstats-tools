@@ -34,5 +34,5 @@ While metadata schema use pydantic (version:1.10.9).
    - server-side validation
    - user-side JS script.
 - Integration with larger Pydantic-based systems is less straightforward and may require explicit schema translation or adapter layers.
-   - Pandera is validate based on volumn (vector)
-   - Pydantic is vlidate based on row
+   - Pandera is validated based on column (vector)
+   - Pydantic is validated based on row
