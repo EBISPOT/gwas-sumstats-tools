@@ -15,6 +15,8 @@ def _env_variable_else(env_var_name: str, default: str) -> str:
     return value if value else default
 
 
+# These URLs are runtime-configurable to support sandbox/dev environments.
+# All static field mappings live in constants.py instead.
 REST_API_STUDIES_URL = _env_variable_else(
     "REST_API_STUDIES_URL", "https://www.ebi.ac.uk/gwas/rest/api/v2/studies/"
 )
@@ -25,61 +27,3 @@ INGEST_API_STUDIES_URL = _env_variable_else(
     # if sandbox, then use
     # "https://wwwdev.ebi.ac.uk/gwas/ingest/api/v2/studies/",
 )
-
-# ingest api studies entity
-INGEST_API_STUDY_MAPPINGS = {
-    "genotyping_technology": "genotyping_technology",
-    "traitDescription": "trait_description",
-    "trait": "trait_description",
-    "effect_allele_frequency_lower_limit": "minor_allele_freq_lower_limit",
-    "minor_allele_frequency_lower_limit": "minor_allele_freq_lower_limit",
-    "summary_statistics_assembly": "genome_assembly",
-    "analysisSoftware": "analysis_software",
-    "imputationPanel": "imputation_panel",
-    "imputationSoftware": "imputation_software",
-    "adjustedCovariates": "adjusted_covariates",
-    "ontologyMapping": "efo_trait",
-    "readme_file": "author_notes",
-    "readme_text": "author_notes",
-    "coordinateSystem": "coordinate_system",
-    "sex": "sex",
-}
-
-# ingest api sample entity
-INGEST_API_SAMPLE_MAPPINGS = {
-    "size": "sample_size",
-    "ancestry_category": "sample_ancestry_category",
-    "ancestry": "sample_ancestry", 
-    "ancestryMethod": "ancestry_method",
-    "caseControlStudy": "case_control_study",
-    "caseCount": "case_count",
-    "controlCount": "control_count",
-}
-
-# For the rest API, all information in one endpoint, studies 
-
-REST_API_STUDY_MAPPINGS = {
-    "genotyping_technologies": "genotyping_technology",
-    "disease_trait": "trait_description",
-    "efo_traits": "ontology_mapping",
-}
-
-# REST ancestries entity
-REST_API_SAMPLE_MAPPINGS = {
-    "number_of_individuals": "sample_size",
-    "ancestral_groups": "sample_ancestry_category"
-}
-
-GENOME_ASSEMBLY_MAPPINGS = {"36": "GRCh36", "37": "GRCh37", "38": "GRCh38"}
-
-
-STUDY_FIELD_TO_SPLIT = (
-    "genotyping_technology",
-    "trait_description",
-    "ontology_mapping",
-    "adjusted_covariates",
-    "sample_ancestry_category"
-)
-
-
-SAMPLE_FIELD_TO_SPLIT = ("ancestry_method", "sample_ancestry_category","sample_ancestry")

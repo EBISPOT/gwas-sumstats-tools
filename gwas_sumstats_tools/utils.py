@@ -2,7 +2,7 @@ import re
 import hashlib
 import requests
 import logging
-from typing import Union
+from typing import Any, Union
 from pathlib import Path
 import typer
 import petl as etl
@@ -162,9 +162,9 @@ def update_dict_if_not_set(data_dict: dict, field: str, value: any) -> dict:
     return data_dict
 
 
-def split_fields_on_delimiter(data_dict: dict,
-                              fields: tuple,
-                              delimiter: str = r"[|,]") -> dict:
+def split_fields_on_delimiter(data_dict: dict[str, Any],
+                              fields: tuple[str, ...],
+                              delimiter: str = r"[|,]") -> dict[str, Any]:
     """
     Split specified fields in dict on delimiter
 

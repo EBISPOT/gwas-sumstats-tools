@@ -1,7 +1,7 @@
 import logging
 import yaml
 import json
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 from datetime import date
 from pathlib import Path
 import ruamel.yaml
@@ -9,15 +9,16 @@ import ruamel.yaml
 logger = logging.getLogger(__name__)
 
 from pydantic import ValidationError
-from gwas_sumstats_tools.config import (REST_API_STUDIES_URL,
-                                        REST_API_STUDY_MAPPINGS,
-                                        REST_API_SAMPLE_MAPPINGS,
-                                        INGEST_API_STUDIES_URL,
-                                        INGEST_API_STUDY_MAPPINGS,
-                                        INGEST_API_SAMPLE_MAPPINGS, 
-                                        STUDY_FIELD_TO_SPLIT,
-                                        SAMPLE_FIELD_TO_SPLIT,
-                                        GENOME_ASSEMBLY_MAPPINGS)
+from gwas_sumstats_tools.config import REST_API_STUDIES_URL, INGEST_API_STUDIES_URL
+from gwas_sumstats_tools.constants import (
+    REST_API_STUDY_MAPPINGS,
+    REST_API_SAMPLE_MAPPINGS,
+    INGEST_API_STUDY_MAPPINGS,
+    INGEST_API_SAMPLE_MAPPINGS,
+    STUDY_FIELD_TO_SPLIT,
+    SAMPLE_FIELD_TO_SPLIT,
+    GENOME_ASSEMBLY_MAPPINGS,
+)
 from gwas_sumstats_tools.utils import (download_with_requests,
                                        parse_accession_id,
                                        parse_genome_assembly,
@@ -25,6 +26,69 @@ from gwas_sumstats_tools.utils import (download_with_requests,
                                        replace_dictionary_keys,
                                        split_fields_on_delimiter,
                                        update_dict_if_not_set)
+# These TypedDicts document the raw JSON shapes returned by the GWAS Catalog APIs.
+# They live here (rather than schema/metadata.py) because they reflect an external
+# contract we do not own — if the API changes its field names, only the parse
+# functions below and these type hints need updating, keeping schema/metadata.py
+# as the sole source of truth for the internal metadata model.
+
+# REST API  (https://www.ebi.ac.uk/gwas/rest/api/v2/studies/{id})
+
+class EfoTraitRest(TypedDict):
+    efo_id: str
+
+class RestStudyResponse(TypedDict):
+    disease_trait: str
+    genotyping_technologies: list[str]
+    efo_traits: list[EfoTraitRest]
+
+class AncestralGroup(TypedDict):
+    ancestral_group: str
+
+class RestAncestryResponse(TypedDict, total=False):
+    number_of_individuals: int
+    ancestral_groups: list[AncestralGroup]
+    type: str
+
+
+# Ingest API  (https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/{id})
+
+class IngestDiseaseTrait(TypedDict):
+    trait: str
+
+class IngestEfoTrait(TypedDict):
+    shortForm: str
+
+class IngestStudyResponse(TypedDict, total=False):
+    diseaseTrait: IngestDiseaseTrait
+    efoTraits: list[IngestEfoTrait]
+    genotyping_technology: str
+    traitDescription: str
+    trait: str
+    effect_allele_frequency_lower_limit: float
+    minor_allele_frequency_lower_limit: float
+    summary_statistics_assembly: str
+    analysisSoftware: str
+    imputationPanel: str
+    imputationSoftware: str
+    adjustedCovariates: str
+    ontologyMapping: str
+    readme_file: str
+    readme_text: str
+    coordinateSystem: str
+    sex: str
+
+class IngestSampleResponse(TypedDict, total=False):
+    size: int
+    ancestry_category: str
+    ancestry: str
+    ancestryMethod: str
+    caseControlStudy: bool
+    caseCount: int
+    controlCount: int
+    stage: str
+
+
 from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
 
 
@@ -245,7 +309,7 @@ def _parse_ingest_study_response(
     result_dict = {}
 
     if response:
-        result_dict= json.loads(response.decode())
+        result_dict: IngestStudyResponse = json.loads(response.decode())
 
     # handling variable trait: trait_description, trait or diseaseTrait (diseaseTrait is high priority)
     trait_description = result_dict.get("diseaseTrait", {}).get("trait")
@@ -290,8 +354,8 @@ def _parse_gwas_rest_study_response(response: bytes,
     Returns:
         Dict of metadata
     """
-    result_dict={}
-    response_dict = json.loads(response.decode())
+    result_dict: dict[str, Any] = {}
+    response_dict: RestStudyResponse = json.loads(response.decode())
     # study
     result_dict["trait_description"]=[response_dict['disease_trait']]
     # multiple genotyping technology example: GCST005544
@@ -328,7 +392,7 @@ def _parse_gwas_api_samples_response(response: bytes,
     formatted_list = []
     if response:
         result_dict = json.loads(response.decode())
-        sample = result_dict["_embedded"].get('samples')
+        sample: list[IngestSampleResponse] = result_dict["_embedded"].get('samples')
         sample_list=[x for x in sample if x.get('stage') == 'discovery']
         if sample_list:
             for element in sample_list:
@@ -361,7 +425,7 @@ def _parse_gwas_rest_samples_response(ancestry_response: Optional[bytes] = None,
     ancestry_list = []
     if ancestry_response:
         ancestry_dict = json.loads(ancestry_response.decode())
-        ancestry_list = ancestry_dict.get("_embedded", {}).get("ancestries", [])
+        ancestry_list: list[RestAncestryResponse] = ancestry_dict.get("_embedded", {}).get("ancestries", [])
 
     sample_list = [x for x in ancestry_list if x.get("type") == "initial"] if ancestry_list else []
     
