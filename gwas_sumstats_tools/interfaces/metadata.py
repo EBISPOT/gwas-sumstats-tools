@@ -1,9 +1,12 @@
+import logging
 import yaml
 import json
-from typing import Optional, Union
+from typing import Any, Optional
 from datetime import date
 from pathlib import Path
 import ruamel.yaml
+
+logger = logging.getLogger(__name__)
 
 from pydantic import ValidationError
 from gwas_sumstats_tools.config import (REST_API_STUDIES_URL,
@@ -82,14 +85,14 @@ class MetadataClient:
         try:
             self.metadata = self.metadata.parse_obj(self._meta_dict)
         except ValidationError as e:
-            print(f"Metadata not updated due to the following error:\n {e}\n")
+            logger.error(f"Metadata not updated due to the following error:\n {e}\n")
 
     def __repr__(self) -> str:
         """Representation of metadata.
         """
         return self.as_yaml()
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         """Dict repr of metadata
 
         Returns:
@@ -100,7 +103,7 @@ class MetadataClient:
     def as_yaml(self, **kwargs) -> str:
         return yaml.dump(self.metadata.dict(**kwargs),sort_keys=False,default_flow_style=False)
     
-    def yscbak(self, key, before=None, indent=0, after=None, after_indent=None):
+    def yscbak(self, key: str, before: Optional[str] = None, indent: int = 0, after: Optional[str] = None, after_indent: Optional[int] = None) -> None:
         """
         expects comment (before/after) to be without `#` and possible have multiple lines
         """
@@ -132,9 +135,9 @@ class MetadataClient:
         ruamel.yaml.comments.CommentedMap.yaml_set_comment_before_after_key = yscbak
 
 def metadata_dict_from_gwas_cat(
-    accession_id: str, 
-    is_bypass_rest_api: bool = False, 
-) -> dict:
+    accession_id: str,
+    is_bypass_rest_api: bool = False,
+) -> dict[str, Any]:
     """Extract metadat from the GWAS Catalog API
 
     Arguments:
@@ -166,7 +169,7 @@ def metadata_dict_from_gwas_cat(
         rest_study_response = download_with_requests(url=rest_study_url)
         if rest_study_response:  # Add this check
             try:
-                print(f"{rest_study_url} returned 200")
+                logger.info(f"{rest_study_url} returned 200")
                 rest_study_dict = _parse_gwas_rest_study_response(
                     rest_study_response,
                     replace_dict=REST_API_STUDY_MAPPINGS,
@@ -174,14 +177,14 @@ def metadata_dict_from_gwas_cat(
                 )
                 meta_dict.update(rest_study_dict)
             except Exception as e:
-                print(f"Error processing REST API response: {e}")
+                logger.error(f"Error processing REST API response: {e}")
    
     ingest_study_response = download_with_requests(url=ingest_study_url)
     ingest_sample_response = download_with_requests(url=ingest_sample_url, params={"size": 100})
     # Ingest API as an internal API, will provide more detailed information if available. Overlapped fields will be overwrite by the ingest API info.
     if ingest_study_response:
         try:
-            print(f"{ingest_study_url} returned 200")
+            logger.info(f"{ingest_study_url} returned 200")
 
             ingest_study_dict = _parse_ingest_study_response(
                 ingest_study_response,
@@ -196,13 +199,13 @@ def metadata_dict_from_gwas_cat(
             if not d and t:
                 meta_dict.update({"trait_description": [t]})
         except Exception as e:
-            print(f"Error processing Ingest API response: {e}")
+            logger.error(f"Error processing Ingest API response: {e}")
     
     # Sample info is a list and here will be ingest api information firstly, if it does not exist, then fall back on the rest api.
     sample_list = []
     if ingest_sample_response:
         try:
-            print(f"{ingest_sample_url} returned 200")
+            logger.info(f"{ingest_sample_url} returned 200")
             ingest_samples_list = _parse_gwas_api_samples_response(
                 ingest_sample_response,
                 replace_dict=INGEST_API_SAMPLE_MAPPINGS,
@@ -210,16 +213,16 @@ def metadata_dict_from_gwas_cat(
             )
             sample_list = ingest_samples_list
         except Exception as e:
-            print(f"Error processing Ingest Samples API response: {e}")
+            logger.error(f"Error processing Ingest Samples API response: {e}")
     
     # fallback to rest api samples info
     if not sample_list and not is_bypass_rest_api:
-        print(f'Sample list from Ingest API: {sample_list}')
-        print('Fall back on the REST API.')
+        logger.debug(f'Sample list from Ingest API: {sample_list}')
+        logger.info('Fall back on the REST API.')
         rest_sample_response = download_with_requests(url=rest_ancestry_url)
         if rest_sample_response:
             try:
-                print(f"{rest_ancestry_url} returned 200")
+                logger.info(f"{rest_ancestry_url} returned 200")
                 rest_samples_list = _parse_gwas_rest_samples_response(
                     rest_sample_response,
                     replace_dict=REST_API_SAMPLE_MAPPINGS,
@@ -227,7 +230,7 @@ def metadata_dict_from_gwas_cat(
                 )
                 sample_list = rest_samples_list
             except Exception as e:
-                print(
+                logger.error(
                     f"Sample info of {accession_id} is missing in the REST API and INGEST API: {e}"
                 )
 
@@ -236,9 +239,9 @@ def metadata_dict_from_gwas_cat(
 
 def _parse_ingest_study_response(
     response: bytes,
-    replace_dict: dict = None,
-    fields_to_split: tuple = None
-) -> dict:
+    replace_dict: Optional[dict] = None,
+    fields_to_split: Optional[tuple] = None
+) -> dict[str, Any]:
     result_dict = {}
 
     if response:
@@ -272,9 +275,9 @@ def _parse_ingest_study_response(
 
 
 def _parse_gwas_rest_study_response(response: bytes,
-                                   replace_dict: dict = None,
-                                   fields_to_split: tuple = None
-                                   ) -> dict:
+                                   replace_dict: Optional[dict] = None,
+                                   fields_to_split: Optional[tuple] = None
+                                   ) -> dict[str, Any]:
     """Parse study repsonse from GWAS cat rest api
 
     Arguments:
@@ -307,9 +310,9 @@ def _parse_gwas_rest_study_response(response: bytes,
 
 
 def _parse_gwas_api_samples_response(response: bytes,
-                                     replace_dict: dict = None,
-                                     fields_to_split: tuple = None
-                                     ) -> list:
+                                     replace_dict: Optional[dict] = None,
+                                     fields_to_split: Optional[tuple] = None
+                                     ) -> list[dict[str, Any]]:
     """Parse the samples response from GWAS cat api
 
     Arguments:
@@ -338,10 +341,10 @@ def _parse_gwas_api_samples_response(response: bytes,
                 formatted_list.append(element)
     return formatted_list
 
-def _parse_gwas_rest_samples_response(ancestry_response: bytes = None,
-                                      replace_dict: dict = None,
-                                      fields_to_split: tuple = None
-                                      ) -> list:
+def _parse_gwas_rest_samples_response(ancestry_response: Optional[bytes] = None,
+                                      replace_dict: Optional[dict] = None,
+                                      fields_to_split: Optional[tuple] = None
+                                      ) -> list[dict[str, Any]]:
     """Parse the samples response from GWAS cat api
 
     Arguments:
@@ -378,7 +381,7 @@ def _parse_gwas_rest_samples_response(ancestry_response: bytes = None,
 
     return formatted_list
 
-def get_file_metadata(in_file: Path, out_file: str, meta_dict: Optional[dict] = None) -> dict:
+def get_file_metadata(in_file: Path, out_file: str, meta_dict: Optional[dict] = None) -> dict[str, Any]:
     """Get file related metadata
 
     Arguments:
@@ -403,7 +406,7 @@ def get_file_metadata(in_file: Path, out_file: str, meta_dict: Optional[dict] = 
     return meta_dict
 
 
-def init_metadata_from_file(filename: Path, metadata_infile: Path = None) -> Union[SumStatsMetadata, None]:
+def init_metadata_from_file(filename: Path, metadata_infile: Optional[Path] = None) -> Optional[SumStatsMetadata]:
     m_in = metadata_infile if metadata_infile else filename.with_suffix(filename.suffix + "-meta.yaml")
     if m_in.exists():
         ssm = MetadataClient(in_file=m_in)
