@@ -227,6 +227,7 @@ def ss_format(filename: Path = typer.Argument(...,
            lsf=lsf,
            slurm=slurm)
 
+# NOTE: For dev internal use only — not intended for end users.
 @app.command("gen_meta",
              no_args_is_help=True,
              context_settings={"help_option_names": ["-h", "--help"],
@@ -263,6 +264,7 @@ def ss_gen_meta(filename: Path = typer.Argument(...,
     """
     [green]FORMAT[/green] a sumstats file by creating a new one from the existing one. Add/edit metadata.
     """
+    print("[bold yellow]WARNING:[/bold yellow] This command is for dev internal use only and is not intended for end users.")
     meta_dict = metadata_dict_from_args(args=extra_args.args) \
         if metadata_edit_mode else {}
     gen_meta(filename=filename,

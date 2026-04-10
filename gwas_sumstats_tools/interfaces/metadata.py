@@ -25,7 +25,9 @@ from gwas_sumstats_tools.utils import (download_with_requests,
                                        get_md5sum,
                                        replace_dictionary_keys,
                                        split_fields_on_delimiter,
-                                       update_dict_if_not_set)
+                                       update_dict_if_not_set,
+                                       normalize_file_type)
+
 # These TypedDicts document the raw JSON shapes returned by the GWAS Catalog APIs.
 # They live here (rather than schema/metadata.py) because they reflect an external
 # contract we do not own — if the API changes its field names, only the parse
@@ -145,6 +147,8 @@ class MetadataClient:
         Arguments:
             data_dict -- Dict of data to populate model
         """
+        if "file_type" in data_dict:
+            data_dict["file_type"] = normalize_file_type(data_dict["file_type"])
         self._meta_dict.update(data_dict)
         try:
             self.metadata = self.metadata.parse_obj(self._meta_dict)
@@ -392,7 +396,7 @@ def _parse_gwas_api_samples_response(response: bytes,
     formatted_list = []
     if response:
         result_dict = json.loads(response.decode())
-        sample: list[IngestSampleResponse] = result_dict["_embedded"].get('samples')
+        sample: list[IngestSampleResponse] = result_dict.get("_embedded", {}).get('samples') or []
         sample_list=[x for x in sample if x.get('stage') == 'discovery']
         if sample_list:
             for element in sample_list:

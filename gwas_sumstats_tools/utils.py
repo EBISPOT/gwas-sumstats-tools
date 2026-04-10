@@ -2,7 +2,7 @@ import re
 import hashlib
 import requests
 import logging
-from typing import Any, Union
+from typing import Any, Optional, Union
 from pathlib import Path
 import typer
 import petl as etl
@@ -191,3 +191,24 @@ def split_fields_on_delimiter(data_dict: dict[str, Any],
         for k, v
         in data_dict.items()
     )
+
+
+def normalize_file_type(value: Optional[str]) -> Optional[str]:
+    """Normalise a file_type string to the canonical standard value.
+
+    Performs a case-insensitive lookup via FILE_TYPE_MAPPINGS.
+    Invalid or unrecognised values are returned as-is so that pydantic
+    validation raises a ValidationError for them.
+
+    Arguments:
+        value -- raw file_type string
+
+    Returns:
+        Canonical file_type string, or the original value if not in mapping.
+    """
+    from gwas_sumstats_tools.constants import FILE_TYPE_MAPPINGS
+
+    if value is None:
+        return None
+    token = value.strip()
+    return FILE_TYPE_MAPPINGS.get(token.lower(), token)

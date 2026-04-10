@@ -27,6 +27,12 @@ class CoordinateSystemEnum(str, Enum):
     unknown = 'NR'
 
 
+class FileTypeEnum(str, Enum):
+    pre_gwas_ssf = 'pre-GWAS-SSF'
+    non_gwas_ssf = 'non-GWAS-SSF'
+    gwas_ssf_v1_0 = 'GWAS-SSF v1.0'
+
+
 """
 Models
 """
@@ -62,8 +68,7 @@ class SumStatsMetadata(BaseModel):
     sex: Optional[SexEnum] = None
     # Summary Statistic information:
     data_file_name: str
-    file_type: str
-    data_file_md5sum: str
+    file_type: FileTypeEnum
     analysis_software: Optional[str] = None
     adjusted_covariates: Optional[List[str]] = None
     minor_allele_freq_lower_limit: Optional[float] = None
