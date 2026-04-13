@@ -4,8 +4,8 @@ used by python projects for defining the metadata model.
 Keep the same scheme with https://github.com/EBISPOT/gwas-summary-statistics-standard/blob/master/schema/metadata-yamale-schema.yaml
 """
 
-from pydantic import (BaseModel,
-                      constr)
+import re
+from pydantic import (BaseModel, constr, validator)
 from datetime import date
 from typing import List, Optional
 from enum import Enum
@@ -27,10 +27,7 @@ class CoordinateSystemEnum(str, Enum):
     unknown = 'NR'
 
 
-class FileTypeEnum(str, Enum):
-    pre_gwas_ssf = 'pre-GWAS-SSF'
-    non_gwas_ssf = 'non-GWAS-SSF'
-    gwas_ssf_v1_0 = 'GWAS-SSF v1.0'
+FILE_TYPE_PATTERN = re.compile(r'^(pre-GWAS-SSF|non-GWAS-SSF|GWAS-SSF v\d+(\.\d+)*|NR)$')
 
 
 """
@@ -68,7 +65,7 @@ class SumStatsMetadata(BaseModel):
     sex: Optional[SexEnum] = None
     # Summary Statistic information:
     data_file_name: str
-    file_type: FileTypeEnum
+    file_type: str = 'NR'
     analysis_software: Optional[str] = None
     adjusted_covariates: Optional[List[str]] = None
     minor_allele_freq_lower_limit: Optional[float] = None
@@ -77,6 +74,12 @@ class SumStatsMetadata(BaseModel):
     is_sorted: Optional[bool] = None
     harmonisation_reference: Optional[str] = None
     
+    @validator('file_type')
+    def validate_file_type(cls, v):
+        if not FILE_TYPE_PATTERN.match(v):
+            raise ValueError(f"file_type '{v}' must be 'pre-GWAS-SSF', 'non-GWAS-SSF', 'GWAS-SSF v<version>', or 'NR'")
+        return v
+
     class Config:
         title = 'GWAS Summary Statistics metadata schema'
         use_enum_values = True

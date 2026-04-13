@@ -196,9 +196,11 @@ def split_fields_on_delimiter(data_dict: dict[str, Any],
 def normalize_file_type(value: Optional[str]) -> Optional[str]:
     """Normalise a file_type string to the canonical standard value.
 
-    Performs a case-insensitive lookup via FILE_TYPE_MAPPINGS.
-    Invalid or unrecognised values are returned as-is so that pydantic
-    validation raises a ValidationError for them.
+    For pre-GWAS-SSF / non-GWAS-SSF performs a case-insensitive lookup via
+    FILE_TYPE_MAPPINGS.  For versioned GWAS-SSF strings (e.g. "gwas-ssf v1.0",
+    "gwas_ssf_v2", "GWAS SSF v1.0.2") a regex extracts the version number and
+    returns "GWAS-SSF v{version}".  Unrecognised values are returned as-is so
+    that pydantic validation can raise a ValidationError for them.
 
     Arguments:
         value -- raw file_type string
@@ -206,9 +208,26 @@ def normalize_file_type(value: Optional[str]) -> Optional[str]:
     Returns:
         Canonical file_type string, or the original value if not in mapping.
     """
-    from gwas_sumstats_tools.constants import FILE_TYPE_MAPPINGS
+    import re
+    from gwas_sumstats_tools.constants import FILE_TYPE_MAPPINGS, GWAS_SSF_VERSION
 
     if value is None:
         return None
     token = value.strip()
-    return FILE_TYPE_MAPPINGS.get(token.lower(), token)
+    # Static lookup for pre/non variants
+    mapped = FILE_TYPE_MAPPINGS.get(token.lower())
+    if mapped:
+        return mapped
+    # Regex for "GWAS-SSF v<version>" with loose separators and optional 'v'
+    # Bare "gwas-ssf" with no version → default version
+    if re.match(r'^gwas[-_ ]?ssf$', token, re.IGNORECASE):
+        return f'GWAS-SSF v{GWAS_SSF_VERSION}'
+    # Versioned "gwas-ssf v<version>" with loose separators
+    m = re.match(
+        r'^gwas[-_ ]?ssf[-_ ]?v(\d+(?:\.\d+)*)$',
+        token,
+        re.IGNORECASE,
+    )
+    if m:
+        return f'GWAS-SSF v{m.group(1)}'
+    return token

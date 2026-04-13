@@ -49,28 +49,24 @@ GENOME_ASSEMBLY_MAPPINGS: Final[dict[str, GenomeAssembly]] = {
     "38": "GRCh38",
 }
 
+GWAS_SSF_VERSION: Final[str] = "1.0"
+
 # file_type alias -> standard value mapping (keys are lowercased/normalised for lookup)
 FILE_TYPE_MAPPINGS: Final[dict[str, str]] = {
     # pre-GWAS-SSF variants
     "pre-gwas-ssf": "pre-GWAS-SSF",
     "pre_gwas_ssf": "pre-GWAS-SSF",
     "pre gwas ssf": "pre-GWAS-SSF",
+    "pre gwas_ssf": "pre-GWAS-SSF",
+    "pre gwas-ssf": "pre-GWAS-SSF",
     "pregwasssf": "pre-GWAS-SSF",
     # non-GWAS-SSF variants
     "non-gwas-ssf": "non-GWAS-SSF",
     "non_gwas_ssf": "non-GWAS-SSF",
     "non gwas ssf": "non-GWAS-SSF",
+    "non gwas-ssf": "non-GWAS-SSF",
+    "non gwas_ssf": "non-GWAS-SSF",
     "nongwasssf": "non-GWAS-SSF",
-    # GWAS-SSF v1.0 variants
-    "gwas-ssf": "GWAS-SSF v1.0",
-    "gwas-ssf v1.0": "GWAS-SSF v1.0",
-    "gwas-ssf-v1.0": "GWAS-SSF v1.0",
-    "gwas_ssf_v1.0": "GWAS-SSF v1.0",
-    "gwas ssf v1.0": "GWAS-SSF v1.0",
-    "gwasssf v1.0": "GWAS-SSF v1.0",
-    "gwas-ssf v1": "GWAS-SSF v1.0",
-    "gwas ssf v1": "GWAS-SSF v1.0",
-    "gwas-ssfv1.0": "GWAS-SSF v1.0",  # missing space variant
 }
 
 # Fields that may contain pipe-delimited values and should be split into lists
