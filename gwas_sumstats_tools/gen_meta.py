@@ -54,14 +54,13 @@ class Gen_meta:
             metadata object
         """
 
-        meta_dict = get_file_metadata(
-            in_file=self.data_infile,
-            out_file=self.data_infile,
-            meta_dict=self.meta.as_dict(),
-        )
+        # Priority (low → high): inferred from file < infile metadata < GWAS Catalog API < custom
+        meta_dict = get_file_metadata(in_file=self.data_infile, out_file=self.data_infile).dict()
+        existing = {k: v for k, v in self.meta.as_dict().items() if v is not None}
+        meta_dict.update(existing)
         if from_gwas_cat:
             accession_id = parse_accession_id(filename=self.data_infile)
-            meta_dict.update(metadata_dict_from_gwas_cat(accession_id=accession_id))
+            meta_dict.update(metadata_dict_from_gwas_cat(accession_id=accession_id).dict(exclude_none=True))
         if custom_metadata:
             meta_dict.update(custom_metadata)
         self.meta.update_metadata(meta_dict)
