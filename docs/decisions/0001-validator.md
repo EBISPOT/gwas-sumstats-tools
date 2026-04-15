@@ -23,7 +23,7 @@ The metadata YAML is a lightweight file containing the metadata describing the G
 
 ### Options
 1. Pandera = 0.13.4
-2. pydantic = 1.10.4
+2. pydantic = 1.10.9
 
 ### Benchmarking Result
 1. James conducted internal benchmarking in 2023 and found that Pydantic v1 is slower than Pandera for large-scale tabular validation.
