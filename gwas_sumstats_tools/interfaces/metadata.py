@@ -40,17 +40,17 @@ class EfoTraitRest(TypedDict):
     efo_id: str
 
 class RestStudyResponse(TypedDict):
-    disease_trait: str
-    genotyping_technologies: list[str]
-    efo_traits: list[EfoTraitRest]
+    disease_trait: NotRequired[str]
+    genotyping_technologies: NotRequired[list[str]]
+    efo_traits: NotRequired[list[EfoTraitRest]]
 
 class AncestralGroup(TypedDict):
     ancestral_group: str
 
-class RestAncestryResponse(TypedDict, total=False):
-    number_of_individuals: int
-    ancestral_groups: list[AncestralGroup]
-    type: str
+class RestAncestryResponse(TypedDict):
+    number_of_individuals: NotRequired[int]
+    ancestral_groups: NotRequired[list[AncestralGroup]]
+    type: NotRequired[[str]
 
 
 # Ingest API  (https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/{id})
@@ -61,34 +61,34 @@ class IngestDiseaseTrait(TypedDict):
 class IngestEfoTrait(TypedDict):
     shortForm: str
 
-class IngestStudyResponse(TypedDict, total=False):
-    diseaseTrait: IngestDiseaseTrait
-    efoTraits: list[IngestEfoTrait]
-    genotyping_technology: str
-    traitDescription: str
-    trait: str
-    effect_allele_frequency_lower_limit: float
-    minor_allele_frequency_lower_limit: float
+class IngestStudyResponse(TypedDict):
+    diseaseTrait: NotRequired[IngestDiseaseTrait]
+    efoTraits: NotRequired[list[IngestEfoTrait]]
+    genotyping_technology: NotRequired[str]
+    traitDescription: NotRequired[str]
+    trait: NotRequired[str]
+    effect_allele_frequency_lower_limit: NotRequired[float]
+    minor_allele_frequency_lower_limit: NotRequired[float]
     summary_statistics_assembly: str
-    analysisSoftware: str
-    imputationPanel: str
-    imputationSoftware: str
-    adjustedCovariates: str
-    ontologyMapping: str
-    readme_file: str
-    readme_text: str
+    analysisSoftware: NotRequired[str]
+    imputationPanel: NotRequired[str]
+    imputationSoftware: NotRequired[str]
+    adjustedCovariates: NotRequired[str]
+    ontologyMapping: NotRequired[str]
+    readme_file: NotRequired[str]
+    readme_text: NotRequired[str]
     coordinateSystem: str
-    sex: str
+    sex: NotRequired[str]
 
-class IngestSampleResponse(TypedDict, total=False):
-    size: int
-    ancestry_category: str
-    ancestry: str
-    ancestryMethod: str
-    caseControlStudy: bool
-    caseCount: int
-    controlCount: int
-    stage: str
+class IngestSampleResponse(TypedDict):
+    size: NotRequired[int]
+    ancestry_category: NotRequired[str]
+    ancestry: NotRequired[str]
+    ancestryMethod: NotRequired[str]
+    caseControlStudy: NotRequired[bool]
+    caseCount: NotRequired[int]
+    controlCount: NotRequired[int]
+    stage: NotRequired[str]
 
 
 from gwas_sumstats_tools.schema.metadata import SumStatsMetadata
