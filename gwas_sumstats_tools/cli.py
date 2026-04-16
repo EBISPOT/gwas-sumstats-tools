@@ -262,7 +262,7 @@ def ss_gen_meta(filename: Path = typer.Argument(...,
               extra_args: typer.Context = typer.Option(None)
               ):
     """
-    [green]FORMAT[/green] a sumstats file by creating a new one from the existing one. Add/edit metadata.
+    [green]GEN_META[/green] Generate or edit metadata for a sumstats file. It is also used internally to generate metadata from the GWAS Catalog for testing purposes. 
     """
     print("[bold yellow]WARNING:[/bold yellow] This command is for dev internal use only and is not intended for end users.")
     meta_dict = metadata_dict_from_args(args=extra_args.args) \

@@ -12,7 +12,7 @@ INGEST_API_STUDY_MAPPINGS: Final[dict[str, str]] = {
     "imputationPanel": "imputation_panel",
     "imputationSoftware": "imputation_software",
     "adjustedCovariates": "adjusted_covariates",
-    "ontologyMapping": "efo_trait",
+    "ontologyMapping": "ontology_mapping",
     "readme_file": "author_notes",
     "readme_text": "author_notes",
     "coordinateSystem": "coordinate_system",

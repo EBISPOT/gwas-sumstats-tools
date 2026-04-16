@@ -30,7 +30,7 @@ The metadata YAML is a lightweight file containing the metadata describing the G
 
 2. Pydantic v2 was released in 2023 with improved performance. Without conducting independent benchmarking, we relied on the benchmarking results published by the Pandera team. Reference: https://www.union.ai/blog-post/pandera-0-17-adds-support-for-pydantic-v2
 
-## Dicussion
+## Discussion
 1. Based on this online benchmarking result, it shows that Pandera is approximately 100× faster than Pydantic (both v1 and v2) when validating datasets with more than 1 million rows.
 2. In addition, petl is significantly more efficient than pandas for reading large TSV files in chunks and for fast row indexing, which further improves overall validation performance.
 3. Pandera is natively designed for DataFrame-based schema validation, which aligns naturally with the columnar structure of GWAS summary statistics files. Pydantic, by contrast, is primarily designed for validating individual Python objects (e.g., dicts, dataclasses), requiring row-by-row iteration over tabular data. The pydantic approach that does not scale well to millions of rows.

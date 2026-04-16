@@ -178,7 +178,9 @@ def split_fields_on_delimiter(data_dict: dict[str, Any],
         "efo_trait" : "EFO_0004348,EFO_0004528,EFO_0004527,EFO_0004526,EFO_0004305,EFO_0005192",
 
     Returns:
-        data_dict with fields split
+        data_dict where the values of the specified fields are converted from
+        delimited strings into lists, e.g. "EFO_0004348,EFO_0004528" becomes
+        ["EFO_0004348", "EFO_0004528"]
     """
     def split_fn(s: str) -> list:
         return [x for x in re.split(delimiter, s) if x != ""]

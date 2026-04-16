@@ -463,7 +463,7 @@ def get_file_metadata(in_file: Path, out_file: str) -> SumStatsMetadataFile:
         genome_assembly=GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown'),
         data_file_md5sum=get_md5sum(out_file),
         date_metadata_last_modified=date.today(),
-        gwas_catalog_api=REST_API_STUDIES_URL + accession_id,
+        gwas_catalog_api=REST_API_STUDIES_URL + accession_id if accession_id else None,
     )
 
 
