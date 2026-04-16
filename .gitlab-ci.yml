@@ -24,16 +24,6 @@ test:
   script:
     - poetry run pytest -v
 
-deploy_test:
-  extends: .before_script_template
-  stage: deploy
-  script:
-    - poetry config repositories.testpypi https://test.pypi.org/legacy/
-    - poetry build
-    - poetry publish --repository=testpypi --username=$PYPI_API_TOKEN_USERNAME --password=$PYPI_API_TOKEN_PASSWORD 
-  only:
-    - tags
-
 build:
   image: docker:latest
   services:
@@ -71,11 +61,3 @@ build_release:
   only:
     - tags
 
-deploy_prod:
-  extends: .before_script_template
-  stage: deploy
-  script:
-    - poetry build
-    - poetry publish --username=$PYPI_API_TOKEN_USERNAME --password=$PYPI_API_TOKEN_PASSWORD
-  only:
-    - tags

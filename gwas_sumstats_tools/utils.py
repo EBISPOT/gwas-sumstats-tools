@@ -2,7 +2,7 @@ import re
 import hashlib
 import requests
 import logging
-from typing import Union
+from typing import Any, Optional, Union
 from pathlib import Path
 import typer
 import petl as etl
@@ -162,23 +162,74 @@ def update_dict_if_not_set(data_dict: dict, field: str, value: any) -> dict:
     return data_dict
 
 
-def split_fields_on_delimiter(data_dict: dict,
-                              fields: tuple,
-                              delimiter: str = "|") -> dict:
-    """Split specified fields in dict on delimiter
+def split_fields_on_delimiter(data_dict: dict[str, Any],
+                              fields: tuple[str, ...],
+                              delimiter: str = r"[|,]") -> dict[str, Any]:
+    """
+    Split specified fields in dict on delimiter
 
     Arguments:
         data_dict -- dict to split fields in
         fields -- fields to split
 
     Keyword Arguments:
-        delimiter -- delimiter (default: {"|"})
+        delimiter -- delimiter(s) (default: {"|,"} splits on both)
+        "array_manufacturer" : "Illumina|Affymetrix"
+        "efo_trait" : "EFO_0004348,EFO_0004528,EFO_0004527,EFO_0004526,EFO_0004305,EFO_0005192",
 
     Returns:
-        data_dict with fields split
+        data_dict where the values of the specified fields are converted from
+        delimited strings into lists, e.g. "EFO_0004348,EFO_0004528" becomes
+        ["EFO_0004348", "EFO_0004528"]
     """
-    return dict((k, v.split(delimiter))
-                if k in fields
-                else (k, v)
-                for k, v
-                in data_dict.items())
+    def split_fn(s: str) -> list:
+        return [x for x in re.split(delimiter, s) if x != ""]
+        
+    return dict(
+        (k, split_fn(v))
+        # v1 is str (e.g. "A|B") needs split and v2 is a list while no need split. It does not always need to be split, but keep the function in case.
+        if k in fields and isinstance(v, str)
+        else (k, v)
+        for k, v
+        in data_dict.items()
+    )
+
+
+def normalize_file_type(value: Optional[str]) -> Optional[str]:
+    """Normalise a file_type string to the canonical standard value.
+
+    For pre-GWAS-SSF / non-GWAS-SSF performs a case-insensitive lookup via
+    FILE_TYPE_MAPPINGS.  For versioned GWAS-SSF strings (e.g. "gwas-ssf v1.0",
+    "gwas_ssf_v2", "GWAS SSF v1.0.2") a regex extracts the version number and
+    returns "GWAS-SSF v{version}".  Unrecognised values are returned as-is so
+    that pydantic validation can raise a ValidationError for them.
+
+    Arguments:
+        value -- raw file_type string
+
+    Returns:
+        Canonical file_type string, or the original value if not in mapping.
+    """
+    import re
+    from gwas_sumstats_tools.constants import FILE_TYPE_MAPPINGS, GWAS_SSF_VERSION
+
+    if value is None:
+        return None
+    token = value.strip()
+    # Static lookup for pre/non variants
+    mapped = FILE_TYPE_MAPPINGS.get(token.lower())
+    if mapped:
+        return mapped
+    # Regex for "GWAS-SSF v<version>" with loose separators and optional 'v'
+    # Bare "gwas-ssf" with no version → default version
+    if re.match(r'^gwas[-_ ]?ssf$', token, re.IGNORECASE):
+        return f'GWAS-SSF v{GWAS_SSF_VERSION}'
+    # Versioned "gwas-ssf v<version>" with loose separators
+    m = re.match(
+        r'^gwas[-_ ]?ssf[-_ ]?v(\d+(?:\.\d+)*)$',
+        token,
+        re.IGNORECASE,
+    )
+    if m:
+        return f'GWAS-SSF v{m.group(1)}'
+    return token

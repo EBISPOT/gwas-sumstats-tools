@@ -1,5 +1,8 @@
 # GWAS SumStats Tools
 
+> [!TIP]
+> We are also developing schemas and validation tools for CNV and gene-level data in a separate repository, [`gwas-pysumstats`](https://github.com/EBISPOT/gwas-pysumstats). We welcome suggestions and feedback. Please note that this package is still under development.
+
 You can access comprehensive documentation for using gwas-sumstat-tools at this link: [GWAS SumStats Tools Documentation](https://ebispot.github.io/gwas-sumstats-tools-documentation/#/).
 
 ## Overview:
