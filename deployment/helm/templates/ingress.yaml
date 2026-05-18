@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: {{ .Values.ingress.name }}
+  namespace: {{ .Values.k8Namespace }}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /apps/gwas_sumstats_tools/$2
     nginx.ingress.kubernetes.io/ssl-redirect: "false"

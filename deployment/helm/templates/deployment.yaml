@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.service.name }}
+  namespace: {{ .Values.k8Namespace }}
   labels:
     app: {{ .Values.service.name }}
 spec:
