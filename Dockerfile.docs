@@ -29,7 +29,7 @@ RUN poetry install --only main \
 
 # Copy ssf-morph (main landing page) and documentation
 COPY ssf-morph/ ./ssf-morph/
-COPY docs/gwas-sumstats-tools-Documentation ./docs
+COPY gwas-sumstats-tools-doc ./docs
 
 # ── Stage 2: serve ────────────────────────────────────────────────────────────
 # Lightweight nginx container to serve ssf-morph (landing page) + documentation

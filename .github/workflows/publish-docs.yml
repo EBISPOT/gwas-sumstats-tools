@@ -3,7 +3,7 @@ name: Test Docs Image
 on:
   pull_request:
     paths:
-      - 'docs/**'
+      - 'gwas-sumstats-tools-doc/**'
       - 'ssf-morph/**'
       - 'Dockerfile.docs'
       - 'nginx.conf'

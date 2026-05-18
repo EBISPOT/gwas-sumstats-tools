@@ -19,7 +19,7 @@ This project has two independent release flows:
 │    webworker.js loads Pyodide  ──▶ /apps/gwas_sumstats_tools/ │
 │    + gwas_sumstats_tools wheel                            │
 │                                                           │
-│  docs/gwas-sumstats-tools-Documentation                  │
+│  gwas-sumstats-tools-doc                                 │
 │    docsify static site         ──▶ /apps/gwas_sumstats_tools/docs/      │
 └──────────────────────────────────────────────────────┘
          built by Dockerfile.docs
