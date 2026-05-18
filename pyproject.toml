@@ -27,6 +27,9 @@ pytest = "^7.2.1"
 hypothesis = "^6.68.2"
 pytest-mock = "^3.10.0"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
