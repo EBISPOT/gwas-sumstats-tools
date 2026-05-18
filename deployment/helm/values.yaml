@@ -14,7 +14,7 @@ service:
 ingress:
   name: sumstats-tools-ingress
   annotations: {}
-  path: "/apps/gwas_sumstats_tools(/|$)(.*)"
+  path: "/gwas/apps/gwas_sumstats_tools(/|$)(.*)"
 
 resources:
   limits:
