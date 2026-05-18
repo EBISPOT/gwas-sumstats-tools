@@ -71,9 +71,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-docs/gwas-sumstats-tools-Documentation/.vale.ini
-docs/gwas-sumstats-tools-Documentation/.nojekyll
-docs/gwas-sumstats-tools-Documentation/.git/
+gwas-sumstats-tools-doc/.vale.ini
+gwas-sumstats-tools-doc/.nojekyll
 
 # PyBuilder
 target/

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, minimum-scale=1.0, shrink-to-fit=no, viewport-fit=cover">
+
+  <!-- Replace with your own title and description. -->
+  <title>GWAS SumStats Tools</title>
+  <meta name="description" content="Documentation for GWAS SumStats Tools">
+
+  <!-- Default Theme (see https://docsify.js.org/#/themes) -->
+  <link rel="stylesheet" href="//unpkg.com/docsify/themes/vue.css">
+</head>
+
+<body>
+  <div id="app"></div>
+  <script>
+    // Docsify Configuration (see https://docsify.js.org/#/configuration)
+    window.$docsify = {
+      name: 'GWAS SumStats Tools',
+
+      // Sidebar Configuration
+      auto2top: true,
+      coverpage: true,
+      loadSidebar: true,
+      loadNavbar: true,
+      maxLevel: 0,
+      // Set subMaxLevel to 0 to remove automatic display of page table of contents (TOC) in Sidebar
+      subMaxLevel: 3,
+    
+
+      // Search Plugin Configuration
+      search: {
+        placeholder: 'Type to search',
+        noData: 'No matches found.',
+        // Headline depth, 1 - 6
+        depth: 4,
+      },
+
+      //Alerts Plugin Configuration
+      'flexible-alerts': {
+        style: 'flat'
+      },
+
+      plugins: [
+        function(hook) {
+          hook.doneEach(function() {
+            document.querySelectorAll('.app-nav a').forEach(function(a) {
+              if (a.textContent.trim() === 'SSF-morph') {
+                a.href = 'javascript:void(0)';
+                if (!a.dataset.patched) {
+                  a.dataset.patched = '1';
+                  a.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = window.location.pathname.replace(/\/docs\/?$/, '/');
+                  });
+                }
+              }
+            });
+          });
+        }
+      ]
+    };
+  </script>
+
+
+  <!-- Required -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+
+  <!-- Recommended -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/zoom-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.28/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.28/components/prism-typescript.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1.28/components/prism-json.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/@sy-records/docsify-footnotes/lib/index.min.js"></script>
+  <script src="https://unpkg.com/docsify-plugin-flexible-alerts"></script>
+
+</body>
+</html>
