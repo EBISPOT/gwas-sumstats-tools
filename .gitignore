@@ -73,6 +73,7 @@ instance/
 docs/_build/
 docs/gwas-sumstats-tools-Documentation/.vale.ini
 docs/gwas-sumstats-tools-Documentation/.nojekyll
+docs/gwas-sumstats-tools-Documentation/.git/
 
 # PyBuilder
 target/
