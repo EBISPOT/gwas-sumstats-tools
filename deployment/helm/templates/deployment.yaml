@@ -23,16 +23,12 @@ spec:
             - containerPort: 80
           livenessProbe:
             httpGet:
-              path: /apps/gwas_sumstats_tools/
+              path: /
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /apps/gwas_sumstats_tools/
+              path: /
               port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 5
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
