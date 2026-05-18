@@ -110,8 +110,6 @@ build_release-docs:
 deploy-dev:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/dtzar/helm-kubectl:2.13.1
   stage: deploy
-  variables:
-    GIT_STRATEGY: none
   script:
     - mkdir -p /root/.kube
     - echo ${PLIVE_KUBECONFIG} | base64 -d > /root/.kube/config
@@ -132,8 +130,6 @@ deploy-dev:
 deploy:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/dtzar/helm-kubectl:2.13.1
   stage: deploy
-  variables:
-    GIT_STRATEGY: none
   script:
     - mkdir -p /root/.kube
     - echo ${PLIVE_KUBECONFIG} | base64 -d > /root/.kube/config
@@ -154,8 +150,6 @@ deploy:
 deploy-fallback:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/dtzar/helm-kubectl:2.13.1
   stage: deploy
-  variables:
-    GIT_STRATEGY: none
   script:
     - mkdir -p /root/.kube
     - echo ${PFALLBACK_KUBECONFIG} | base64 -d > /root/.kube/config
