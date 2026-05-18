@@ -60,9 +60,6 @@ coverage.xml
 # Logs
 *.log
 
-# Documentation
-docs/*
-
 # PyBuilder
 target/
 

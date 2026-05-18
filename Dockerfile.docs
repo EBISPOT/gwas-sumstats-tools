@@ -1,0 +1,54 @@
+# ── Stage 1: build ────────────────────────────────────────────────────────────
+# Build the Python package and prepare ssf-morph + documentation for static hosting
+FROM python:3.9-slim-buster AS builder
+
+# Configure Poetry
+ENV POETRY_VERSION=1.3.2
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_VENV=/opt/poetry-venv
+ENV POETRY_CACHE_DIR=/opt/.cache
+
+# Install poetry
+RUN python3 -m venv $POETRY_VENV \
+    && $POETRY_VENV/bin/pip install -U pip setuptools \
+    && $POETRY_VENV/bin/pip install poetry
+
+# Add poetry to PATH
+ENV PATH="${PATH}:${POETRY_VENV}/bin"
+
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml poetry.lock* ./
+COPY README.md LICENSE ./
+COPY gwas_sumstats_tools/ ./gwas_sumstats_tools/
+
+# Install dependencies and build the package
+RUN poetry install --only main \
+    && poetry build
+
+# Copy ssf-morph (main landing page) and documentation
+COPY ssf-morph/ ./ssf-morph/
+COPY docs/gwas-sumstats-tools-Documentation ./docs
+
+# ── Stage 2: serve ────────────────────────────────────────────────────────────
+# Lightweight nginx container to serve ssf-morph (landing page) + documentation
+FROM nginx:alpine
+
+# Copy ssf-morph as the landing page (root of the site)
+COPY --from=builder /app/ssf-morph /usr/share/nginx/html/apps/gwas_sumstats_tools
+
+# Copy documentation to a docs subdirectory
+COPY --from=builder /app/docs /usr/share/nginx/html/apps/gwas_sumstats_tools/docs
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/apps/gwas_sumstats_tools/ || exit 1
+
+EXPOSE 80
+
+# Default command
+CMD ["nginx", "-g", "daemon off;"]

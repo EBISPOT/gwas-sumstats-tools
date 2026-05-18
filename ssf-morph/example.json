@@ -1,0 +1,141 @@
+{
+    "fileConfig": {
+        "outFileSuffix": null,
+        "md5": false,
+        "convertNegLog10Pvalue": false,
+        "fieldSeparator": "\t",
+        "removeComments": false
+    },
+    "columnConfig": {
+        "split": [
+            {
+                "field": "SNP",
+                "separator": ":",
+                "capture": null,
+                "new_field":["chromosome","base_pair_location"],
+                "include_original": null
+            },
+            {
+                "field": "A1",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            },
+            {
+                "field": "A2",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            },
+            {
+                "field": "freq",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            },
+            {
+                "field": "b",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            },
+            {
+                "field": "se",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            },
+            {
+                "field": "p",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            },
+            {
+                "field": "N_cases",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            },
+            {
+                "field": "N_controls",
+                "separator": null,
+                "capture": null,
+                "new_field": null,
+                "include_original": null
+            }
+        ],
+        "edit": [
+            {
+                "field": "SNP",
+                "rename": "variant_id",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "A1",
+                "rename": "effect_allele",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "A2",
+                "rename": "other_allele",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "freq",
+                "rename": "effect_allele_frequency",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "b",
+                "rename": "beta",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "se",
+                "rename": "standard_error",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "p",
+                "rename": "p_value",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "N_cases",
+                "rename": "n_cas",
+                "find": null,
+                "replace": null,
+                "extract": null
+            },
+            {
+                "field": "N_controls",
+                "rename": "n_con",
+                "find": null,
+                "replace": null,
+                "extract": null
+            }
+        ]
+    }
+}

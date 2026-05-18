@@ -25,15 +25,18 @@ jobs:
         run: poetry run pytest -v
 
   publish:
-    name: Publish to PyPI
+    name: Publish to PyPI and update wheels
     needs: test
     runs-on: ubuntu-latest
     environment: publish
     permissions:
       id-token: write
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,6 +51,32 @@ jobs:
 
       - name: Build package
         run: poetry build
+
+      - name: Update wheel in ssf-morph
+        run: |
+          new_wheel=$(find dist -name "gwas_sumstats_tools-*.whl" -type f | head -1)
+          new_wheel_name=$(basename "$new_wheel")
+          echo "New wheel: $new_wheel_name"
+
+          # Replace old wheel file with the new one
+          rm -f ssf-morph/wheels/gwas_sumstats_tools-*.whl
+          cp "$new_wheel" ssf-morph/wheels/
+
+          # Update webworker.js to reference the new wheel filename
+          sed -i "s|./wheels/gwas_sumstats_tools-[^'\"]*\.whl|./wheels/${new_wheel_name}|g" ssf-morph/webworker.js
+          echo "Updated webworker.js to load $new_wheel_name"
+
+      - name: Commit and push wheel update to master
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
+          git checkout master
+          if [[ -n $(git status -s) ]]; then
+            git add ssf-morph/wheels/gwas_sumstats_tools-*.whl ssf-morph/webworker.js
+            git commit -m "chore: update gwas_sumstats_tools wheel to ${GITHUB_REF_NAME}"
+            git push origin master
+          fi
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

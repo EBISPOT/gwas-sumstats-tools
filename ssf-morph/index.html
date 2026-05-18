@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SSF-morph</title>
+  <link rel="stylesheet" href="https://assets.emblstatic.net/vf/v2.5.14/css/styles.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" href="specificstyle.css">
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     GLOBAL HEADER
+═══════════════════════════════════════════════════════════ -->
+<div class="ssf-global-header">
+  <div class="ssf-global-header__inner">
+    <img src="Icons/ssf_morph_logo.jpeg" alt="SSF-morph" style="display:block;height:40px;width:auto">
+    <nav class="ssf-global-header__nav">
+      <a href="/apps/gwas_sumstats_tools/docs/" target="_blank" rel="noopener">Documentation</a>
+      <a href="https://www.ebi.ac.uk/gwas/home" target="_blank" rel="noopener">GWAS Catalog</a>
+      <a href="https://www.ebi.ac.uk/gwas/docs/summary-statistics-format" target="_blank" rel="noopener">GWAS-SSF standard</a>
+      <a href="mailto:gwas-info@ebi.ac.uk">Contact</a>
+    </nav>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     LANDING PAGE
+═══════════════════════════════════════════════════════════ -->
+<section id="landing-page">
+  <div class="container ssf-landing">
+
+    <div class="text-center mb-4">
+      <img src="Icons/ssf_morph_logo.jpeg" alt="SSF-morph logo" style="height:80px;width:auto;margin-bottom:16px">
+      <h1 class="ssf-landing__title">SSF-morph</h1>
+      <p class="ssf-landing__subtitle">GWAS Summary Statistic Formatting and Validation Tool</p>
+    </div>
+
+    <div id="file-protocol-warning" class="alert alert-danger" role="alert" style="display:none">
+      <strong>Cannot run from file://</strong> — This tool must be served from an HTTP server, not opened directly as a file.
+      Run <code>python -m http.server</code> in this folder and open <code>http://localhost:8000</code> instead.
+    </div>
+    <div class="alert alert-warning" role="alert">
+      <strong>Browser requirement:</strong>
+      This tool requires a Chromium-based browser (Google Chrome or Microsoft Edge) that supports the File System Access API.
+    </div>
+    <div class="alert alert-info" role="alert">
+      <strong>File size limit:</strong>
+      For best performance, place <em>only</em> the file you wish to process in the selected folder. Maximum supported file size is <strong>2 GB</strong>.
+    </div>
+
+    <div class="row g-4 mt-1">
+
+      <!-- Format card -->
+      <div class="col-md-6">
+        <div class="card ssf-mode-card h-100">
+          <div class="card-body d-flex flex-column">
+            <h4 class="ssf-mode-card__title">Format a GWAS summary statistic data</h4>
+            <p class="text-muted small mb-3">Step by step</p>
+            <ol class="ssf-step-overview flex-grow-1">
+              <li>Select your input file</li>
+              <li>Select your way to input configuration files</li>
+              <li>Edit the configuration and test on the first 5 rows of your input</li>
+              <li>Apply the configuration to your whole file and download the formatted result</li>
+            </ol>
+            <button id="start-format" class="btn btn-success btn-lg w-100 mt-3">Start Format</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validate card -->
+      <div class="col-md-6">
+        <div class="card ssf-mode-card h-100">
+          <div class="card-body d-flex flex-column">
+            <h4 class="ssf-mode-card__title">Validate a GWAS summary statistic data</h4>
+            <p class="text-muted small mb-3">Check against gwas-ssf schema</p>
+            <ol class="ssf-step-overview flex-grow-1">
+              <li>Select your input file</li>
+              <li>Validate your file and read the validation result</li>
+            </ol>
+            <button id="start-validation" class="btn btn-success btn-lg w-100 mt-3">Start Validation</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row -->
+  </div><!-- /container -->
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     FORMAT WIZARD  (Steps 1 – 4)
+═══════════════════════════════════════════════════════════ -->
+<section id="format-wizard" style="display:none">
+  <div class="container py-4">
+
+    <button id="back-home-format" class="btn btn-outline-secondary btn-sm mb-4">&#8592; Back to Home</button>
+
+    <!-- Stepper progress indicator -->
+    <div class="ssf-stepper mb-4" aria-label="Format progress">
+      <div class="ssf-stepper__step active" id="stepper-1">
+        <div class="ssf-stepper__circle">1</div>
+        <div class="ssf-stepper__label">Select File</div>
+      </div>
+      <div class="ssf-stepper__connector" id="connector-1-2"></div>
+      <div class="ssf-stepper__step" id="stepper-2">
+        <div class="ssf-stepper__circle">2</div>
+        <div class="ssf-stepper__label">Configuration</div>
+      </div>
+      <div class="ssf-stepper__connector" id="connector-2-3"></div>
+      <div class="ssf-stepper__step" id="stepper-3">
+        <div class="ssf-stepper__circle">3</div>
+        <div class="ssf-stepper__label">Edit &amp; Test</div>
+      </div>
+      <div class="ssf-stepper__connector" id="connector-3-4"></div>
+      <div class="ssf-stepper__step" id="stepper-4">
+        <div class="ssf-stepper__circle">4</div>
+        <div class="ssf-stepper__label">Apply</div>
+      </div>
+    </div>
+
+    <!-- ── Step 1: Select input file ── -->
+    <div class="format-step-panel" id="format-panel-1">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Step 1: Select the input file</h5>
+          <p class="card-text">
+            1.1&nbsp; Grant the browser permission to read and write to a local directory:&nbsp;
+            <button type="button" id="mount" class="btn btn-primary">Grant permission</button>
+          </p>
+          <div id="mountdiv"></div>
+          <p class="card-text mt-2">
+            1.2&nbsp; Select your input file:&nbsp;
+            <button type="button" id="select" disabled class="btn btn-primary">Select input file</button>
+          </p>
+          <div id="selectdiv"></div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button id="format-next-1" class="btn btn-primary" disabled>Next &#8594;</button>
+      </div>
+    </div>
+
+    <!-- ── Step 2: Prepare configuration ── -->
+    <div class="format-step-panel" id="format-panel-2" style="display:none">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Step 2: Prepare the configuration file</h5>
+          <p class="card-text">
+            2.1&nbsp; Specify the delimiter in the input file:&nbsp;
+            <input type="text" name="delimiter" list="delimiterList" id="delimiter" class="form-control d-inline-block w-auto">
+            <datalist id="delimiterList">
+              <option value="\t" label="Tab">
+              <option value="," label="Comma">
+              <option value=" " label="Space">
+            </datalist>
+            &nbsp; and the comment character:&nbsp;
+            <input type="text" name="comments" list="commentsList" id="comments" class="form-control d-inline-block w-auto">
+            <datalist id="commentsList">
+              <option value="#">
+            </datalist>
+            <small class="text-muted">(Leave empty if not applicable.)</small>
+          </p>
+          <p class="card-text">
+            2.2&nbsp; Select the analysis software used to generate your data:&nbsp;
+            <select name="analysis_software" id="analysis_software" class="form-select d-inline-block w-auto">
+              <option value="BOLT-LMM">BOLT-LMM</option>
+              <option value="REGENIE">REGENIE</option>
+              <option value="SNPTEST">SNPtest</option>
+              <option value="SAIGE">SAIGE</option>
+              <option value="None" selected>Others</option>
+            </select>
+          </p>
+          <button type="button" id="generate" disabled class="btn btn-primary">Generate configuration</button>
+          <div id="step2error" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-between mt-3">
+        <button id="format-prev-2" class="btn btn-outline-secondary">&#8592; Back</button>
+        <button id="format-next-2" class="btn btn-primary" disabled>Next &#8594;</button>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Edit and test configuration ── -->
+    <div class="format-step-panel" id="format-panel-3" style="display:none">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Step 3: Edit and test your configuration</h5>
+          <p class="card-text">Preview how the configuration reformats your data using the <strong>Test</strong> button, then adjust as needed.</p>
+
+          <div class="row g-3">
+            <!-- Left: config editor (tabbed form) -->
+            <div class="col-lg-6">
+              <label class="form-label fw-semibold">Configuration:</label>
+
+              <!-- Top-level tabs: fileConfig / columnConfig (plain JS — avoids Bootstrap tab issues in hidden containers) -->
+              <ul class="nav nav-tabs" id="configTabs">
+                <li class="nav-item">
+                  <button id="cfg-tab-file-btn" class="nav-link active" type="button">File Config</button>
+                </li>
+                <li class="nav-item">
+                  <button id="cfg-tab-column-btn" class="nav-link" type="button">Column Config</button>
+                </li>
+              </ul>
+
+              <div class="tab-content border border-top-0 rounded-bottom p-3 mb-2" id="configTabContent">
+
+                <!-- fileConfig tab -->
+                <div id="tab-fileConfig">
+                  <div class="mb-2">
+                    <label class="form-label form-label-sm mb-1">Output file suffix</label>
+                    <input type="text" class="form-control form-control-sm" id="cfg-outFileSuffix" value="formatted_">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label form-label-sm mb-1">Field separator</label>
+                    <select class="form-select form-select-sm" id="cfg-fieldSeparator-preset">
+                      <option value="&#9;" selected>Tab (\t)</option>
+                      <option value=",">Comma (,)</option>
+                      <option value=" ">Space</option>
+                      <option value=";">Semicolon (;)</option>
+                      <option value="|">Pipe (|)</option>
+                      <option value="__custom__">Other…</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm mt-1 d-none" id="cfg-fieldSeparator-custom" placeholder="Enter separator">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label form-label-sm mb-1">Missing value text<span class="text-muted">(blank = null)</span></label>
+                    <input type="text" class="form-control form-control-sm" id="cfg-naValue" placeholder="">
+                  </div>
+                  <div class="mb-2 form-check">
+                    <input type="checkbox" class="form-check-input" id="cfg-convertNegLog10Pvalue">
+                    <label class="form-check-label small" for="cfg-convertNegLog10Pvalue">Convert -log&#x2081;&#x2080; p-value</label>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label form-label-sm mb-1">Remove comments</label>
+                    <input type="text" class="form-control form-control-sm" id="cfg-removeComments" placeholder="">
+                  </div>
+                </div>
+
+                <!-- columnConfig tab -->
+                <div id="tab-columnConfig" style="display:none">
+                  <!-- Sub-section switcher (plain buttons — avoids nested Bootstrap tabs) -->
+                  <div class="btn-group btn-group-sm mt-1 mb-2" role="group">
+                    <button id="col-tab-split-btn" type="button" class="btn btn-secondary">Split</button>
+                    <button id="col-tab-edit-btn"  type="button" class="btn btn-outline-secondary">Edit</button>
+                  </div>
+
+                  <!-- split panel -->
+                  <div id="col-panel-split">
+                    <div class="table-responsive" style="max-height:260px;overflow-y:auto">
+                      <table class="table table-sm table-bordered align-middle mb-1">
+                        <thead class="table-light" style="position:sticky;top:0;z-index:1">
+                          <tr>
+                            <th style="min-width:110px">Field</th>
+                            <th style="min-width:130px">Separator</th>
+                            <th style="min-width:90px">Capture</th>
+                            <th style="min-width:90px">New field</th>
+                            <th style="min-width:110px">Include original</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody id="split-rules-body"></tbody>
+                      </table>
+                    </div>
+                    <button id="add-split-rule" type="button" class="btn btn-sm btn-outline-secondary mt-1">+ Add split rule</button>
+                  </div>
+
+                  <!-- edit panel -->
+                  <div id="col-panel-edit" style="display:none">
+                    <div class="table-responsive" style="max-height:260px;overflow-y:auto">
+                      <table class="table table-sm table-bordered align-middle mb-1">
+                        <thead class="table-light" style="position:sticky;top:0;z-index:1">
+                          <tr>
+                            <th style="min-width:110px">Field</th>
+                            <th style="min-width:90px">Rename</th>
+                            <th style="min-width:90px">Find</th>
+                            <th style="min-width:90px">Replace</th>
+                            <th style="min-width:90px">Extract</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody id="edit-rules-body"></tbody>
+                      </table>
+                    </div>
+                    <button id="add-edit-rule" type="button" class="btn btn-sm btn-outline-secondary mt-1">+ Add edit rule</button>
+                  </div>
+                </div>
+
+              </div><!-- /tab-content -->
+
+              <!-- Update config button -->
+              <div class="mb-2">
+                <button id="update-config" type="button" class="btn btn-sm btn-success">Update config</button>
+                <span id="update-config-status" class="ms-2 small text-success" style="display:none">&#10003; Config updated</span>
+              </div>
+
+              <!-- JSON preview (collapsible, read-only) -->
+              <div class="mb-2">
+                <button id="json-preview-btn" class="btn btn-sm btn-link p-0 text-decoration-none" type="button">
+                  &#9660; View / Copy JSON
+                </button>
+                <div id="json-preview-collapse" style="display:none">
+                  <textarea id="config_out" rows="10" class="form-control font-monospace mt-1"
+                            style="font-size:0.75rem;resize:vertical" readonly></textarea>
+                  <button id="copy-json" type="button" class="btn btn-sm btn-outline-secondary mt-1">Copy</button>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 mt-2">
+                <button id="test" disabled class="btn btn-primary">Test</button>
+                <button id="download" disabled class="btn btn-outline-secondary">Download config</button>
+              </div>
+            </div>
+
+            <!-- Right: data previews -->
+            <div class="col-lg-6">
+              <div class="mb-3">
+                <button id="btn-show-example" type="button" class="btn btn-outline-primary w-100">
+                  Show Example data
+                </button>
+                <div id="collapseExample" style="display:none" class="mt-2">
+                  <div class="card card-body p-2" style="overflow-x:auto">
+                    <table id="example_table" class="display compact cell-border nowrap"></table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <button id="btn-show-input" type="button" class="btn btn-outline-primary w-100">
+                  Show Your Input data
+                </button>
+                <div id="collapseInput" style="display:none" class="mt-2">
+                  <div class="card card-body p-2" style="overflow-x:auto">
+                    <table id="your_input" class="display compact cell-border nowrap"></table>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="form-label fw-semibold">Your output (first 5 rows):</label>
+                <div style="overflow-x:auto">
+                  <table id="your_output" class="display compact cell-border nowrap">
+                    <textarea id="test_example"></textarea>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div><!-- /row -->
+
+          <div id="step3error" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-between mt-3">
+        <button id="format-prev-3" class="btn btn-outline-secondary">&#8592; Back</button>
+        <button id="format-next-3" class="btn btn-primary">Next &#8594;</button>
+      </div>
+    </div>
+
+    <!-- ── Step 4: Apply and download ── -->
+    <div class="format-step-panel" id="format-panel-4" style="display:none">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Step 4: Apply configuration and download</h5>
+          <p class="card-text">Apply your configuration to the entire input file. The formatted output will be saved to the folder you permitted.</p>
+          <p id="apply_configure" class="text-muted small"></p>
+          <button id="apply" disabled class="btn btn-success btn-lg">Apply &amp; Download</button>
+          <div id="step4error" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-start mt-3">
+        <button id="format-prev-4" class="btn btn-outline-secondary">&#8592; Back</button>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     VALIDATE WIZARD  (Step 5)
+═══════════════════════════════════════════════════════════ -->
+<section id="validate-wizard" style="display:none">
+  <div class="container py-4">
+
+    <button id="back-home-validate" class="btn btn-outline-secondary btn-sm mb-4">&#8592; Back to Home</button>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Validate your formatted file</h5>
+
+        <p class="card-text">
+          5.1&nbsp; Grant permission to a local directory (skip if already granted during formatting):&nbsp;
+          <button type="button" id="mountvalidate" class="btn btn-primary">Grant permission</button>
+          &nbsp; then select the file to validate:&nbsp;
+          <button id="select_validate" disabled class="btn btn-primary">Select file to validate</button>
+        </p>
+        <div id="validatediv"></div>
+
+        <p class="card-text mt-3">
+          5.2&nbsp; Set validation thresholds <span class="text-muted">(optional)</span>:<br>
+          <span class="d-flex flex-wrap align-items-center gap-2 mt-2">
+            Minimum number of variants (rows):
+            <input type="text" name="nrows" list="nrowsList" id="nrows" class="form-control d-inline-block w-auto">
+            <datalist id="nrowsList">
+              <option value="100000" label="GWAS Catalog acceptable">
+            </datalist>
+            Allow zero p-values:
+            <select name="zeropvalues" id="zeropvalues" class="form-select d-inline-block w-auto">
+              <option value="False" selected>No</option>
+              <option value="True">Yes</option>
+            </select>
+          </span>
+        </p>
+        <p class="text-muted small">
+          For GWAS Catalog submission, lower row numbers may be permissible in certain circumstances
+          (please contact <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a> to request an eligibility review).
+          For files containing zero p-values, analysis software type must be provided in the metadata template
+          (see <a href="https://www.ebi.ac.uk/gwas/docs/submission-summary-statistics-plus-metadata" target="_blank" rel="noopener">GWAS Catalog submission documentation</a> for details).
+        </p>
+
+        <p class="card-text">
+          5.3&nbsp; Run validation:&nbsp;
+          <button id="validate" disabled class="btn btn-success">Validate</button>
+        </p>
+        <textarea id="validation_out" class="form-control" rows="8" disabled></textarea>
+        <div id="step5error" class="mt-2"></div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════ -->
+<footer class="ssf-footer">
+  <div class="container">
+    <p class="mb-0">
+      Copyright &copy; EMBL-EBI <span id="year"></span> |
+      EMBL-EBI is an Outstation of the <a href="https://www.embl.org">European Molecular Biology Laboratory</a> |
+      <a href="https://www.ebi.ac.uk/about/terms-of-use">Terms of use</a> |
+      <a href="https://www.ebi.ac.uk/long-term-data-preservation">Data Preservation Statement</a>
+    </p>
+  </div>
+</footer>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     WIZARD NAVIGATION  (vanilla JS — no jQuery dependency)
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  // Detect file:// protocol — modules and fetch() don't work without an HTTP server
+  if (window.location.protocol === 'file:') {
+    document.getElementById('file-protocol-warning').style.display = 'block';
+  }
+
+  const landing        = document.getElementById('landing-page');
+  const formatWizard   = document.getElementById('format-wizard');
+  const validateWizard = document.getElementById('validate-wizard');
+
+  function showSection(section) {
+    landing.style.display        = 'none';
+    formatWizard.style.display   = 'none';
+    validateWizard.style.display = 'none';
+    section.style.display        = 'block';
+    window.scrollTo(0, 0);
+  }
+
+  function showFormatStep(step) {
+    // Show the right panel
+    document.querySelectorAll('.format-step-panel').forEach(function (p) {
+      p.style.display = 'none';
+    });
+    document.getElementById('format-panel-' + step).style.display = 'block';
+
+    // Update stepper circles
+    for (var i = 1; i <= 4; i++) {
+      var s = document.getElementById('stepper-' + i);
+      s.classList.remove('active', 'completed');
+      if (i < step)  s.classList.add('completed');
+      if (i === step) s.classList.add('active');
+    }
+    // Update connectors
+    for (var j = 1; j <= 3; j++) {
+      var c = document.getElementById('connector-' + j + '-' + (j + 1));
+      if (j < step) {
+        c.classList.add('completed');
+      } else {
+        c.classList.remove('completed');
+      }
+    }
+
+    window.scrollTo(0, 0);
+  }
+
+  // Landing → Format
+  document.getElementById('start-format').addEventListener('click', function () {
+    showSection(formatWizard);
+    showFormatStep(1);
+  });
+
+  // Landing → Validate
+  document.getElementById('start-validation').addEventListener('click', function () {
+    showSection(validateWizard);
+  });
+
+  // Back to home buttons
+  document.getElementById('back-home-format').addEventListener('click', function () {
+    showSection(landing);
+  });
+  document.getElementById('back-home-validate').addEventListener('click', function () {
+    showSection(landing);
+  });
+
+  // Step 3 data-panel toggles — plain JS show/hide instead of Bootstrap collapse,
+  // which breaks when DataTables is initialised inside a hidden parent.
+  // We still dispatch 'shown.bs.collapse' so consumer.js handlers fire normally.
+  function makeDataToggle(btnId, panelId) {
+    var btn   = document.getElementById(btnId);
+    var panel = document.getElementById(panelId);
+    var showTxt = btn.textContent.trim();
+    var hideTxt = showTxt.replace('Show', 'Hide');
+
+    btn.addEventListener('click', function () {
+      var opening = panel.style.display === 'none';
+      panel.style.display = opening ? 'block' : 'none';
+      btn.textContent     = opening ? hideTxt : showTxt;
+      if (opening) {
+        // jQuery trigger properly fires namespaced events like 'shown.bs.collapse'
+        // that consumer.js registers via $().on() — native CustomEvent does not.
+        $(panel).trigger('shown.bs.collapse');
+      }
+    });
+  }
+  makeDataToggle('btn-show-example', 'collapseExample');
+  makeDataToggle('btn-show-input',   'collapseInput');
+
+  // ── Config outer tab switcher (File Config / Column Config) ──────
+  function switchConfigTab(show) {
+    var isColumn = show === 'column';
+    document.getElementById('tab-fileConfig').style.display   = isColumn ? 'none' : '';
+    document.getElementById('tab-columnConfig').style.display = isColumn ? ''     : 'none';
+    document.getElementById('cfg-tab-file-btn').classList.toggle('active', !isColumn);
+    document.getElementById('cfg-tab-column-btn').classList.toggle('active', isColumn);
+  }
+  document.getElementById('cfg-tab-file-btn').addEventListener('click', function () { switchConfigTab('file'); });
+  document.getElementById('cfg-tab-column-btn').addEventListener('click', function () { switchConfigTab('column'); });
+
+  // ── Column Config inner panel switcher (Split / Edit) ────────────
+  function switchColPanel(show) {
+    var isEdit = show === 'edit';
+    document.getElementById('col-panel-split').style.display = isEdit ? 'none' : '';
+    document.getElementById('col-panel-edit').style.display  = isEdit ? ''     : 'none';
+    document.getElementById('col-tab-split-btn').className   = isEdit ? 'btn btn-outline-secondary btn-sm' : 'btn btn-secondary btn-sm';
+    document.getElementById('col-tab-edit-btn').className    = isEdit ? 'btn btn-secondary btn-sm' : 'btn btn-outline-secondary btn-sm';
+  }
+  document.getElementById('col-tab-split-btn').addEventListener('click', function () { switchColPanel('split'); });
+  document.getElementById('col-tab-edit-btn').addEventListener('click',  function () { switchColPanel('edit'); });
+
+  // ── Update config button ─────────────────────────────────────────
+  document.getElementById('update-config').addEventListener('click', function () {
+    // Deduplicate and sort edit rows, then alert if any were removed
+    var dedupeResult = { removedFields: [], removedNullCount: 0 };
+    if (window.deduplicateEditRules) {
+      try { dedupeResult = window.deduplicateEditRules(); } catch (e) { console.error('deduplicateEditRules error:', e); }
+    }
+    var msgs = [];
+    if (dedupeResult.removedFields.length > 0)
+      msgs.push('Duplicate rows removed for: ' + dedupeResult.removedFields.join(', ') + '.\nThe row with more information was kept.');
+    if (dedupeResult.removedNullCount > 0)
+      msgs.push(dedupeResult.removedNullCount + ' row(s) with no field selected were removed.');
+    if (msgs.length > 0) alert(msgs.join('\n\n'));
+    if (dedupeResult.missingMandatory && dedupeResult.missingMandatory.length > 0)
+      alert('Warning: the following mandatory output fields have no source column assigned:\n\n  ' +
+            dedupeResult.missingMandatory.join('\n  ') +
+            '\n\nYou can still continue, but the output may be incomplete.');
+    // Sync the JSON
+    if (window.syncJsonPreview) {
+      try { window.syncJsonPreview(); } catch (e) { console.error('syncJsonPreview error:', e); }
+    }
+    // Always open the JSON preview so the user can see the result
+    var panel  = document.getElementById('json-preview-collapse');
+    var preBtn = document.getElementById('json-preview-btn');
+    panel.style.display = 'block';
+    if (preBtn) preBtn.textContent = '\u25b2 View / Copy JSON';
+    // Show feedback
+    var status = document.getElementById('update-config-status');
+    status.style.display = 'inline';
+    setTimeout(function () { status.style.display = 'none'; }, 2000);
+  });
+
+  // Format wizard next / back
+  document.getElementById('format-next-1').addEventListener('click', function () { showFormatStep(2); });
+  document.getElementById('format-prev-2').addEventListener('click', function () { showFormatStep(1); });
+  document.getElementById('format-next-2').addEventListener('click', async function () {
+    showFormatStep(3);
+  });
+  document.getElementById('format-prev-3').addEventListener('click', function () { showFormatStep(2); });
+  document.getElementById('format-next-3').addEventListener('click', function () { showFormatStep(4); });
+  document.getElementById('format-prev-4').addEventListener('click', function () { showFormatStep(3); });
+
+  // Footer year
+  document.getElementById('year').textContent = new Date().getFullYear();
+}());
+</script>
+
+<!-- Scripts — order matters: jQuery must load before consumer.js uses it -->
+<script src="https://code.jquery.com/jquery-3.7.1.slim.js" integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc=" crossorigin="anonymous"></script>
+<script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAX+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script type="module" src="consumer.js"></script>
+
+</body>
+</html>

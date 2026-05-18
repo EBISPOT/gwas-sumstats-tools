@@ -19,7 +19,8 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
+/wheels/
+!ssf-morph/wheels/
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
@@ -70,6 +71,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/gwas-sumstats-tools-Documentation/.vale.ini
+docs/gwas-sumstats-tools-Documentation/.nojekyll
 
 # PyBuilder
 target/
@@ -128,3 +131,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# AI tooling
+.claude/
+.cursor/
+.agent/
+.aider/
+.continue/
