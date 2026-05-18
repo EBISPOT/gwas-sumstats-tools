@@ -37,15 +37,14 @@ If you have a different Python version installed on your local computer and enco
 
 ## Documentation Layout
 
-This documentation site is built with [Docsify](https://docsify.js.org/). Below is an overview of the files and folders in this directory.
+This documentation site is built with [Docsify](https://docsify.js.org/) — a client-side renderer that turns Markdown files into a website with no build step. The `index.html` loads Docsify from a CDN at runtime; all content is plain `.md` files.
 
 ```
-gwas-sumstats-tools-Documentation/
+gwas-sumstats-tools-doc/
 ├── index.html          # Docsify entry point — loads the site and configures plugins
 ├── _coverpage.md       # Cover page shown before the main docs
 ├── _sidebar.md         # Left-hand navigation sidebar
 ├── _navbar.md          # Top navigation bar
-├── .nojekyll           # Tells GitHub Pages not to process with Jekyll
 │
 ├── README.md           # Homepage / overview (this file)
 ├── tutorial.md         # Step-by-step tutorial
@@ -69,6 +68,37 @@ gwas-sumstats-tools-Documentation/
     ├── saige.tsv
     └── snptest.tsv
 ```
+
+### Previewing locally
+
+Because Docsify runs in the browser, you need a local HTTP server (opening `index.html` directly as a `file://` URL won't work).
+
+**Option 1 — Docsify CLI (recommended):**
+```bash
+npm install -g docsify-cli
+docsify serve gwas-sumstats-tools-doc
+# opens at http://localhost:3000
+```
+
+**Option 2 — Python:**
+```bash
+cd gwas-sumstats-tools-doc
+python3 -m http.server 3000
+# opens at http://localhost:3000
+```
+
+### How it is deployed
+
+The docs are served as a static site inside a Docker container alongside the [SSF-morph](https://github.com/EBISPOT/gwas-sumstats-tools) web app.
+
+1. **`Dockerfile.docs`** (repo root) copies this folder into the nginx image:
+   ```dockerfile
+   COPY gwas-sumstats-tools-doc ./docs
+   ```
+2. **`nginx.conf`** routes requests:
+   - `/apps/gwas_sumstats_tools/` → SSF-morph landing page
+   - `/apps/gwas_sumstats_tools/docs/` → this Docsify site
+3. The image is built and pushed by GitLab CI on pushes to `dev` or on a git tag, then deployed to Kubernetes via Helm (`deployment/helm/`).
 
 ### Adding or editing pages
 
