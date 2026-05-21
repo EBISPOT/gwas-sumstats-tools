@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.ingress.name }}
   namespace: {{ .Values.k8Namespace }}
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /gwas/apps/gwas_sumstats_tools/$2
+    nginx.ingress.kubernetes.io/rewrite-target: /gwas/apps/gwas-sumstats-tools/$2
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:

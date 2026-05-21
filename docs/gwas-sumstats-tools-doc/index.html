@@ -20,6 +20,8 @@
     // Docsify Configuration (see https://docsify.js.org/#/configuration)
     window.$docsify = {
       name: 'GWAS SumStats Tools',
+      routerMode: 'history',
+      relativePath: true,
 
       // Sidebar Configuration
       auto2top: true,
@@ -47,17 +49,16 @@
       plugins: [
         function(hook) {
           hook.doneEach(function() {
-            document.querySelectorAll('.app-nav a').forEach(function(a) {
-              if (a.textContent.trim() === 'SSF-morph') {
+            var landingPage = window.location.pathname.replace(/\/docs\/.*$/, '/');
+            document.querySelectorAll('a').forEach(function(a) {
+              if (a.textContent.trim() === 'SSF-morph' && !a.dataset.patched) {
                 a.href = 'javascript:void(0)';
-                if (!a.dataset.patched) {
-                  a.dataset.patched = '1';
-                  a.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.location.href = window.location.pathname.replace(/\/docs\/?$/, '/');
-                  });
-                }
+                a.dataset.patched = '1';
+                a.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.location.href = landingPage;
+                });
               }
             });
           });
