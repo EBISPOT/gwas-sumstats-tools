@@ -179,3 +179,33 @@ table.dataTable tbody tr td {
 .ssf-footer a {
   color: #23527c;
 }
+
+/* ── File drop zone ─────────────────────────────────────────── */
+.ssf-drop-zone {
+  border: 2px dashed #adb5bd;
+  border-radius: 0.5rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+  background-color: #f8f9fa;
+  color: #555;
+  user-select: none;
+}
+
+.ssf-drop-zone:hover,
+.ssf-drop-zone.drag-over {
+  border-color: #3B9E52;
+  background-color: #f0faf2;
+}
+
+.ssf-drop-zone__text {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.ssf-drop-zone__hint {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 0.25rem;
+}

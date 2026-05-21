@@ -8,10 +8,11 @@ const apply_config = await fetch('./python_bin/apply_config.py').then(response =
 const validate = await fetch('./python_bin/validation.py').then(response => response.text());
 const validation_out = document.getElementById('validation_out');
 
-let dirHandle;
-let inputFileHandle;
-let outputFileHandle;
-let validateFileHandle;
+let inputFile = null;
+let inputFileBuffer = null;
+let fileInWorker = false;   // true once inputFile has been written to worker MEMFS
+let validateFile = null;
+let validateFileBuffer = null;
 let delimiter;
 let removecomments;
 let analysisSoftware;
@@ -312,8 +313,6 @@ window.deduplicateEditRules = function () {
     for (const e of kept) tbody.appendChild(e.tr);
 
     // Check which mandatory fields have no source column assigned.
-    // A mandatory field is covered if a kept row has rename === mandatory,
-    // or rename is null and field === mandatory (column keeps its own name).
     const isCovered = mandatory => kept.some(e => e.rename === mandatory || (!e.rename && e.field === mandatory));
     const betaCovered = isCovered('beta') || isCovered('odds_ratio');
     const missingMandatory = MANDATORY_RENAME_FIELDS.filter(mandatory => {
@@ -350,10 +349,10 @@ document.getElementById('json-preview-btn').addEventListener('click', () => {
     if (isHidden) {
         syncJsonPreview();
         panel.style.display = 'block';
-        btn.textContent = '\u25b2 View / Copy JSON';
+        btn.textContent = '▲ View / Copy JSON';
     } else {
         panel.style.display = 'none';
-        btn.textContent = '\u25bc View / Copy JSON';
+        btn.textContent = '▼ View / Copy JSON';
     }
 });
 
@@ -377,13 +376,11 @@ document.getElementById('add-edit-rule').addEventListener('click', () => {
 // Expose column-loader so the inline step wizard can call it when navigating to Step 3
 // without having gone through "Generate" first.
 window.ensureInputColumns = async function () {
-    if (inputColumns.length === 0 && inputFileHandle) {
+    if (inputColumns.length === 0 && inputFile) {
         try {
-            // Mirror what the generate handler does — read delimiter/comments from the form
-            // so Python receives valid (possibly empty-string) values rather than undefined.
-            delimiter    = document.getElementById('delimiter').value;
+            delimiter      = document.getElementById('delimiter').value;
             removecomments = document.getElementById('comments').value;
-            const input = await read(inputFileHandle);
+            const input = await read(inputFile);
             if (!input) return;
             const indata = JSON.parse(input);
             inputColumns = indata.title.map(col => col.title);
@@ -393,211 +390,133 @@ window.ensureInputColumns = async function () {
     }
 };
 
+// ── File helpers ──────────────────────────────────────────────────
 
-async function mountLocalDirectory() {
-    // use the same ID crypt4gh to open pickers in the same directory
-    dirHandle = await showDirectoryPicker();
-
-    if ((await dirHandle.queryPermission({ mode: "readwrite" })) !== "granted") {
-        if (
-            (await dirHandle.requestPermission({ mode: "readwrite" })) !== "granted"
-        ) {
-            throw Error("Unable to read and write directory");
-        }
-    }
-} 
-
-async function saveFile(blob) {
-    try {
-      let outputConfig = `config_${inputFileHandle.name}.json`;
-      
-      const handle = await window.showSaveFilePicker({
-        suggestedName: outputConfig,
-        types: [
-          {
-            description: 'JSON files',
-            accept: {
-              'application/json': ['.json'],
-            },
-          },
-        ],
-      });
-  
-      // Write the blob to the file
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-  
-      console.log('File saved successfully!');
-    } catch (error) {
-      console.error('Error saving file:', error);
-    }
-  }
-
-async function getNewFileHandle() {
-    let outputFileName = `${inputFileHandle.name}_formatted.tsv`;
-
-    const options = {
-        suggestedName: outputFileName,
-        types: [
-            {
-                description: 'formatted file',
-                accept: {
-                    'application/octet-stream': ['.tsv'],
-                },
-            },
-        ],
-    };
-    return window.showSaveFilePicker(options);
+function triggerDownload(data, filename) {
+    const blob = new Blob([data], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
-async function generate(inputFileHandle) {
-    if (!inputFileHandle) {
-        error('inputFileHandle is not defined');
-        return;
+// Build the worker context for format operations.
+// Includes fileBuffer only on the first call after a new file is selected,
+// avoiding repeated large-buffer clones for test/apply/generate calls.
+function formatContext(extra) {
+    const ctx = { inputFileName: inputFile.name, ...extra };
+    if (!fileInWorker) {
+        ctx.fileBuffer = inputFileBuffer;
     }
+    return ctx;
+}
 
-    let context = {
-        dirHandle: dirHandle,
-        inputFileName: inputFileHandle.name,
-        delimiter: delimiter,
-        removecomments: removecomments,
-        analysisSoftware: analysisSoftware
-    };
+// ── Python runner wrappers ────────────────────────────────────────
+
+async function read(file) {
+    if (!file) { console.error('inputFile is not defined'); return; }
+    const context = formatContext({ delimiter, removecomments });
+    try {
+        const { results, error } = await asyncRun(read_input, context);
+        if (results) { fileInWorker = true; return results; }
+        if (error) {
+            console.log("pyodideWorker error: ", error);
+            appendAlertToElement("step2error", 'Error: ' + error, 'danger');
+        }
+    } catch (e) {
+        console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`);
+    }
+}
+
+async function generate(file) {
+    if (!file) { error('inputFile is not defined'); return; }
+    const context = formatContext({ delimiter, removecomments, analysisSoftware });
     try {
         const { results, error } = await asyncRun(generate_config, context);
         if (results) {
+            fileInWorker = true;
             console.log("pyodideWorker return results: ", results);
             alert("Generating configure file finish!");
             return results;
-        } else if (error) {
+        }
+        if (error) {
             console.log("pyodideWorker error: ", error);
-            appendAlertToElement("step2error",'Error: '+error,'danger' )
+            appendAlertToElement("step2error", 'Error: ' + error, 'danger');
         }
     } catch (e) {
-        console.log(
-            `Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`,
-        );
-        appendAlertToElement("step2error",'Error in pyodideWorker','danger')
+        console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`);
+        appendAlertToElement("step2error", 'Error in pyodideWorker', 'danger');
     }
 }
 
-async function read(inputFileHandle) {
-    if (!inputFileHandle) {
-        console.error('inputFileHandle is not defined');
-        return;
-    }
-
-    let context = {
-        dirHandle: dirHandle,
-        inputFileName: inputFileHandle.name,
-        delimiter: delimiter,
-        removecomments: removecomments,
-    };
-    try {
-        const { results, error } = await asyncRun(read_input, context);
-        if (results) {
-            console.log("pyodideWorker return results: ", results);
-            return results;
-        } else if (error) {
-            console.log("pyodideWorker error: ", error);
-            appendAlertToElement("step2error",'Error: '+error,'danger')
-        }
-    } catch (e) {
-        console.log(
-            `Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`,
-        );
-    }
-}
-
-
-async function test (inputFileHandle, config) {
-    if (!inputFileHandle) {
-        console.error('inputFileHandle is not defined');
-        return;
-    }
-    let context = {
-        dirHandle: dirHandle,
-        inputFileName: inputFileHandle.name,
-        config: config,
-    };
+async function test(file, config) {
+    if (!file) { console.error('inputFile is not defined'); return; }
+    const context = formatContext({ config });
     try {
         const { results, error } = await asyncRun(test_config, context);
         if (results) {
+            fileInWorker = true;
             console.log("pyodideWorker return results: ", results);
             alert("Format test finish!");
             return results;
-        } else if (error) {
+        }
+        if (error) {
             console.log("pyodideWorker error: ", error);
-            appendAlertToElement("step3rror",'Error: '+error,'danger')
+            appendAlertToElement("step3error", 'Error: ' + error, 'danger');
         }
     } catch (e) {
-        console.log(
-            `Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`,
-        );
+        console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`);
     }
 }
 
-async function apply (inputFileHandle, outputFileHandle, config) {
-    if (!inputFileHandle) {
-        console.error('inputFileHandle is not defined');
-        return;
-    }
-    let context = {
-        dirHandle: dirHandle,
-        inputFileName: inputFileHandle.name,
-        outputFileName: outputFileHandle.name,
-        config: config,
-    };
+async function apply(outputFileName, config) {
+    if (!inputFile) { console.error('inputFile is not defined'); return {}; }
+    const context = formatContext({ outputFileName, config, returnOutput: true });
     try {
-        const { results, error } = await asyncRun(apply_config, context);
-        if (results) {
-            $('#apply_configure').text("Please check the result in " + dirHandle + "/" + outputFileHandle.name);
+        const { results, error, outputData } = await asyncRun(apply_config, context);
+        if (!error) {
+            fileInWorker = true;
             console.log("pyodideWorker return results: ", results);
-            alert("Format test finish!");
-            return results;
-        } else if (error) {
-            $('#apply_configure').text("pyodideWorker error: ", error)
-            console.log("pyodideWorker error: ", error);
-            appendAlertToElement("step4rror",'Error: '+error,'danger')
+            alert("Format apply finish!");
+            return { results, outputData };
         }
+        console.log("pyodideWorker error: ", error);
+        appendAlertToElement("step4error", 'Error: ' + error, 'danger');
     } catch (e) {
-        $('#apply_configure').text(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`)
-        console.log(
-            `Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`,
-        );
+        console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`);
+        appendAlertToElement("step4error", 'Error in pyodideWorker', 'danger');
     }
+    return {};
 }
 
-async function validation(validateFileHandle) {
-    if (!validateFileHandle) {
-        console.error('formatted data is not defined');
-        return;
-    }
-    console.log(dirHandle);
-    let context = {
-        dirHandle: dirHandle,
-        outputFileName: validateFileHandle.name,
-        zeropvalues: zeropvalues,
-        nrows: nrows
+async function validation() {
+    if (!validateFile) { console.error('validateFile is not defined'); return; }
+    const context = {
+        validateBuffer: validateFileBuffer,
+        outputFileName: validateFile.name,
+        zeropvalues,
+        nrows,
     };
     try {
         const { results, error } = await asyncRun(validate, context);
         if (results) {
-            validation_out.value =results;
+            validation_out.value = results;
             console.log("pyodideWorker return results: ", results);
             alert("Validation finish!");
             return results;
-        } else if (error) {
-            validation_out.value =error;
+        }
+        if (error) {
+            validation_out.value = error;
             console.log("pyodideWorker error: ", error);
-            appendAlertToElement("step5error",'Error: '+error,'danger')
+            appendAlertToElement("step5error", 'Error: ' + error, 'danger');
         }
     } catch (e) {
-        validation_out.value =`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`;
-        console.log(
-            `Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`,
-        );
+        validation_out.value = `Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`;
+        console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`);
     }
 }
 
@@ -607,7 +526,6 @@ async function appendAlertToElement(elementId, message, type) {
         console.error("Element with ID '" + elementId + "' not found.");
         return;
     }
-
     const wrapper = document.createElement('div');
     wrapper.innerHTML = [
         `<div class="alert alert-${type} alert-dismissible" role="alert">`,
@@ -615,48 +533,67 @@ async function appendAlertToElement(elementId, message, type) {
         '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
         '</div>'
     ].join('');
-
     alertPlaceholder.append(wrapper);
 }
 
-document.querySelector('#mount').addEventListener("click", async () => {
-    if (!('showDirectoryPicker' in window)) {
-        alert('Your browser does not support the File System Access API. Please use a supported browser.');
-        return; // Stop execution if the API is not supported
-    }
-    else {
-        await mountLocalDirectory();
-        appendAlertToElement('mountdiv','Nice, you have granted the permission to the local directory '+dirHandle.name,'success' )
-        document.querySelector('#select').disabled = false;
-        document.querySelector('#select_validate').disabled = false;
-        document.querySelector('#mountvalidate').disabled = true;
-    }
-  });
+// ── Drop zone setup ───────────────────────────────────────────────
 
-document.querySelector('#select').addEventListener('click', async () => {
-    // Destructure the one-element array.
-    [inputFileHandle] = await window.showOpenFilePicker();
-    appendAlertToElement('selectdiv','You have selected the file '+ inputFileHandle.name,'success' )
-    document.querySelector('#generate').disabled = false;
-    document.querySelector('#download').disabled = false;
-    document.querySelector('#test').disabled = false;
-    document.querySelector('#apply').disabled = false;
+function setupDropZone(zoneId, inputId, onFile) {
+    const zone  = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) onFile(file);
+    });
+    input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) onFile(file);
+        e.target.value = '';
+    });
+}
+
+// Format wizard — input file
+setupDropZone('format-drop-zone', 'format-file-input', async (file) => {
+    inputFile       = file;
+    inputFileBuffer = await file.arrayBuffer();
+    fileInWorker    = false;
+    appendAlertToElement('selectdiv', 'You have selected the file ' + file.name, 'success');
+    document.querySelector('#generate').disabled     = false;
+    document.querySelector('#download').disabled     = false;
+    document.querySelector('#test').disabled         = false;
+    document.querySelector('#apply').disabled        = false;
     document.querySelector('#format-next-1').disabled = false;
 });
 
-document.querySelector('#generate').addEventListener('click', async () => {
-    delimiter = document.getElementById('delimiter').value;
-    removecomments = document.getElementById('comments').value;
-    analysisSoftware= document.getElementById('analysis_software').value;
+// Validate wizard — file to validate
+setupDropZone('validate-drop-zone', 'validate-file-input', async (file) => {
+    validateFile       = file;
+    validateFileBuffer = await file.arrayBuffer();
+    appendAlertToElement('validatediv', 'You have selected the file ' + file.name + ' for validation', 'success');
+    document.querySelector('#validate').disabled = false;
+});
 
-    appendAlertToElement("step2error",'Please Note: This is not guaranteed to return a valid standard file, because mandatory data fields could be missing in the input.','warning' )
+// ── Generate ──────────────────────────────────────────────────────
+
+document.querySelector('#generate').addEventListener('click', async () => {
+    delimiter      = document.getElementById('delimiter').value;
+    removecomments = document.getElementById('comments').value;
+    analysisSoftware = document.getElementById('analysis_software').value;
+
+    appendAlertToElement("step2error", 'Please Note: This is not guaranteed to return a valid standard file, because mandatory data fields could be missing in the input.', 'warning');
 
     $('#generate').html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Analyzing...');
 
-    let input = await read(inputFileHandle);
+    let input = await read(inputFile);
     if (!input) {
         $('#generate').html('Generate configuration');
-        return;   // read() already showed the error alert
+        return;
     }
     let indata;
     try {
@@ -670,28 +607,25 @@ document.querySelector('#generate').addEventListener('click', async () => {
     // Store column names for the config form dropdowns
     inputColumns = indata.title.map(col => col.title);
 
-        var dataSet = indata.data;
-        dataSet.forEach(r => {
-            var div1 = document.createElement('div');
-            div1.innerHTML = r[1];
-            r[1] = div1;
-         
-            var div3 = document.createElement('div');
-            div3.innerHTML = r[3];
-            r[3] = div3;
-        })
+    var dataSet = indata.data;
+    dataSet.forEach(r => {
+        var div1 = document.createElement('div');
+        div1.innerHTML = r[1];
+        r[1] = div1;
 
-        // Store for lazy init — the table is inside a hidden panel so DataTables
-        // can't measure widths here. It will be initialised on first open instead.
-        if ($.fn.dataTable.isDataTable('#your_input')) {
-            $('#your_input').DataTable().destroy();
-            $('#your_input').empty();
-        }
-        inputTablePending = { columns: indata.title, data: dataSet };
-        $('#generate').html('Generate configuration');
+        var div3 = document.createElement('div');
+        div3.innerHTML = r[3];
+        r[3] = div3;
+    });
 
+    if ($.fn.dataTable.isDataTable('#your_input')) {
+        $('#your_input').DataTable().destroy();
+        $('#your_input').empty();
+    }
+    inputTablePending = { columns: indata.title, data: dataSet };
+    $('#generate').html('Generate configuration');
 
-    let output = await generate(inputFileHandle);
+    let output = await generate(inputFile);
     try {
         configToForm(JSON.parse(output));
         window.configGenerated = true;
@@ -701,14 +635,14 @@ document.querySelector('#generate').addEventListener('click', async () => {
     } catch (err) {
         appendAlertToElement('step2error', 'Error generating configuration: ' + err, 'danger');
     }
-  
 });
+
+// ── Test ──────────────────────────────────────────────────────────
 
 document.querySelector('#test').addEventListener('click', async () => {
     test_example.value = "Preparing the result example...\n";
     var config = formToConfig();
-    //your_output = "Preparing the result example...\n";
-    let test_output=await test(inputFileHandle,config);
+    let test_output = await test(inputFile, config);
     try {
         test_example.value = "formatting result example\n";
         var test_out = JSON.parse(test_output);
@@ -718,90 +652,82 @@ document.querySelector('#test').addEventListener('click', async () => {
             var div1 = document.createElement('div');
             div1.innerHTML = r[1];
             r[1] = div1;
-         
+
             var div3 = document.createElement('div');
             div3.innerHTML = r[3];
             r[3] = div3;
-        })
-
-        //if the table table exist, need to destroy it and reinitiliaze it.
-       if($.fn.dataTable.isDataTable('#your_output') ){
-        $('#your_output').DataTable().destroy();
-        $('#your_output').empty();
-       }
-       // create the table on the UI side
-       $('#your_output').DataTable({
-        columns: test_out.title,
-        data: dataSet,
-        paging: false,
-        ordering: false,
-        searching: false,
-        autoWidth: true,
-        scrollX: "600px"
         });
 
+        if ($.fn.dataTable.isDataTable('#your_output')) {
+            $('#your_output').DataTable().destroy();
+            $('#your_output').empty();
+        }
+        $('#your_output').DataTable({
+            columns:  test_out.title,
+            data:     dataSet,
+            paging:   false,
+            ordering: false,
+            searching: false,
+            autoWidth: true,
+            scrollX:  "600px"
+        });
     } catch (err) {
-        test_example.value = "Test configure on the input data:There is an error";
+        test_example.value = "Test configure on the input data: There is an error";
     }
 });
+
+// ── Download config ───────────────────────────────────────────────
 
 document.querySelector('#download').addEventListener('click', async () => {
     $('#download').removeClass('btn-outline-secondary').addClass('btn-primary')
                   .html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Downloading...');
-    var config = formToConfig();
-    const blob = new Blob([config], { type: 'application/json' });
-    await saveFile(blob);
+    const config = formToConfig();
+    const filename = inputFile ? `config_${inputFile.name}.json` : 'config.json';
+    triggerDownload(new TextEncoder().encode(config), filename);
     $('#download').removeClass('btn-primary').addClass('btn-success').text('Done');
 });
 
+// ── Apply ─────────────────────────────────────────────────────────
+
 document.querySelector('#apply').addEventListener('click', async () => {
-    apply_configure.value = "Preparing the result ...\n";
-    $('#apply').removeClass('btn-success').addClass('btn-primary').html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Formatting...');
-    $('#apply_configure').text("we are appliying the configure to " + inputFileHandle.name);
-    var config = formToConfig();
-    outputFileHandle = await getNewFileHandle(inputFileHandle);
-    await apply(inputFileHandle,outputFileHandle,config);
-    apply_configure.value ="Apply configure file finish!\n";
+    $('#apply').removeClass('btn-success').addClass('btn-primary')
+               .html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Formatting...');
+    $('#apply_configure').text('Applying configuration to ' + inputFile.name + '...');
+
+    const config    = formToConfig();
+    const configObj = JSON.parse(config);
+    const suffix    = (configObj.fileConfig && configObj.fileConfig.outFileSuffix)
+                      ? configObj.fileConfig.outFileSuffix : 'formatted_';
+    const outputFileName = suffix + inputFile.name;
+
+    const { outputData } = await apply(outputFileName, config);
+    if (outputData) {
+        triggerDownload(outputData, outputFileName);
+        $('#apply_configure').text('Download started: ' + outputFileName);
+    }
     $('#apply').removeClass('btn-primary').addClass('btn-success').text('Done');
 });
 
-document.querySelector('#mountvalidate').addEventListener('click', async () => {
-    if (!('showDirectoryPicker' in window)) {
-        alert('Your browser does not support the File System Access API. Please use a supported browser.');
-        return; // Stop execution if the API is not supported
-    }
-    else {
-        await mountLocalDirectory();
-        appendAlertToElement('validatediv','Nice, you have granted the permission to the local directory '+dirHandle.name,'success' )
-        document.querySelector('#mount').disabled = true;
-        document.querySelector('#select_validate').disabled = false;
-    }
-});
-
-
-document.querySelector('#select_validate').addEventListener('click', async () => {
-    [validateFileHandle] = await window.showOpenFilePicker();
-    appendAlertToElement('validatediv','You have selected the file '+ validateFileHandle.name + 'for validation','success' )
-    document.querySelector('#validate').disabled = false;
-});
-
+// ── Validate ──────────────────────────────────────────────────────
 
 document.querySelector('#validate').addEventListener('click', async () => {
-    zeropvalues=document.getElementById('zeropvalues').value
-    nrows=document.getElementById('nrows').value
+    zeropvalues = document.getElementById('zeropvalues').value;
+    nrows       = document.getElementById('nrows').value;
 
     validation_out.value = "Initializing validation...\n";
-    $('#validate').html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...'); 
-    await validation(validateFileHandle);
-    $('#validate').html('<button id="validate" class="btn btn-primary" data-mdb-ripple-init>Validate the selected file</button>'); 
+    $('#validate').html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...');
+    await validation();
+    $('#validate').html('Validate');
 });
+
+// ── DataTable lazy-init ───────────────────────────────────────────
 
 $(document).ready(function() {
     // Lazy-init: initialise #example_table only on first open so DataTables
     // can measure real dimensions (initialising while hidden gives 0-px columns).
     var exampleTableInitialized = false;
 
-    $( "#collapseExample" ).on("shown.bs.collapse", function() {
+    $("#collapseExample").on("shown.bs.collapse", function() {
         if (!exampleTableInitialized) {
             new DataTable('#example_table', {
                 columns: [
@@ -833,7 +759,7 @@ $(document).ready(function() {
         }
     });
 
-    $( "#collapseInput" ).on("shown.bs.collapse", function() {
+    $("#collapseInput").on("shown.bs.collapse", function() {
         if (inputTablePending) {
             new DataTable('#your_input', {
                 columns:   inputTablePending.columns,
@@ -847,4 +773,4 @@ $(document).ready(function() {
             $('#your_input').DataTable().columns.adjust().draw();
         }
     });
-} );
+});

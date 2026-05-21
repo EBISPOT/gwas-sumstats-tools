@@ -47,7 +47,7 @@
     </div>
     <div class="alert alert-warning" role="alert">
       <strong>Browser requirement:</strong>
-      This tool requires a Chromium-based browser (Google Chrome or Microsoft Edge) that supports the File System Access API.
+      This tool requires a modern browser with WebAssembly support (Google Chrome, Microsoft Edge, Firefox, or Safari 15.4+).
     </div>
     <div class="alert alert-info" role="alert">
       <strong>File size limit:</strong>
@@ -129,16 +129,13 @@
       <div class="card">
         <div class="card-body">
           <h5 class="card-title">Step 1: Select the input file</h5>
-          <p class="card-text">
-            1.1&nbsp; Grant the browser permission to read and write to a local directory:&nbsp;
-            <button type="button" id="mount" class="btn btn-primary">Grant permission</button>
-          </p>
-          <div id="mountdiv"></div>
-          <p class="card-text mt-2">
-            1.2&nbsp; Select your input file:&nbsp;
-            <button type="button" id="select" disabled class="btn btn-primary">Select input file</button>
-          </p>
-          <div id="selectdiv"></div>
+          <p class="card-text">Drop your input file below, or click to browse:</p>
+          <div class="ssf-drop-zone" id="format-drop-zone">
+            <div class="ssf-drop-zone__text">Drop file here or <strong>click to browse</strong></div>
+            <div class="ssf-drop-zone__hint">Supports TSV, CSV, and other delimited formats (up to 2 GB)</div>
+          </div>
+          <input type="file" id="format-file-input" class="d-none">
+          <div id="selectdiv" class="mt-2"></div>
         </div>
       </div>
       <div class="d-flex justify-content-end mt-3">
@@ -393,13 +390,12 @@
       <div class="card-body">
         <h5 class="card-title">Validate your formatted file</h5>
 
-        <p class="card-text">
-          5.1&nbsp; Grant permission to a local directory (skip if already granted during formatting):&nbsp;
-          <button type="button" id="mountvalidate" class="btn btn-primary">Grant permission</button>
-          &nbsp; then select the file to validate:&nbsp;
-          <button id="select_validate" disabled class="btn btn-primary">Select file to validate</button>
-        </p>
-        <div id="validatediv"></div>
+        <p class="card-text">5.1&nbsp; Select the file to validate:</p>
+        <div class="ssf-drop-zone" id="validate-drop-zone">
+          <div class="ssf-drop-zone__text">Drop file here or <strong>click to browse</strong></div>
+        </div>
+        <input type="file" id="validate-file-input" class="d-none">
+        <div id="validatediv" class="mt-2"></div>
 
         <p class="card-text mt-3">
           5.2&nbsp; Set validation thresholds <span class="text-muted">(optional)</span>:<br>
@@ -616,7 +612,7 @@
 <!-- Scripts — order matters: jQuery must load before consumer.js uses it -->
 <script src="https://code.jquery.com/jquery-3.7.1.slim.js" integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc=" crossorigin="anonymous"></script>
 <script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAX+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <script type="module" src="consumer.js"></script>
 
 </body>
