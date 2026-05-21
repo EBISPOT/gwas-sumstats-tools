@@ -211,7 +211,7 @@ def normalize_file_type(value: Optional[str]) -> Optional[str]:
         Canonical file_type string, or the original value if not in mapping.
     """
     import re
-    from gwas_sumstats_tools.constants import FILE_TYPE_MAPPINGS, GWAS_SSF_VERSION
+    from src.gwas_sumstats_tools.constants import FILE_TYPE_MAPPINGS, GWAS_SSF_VERSION
 
     if value is None:
         return None

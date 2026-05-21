@@ -5,9 +5,9 @@ import petl as etl
 from pandera import errors
 from rich import print
 
-from gwas_sumstats_tools.schema.data_table import SumStatsSchema
-from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
-from gwas_sumstats_tools.interfaces.metadata import init_metadata_from_file
+from src.gwas_sumstats_tools.schema.data_table import SumStatsSchema
+from src.gwas_sumstats_tools.interfaces.data_table import SumStatsTable
+from src.gwas_sumstats_tools.interfaces.metadata import init_metadata_from_file
 
 
 class Validator(SumStatsTable):

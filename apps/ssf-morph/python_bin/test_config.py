@@ -1,5 +1,5 @@
 from js import inputFileName, config
-from gwas_sumstats_tools.format import format
+from src.gwas_sumstats_tools.format import format
 from datetime import datetime
 from pathlib import Path
 import petl as etl

@@ -12,26 +12,29 @@ It ships as:
 
 ```
 gwas-sumstats-tools/
-├── gwas_sumstats_tools/        # Python package (the core library and CLI)
-├── ssf-morph/                  # Browser web app (Pyodide-based)
-├── gwas-sumstats-tools-doc/    # Docsify documentation site
+├── src/
+│   └── gwas_sumstats_tools/    # Python package (the core library and CLI)
+├── apps/
+│   └── ssf-morph/              # Browser web app (Pyodide-based)
+├── docs/
+│   ├── gwas-sumstats-tools-doc/  # Docsify documentation site
+│   └── decisions/              # Architecture decision records
 ├── tests/                      # Pytest test suite
 ├── deployment/                 # Kubernetes Helm chart
-├── docs/                       # Architecture decision records
 ├── dist/                       # Built Python wheel and sdist archives
 ├── Dockerfile                  # Docker image for the CLI
 ├── Dockerfile.docs             # Docker image: nginx serving ssf-morph + docs
 ├── nginx.conf                  # nginx routing config for the Docker image
 ├── DEPLOYMENT.md               # End-to-end deployment guide
 ├── pyproject.toml              # Poetry project configuration
-└── .gitlab-ci.yml / .github/   # CI/CD pipelines
+└── .github/                    # CI/CD pipelines
 ```
 
 ---
 
 ## Folder Descriptions
 
-### `gwas_sumstats_tools/`
+### `src/gwas_sumstats_tools/`
 The installable Python package. Exposes a `gwas-ssf` CLI entry-point and a public Python API.
 
 | File / Folder | Purpose |
@@ -47,7 +50,7 @@ The installable Python package. Exposes a `gwas-ssf` CLI entry-point and a publi
 | `interfaces/` | Data-layer abstractions: `data_table.py` (tabular data), `metadata.py` (YAML metadata) |
 | `schema/` | Pydantic/Pandera schemas for data validation and config structure |
 
-### `ssf-morph/`
+### `apps/ssf-morph/`
 A browser-only web app that runs the same Python formatting and validation logic in-browser via [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly). No server or installation needed.
 
 | File / Folder | Purpose |
@@ -62,7 +65,7 @@ A browser-only web app that runs the same Python formatting and validation logic
 
 > Requires a Chromium-based browser (Chrome, Edge). Single file, max 2 GB.
 
-### `gwas-sumstats-tools-doc/`
+### `docs/gwas-sumstats-tools-doc/`
 A [Docsify](https://docsify.js.org/) documentation site — plain Markdown files rendered client-side. Covers installation, CLI usage, the web UI guide, a tutorial, and the configuration format.
 
 | File / Folder | Purpose |
@@ -104,16 +107,16 @@ Kubernetes deployment configuration using Helm.
 | `helm/templates/service.yaml` | K8S Service resource |
 | `helm/templates/ingress.yaml` | K8S Ingress resource |
 
-### `docs/`
+### `docs/decisions/`
 Architecture Decision Records (ADRs) — lightweight design documents explaining why key technical choices were made.
 
 | File | Purpose |
 |---|---|
-| `decisions/0001-validator.md` | Decision record for the validation approach |
-| `decisions/0002-deployment.md` | Decision record for the deployment architecture |
+| `0001-validator.md` | Decision record for the validation approach |
+| `0002-deployment.md` | Decision record for the deployment architecture |
 
 ### `dist/`
-Pre-built Python distribution archives (wheels and source tarballs) produced by `poetry build`. The latest wheel is also copied into `ssf-morph/wheels/` for use by the browser app.
+Pre-built Python distribution archives (wheels and source tarballs) produced by `poetry build`. The latest wheel is also copied into `apps/ssf-morph/wheels/` for use by the browser app.
 
 ---
 
@@ -137,7 +140,7 @@ poetry install
 pytest
 
 # Preview the docs locally
-cd gwas-sumstats-tools-doc
+cd docs/gwas-sumstats-tools-doc
 python3 -m http.server 3000
 # then open http://localhost:3000
 ```
@@ -150,7 +153,7 @@ Two independent release flows:
 
 | Flow | Trigger | Produces |
 |---|---|---|
-| **PyPI** | GitHub Release | Python package on PyPI + updated wheel in ssf-morph |
+| **PyPI** | GitHub Release | Python package on PyPI + updated wheel in apps/ssf-morph |
 | **Docs/App** | Push to `dev` or git tag via GitLab CI | Docker image → Kubernetes (EBI) |
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for full details.

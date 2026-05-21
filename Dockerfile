@@ -20,4 +20,4 @@ WORKDIR /application
 COPY . /application/
 RUN poetry install
 
-ENTRYPOINT ["poetry", "run", "python3", "gwas_sumstats_tools/cli.py"]
+ENTRYPOINT ["poetry", "run", "python3", "src/gwas_sumstats_tools/cli.py"]

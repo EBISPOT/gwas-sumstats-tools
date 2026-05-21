@@ -21,15 +21,15 @@ WORKDIR /app
 # Copy project files
 COPY pyproject.toml poetry.lock* ./
 COPY README.md LICENSE ./
-COPY gwas_sumstats_tools/ ./gwas_sumstats_tools/
+COPY src/ ./src/
 
 # Install dependencies and build the package
 RUN poetry install --only main \
     && poetry build
 
 # Copy ssf-morph (main landing page) and documentation
-COPY ssf-morph/ ./ssf-morph/
-COPY gwas-sumstats-tools-doc ./docs
+COPY apps/ssf-morph/ ./ssf-morph/
+COPY docs/gwas-sumstats-tools-doc ./docs
 
 # ── Stage 2: serve ────────────────────────────────────────────────────────────
 # Lightweight nginx container to serve ssf-morph (landing page) + documentation

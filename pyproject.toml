@@ -4,7 +4,7 @@ version = "1.0.24"
 description = ""
 authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>", "yueji <jiyue1214@gmail.com>"]
 readme = "README.md"
-packages = [{include = "gwas_sumstats_tools"}]
+packages = [{include = "gwas_sumstats_tools", from = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"

@@ -6,7 +6,7 @@ This project has two independent release flows:
 
 | Flow | Trigger | System | Produces |
 |------|---------|--------|---------|
-| **A — PyPI** | GitHub Release | GitHub Actions | Python package on PyPI + updated wheel in ssf-morph |
+| **A — PyPI** | GitHub Release | GitHub Actions | Python package on PyPI + updated wheel in apps/ssf-morph |
 | **B — Docs/App** | Push to `dev` or git tag | GitLab CI | Docker image on Docker Hub → deployed to K8S via Helm |
 
 ---
@@ -51,8 +51,8 @@ This project has two independent release flows:
 |------|---------|
 | `Dockerfile.docs` | Multi-stage build: Poetry builder → nginx server |
 | `nginx.conf` | Routes `/apps/gwas_sumstats_tools/` and `/apps/gwas_sumstats_tools/docs/` |
-| `ssf-morph/webworker.js` | Loads Pyodide + the versioned wheel file |
-| `ssf-morph/wheels/` | Wheel files loaded by the browser app |
+| `apps/ssf-morph/webworker.js` | Loads Pyodide + the versioned wheel file |
+| `apps/ssf-morph/wheels/` | Wheel files loaded by the browser app |
 | `deployment/helm/Chart.yaml` | Helm chart metadata |
 | `deployment/helm/values.yaml` | Default values (image, namespace, resources) |
 | `deployment/helm/templates/` | K8S Deployment, Service, Ingress templates |
@@ -107,9 +107,9 @@ On GitHub → Settings → Environments → create an environment named `publish
 ```
 test (pytest)
   → build wheel: gwas_sumstats_tools-1.0.25-py3-none-any.whl
-  → remove old gwas_sumstats_tools-*.whl from ssf-morph/wheels/
-  → copy new wheel to ssf-morph/wheels/
-  → update webworker.js to reference new wheel filename
+  → remove old gwas_sumstats_tools-*.whl from apps/ssf-morph/wheels/
+  → copy new wheel to apps/ssf-morph/wheels/
+  → update apps/ssf-morph/webworker.js to reference new wheel filename
   → commit & push changes to master
   → publish to PyPI
 ```

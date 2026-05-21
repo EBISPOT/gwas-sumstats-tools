@@ -1,5 +1,5 @@
 from js import inputFileName, delimiter, removecomments
-from gwas_sumstats_tools.read import read
+from src.gwas_sumstats_tools.read import read
 from datetime import datetime
 from pathlib import Path
 import petl as etl

@@ -4,7 +4,7 @@ import petl as etl
 from tests.prep_tests import SSTestFile, EFFECT_FIELDS
 from pandera import DataFrameSchema
 
-from gwas_sumstats_tools.validate import Validator
+from src.gwas_sumstats_tools.validate import Validator
 
 
 @pytest.fixture()

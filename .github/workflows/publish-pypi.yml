@@ -59,11 +59,11 @@ jobs:
           echo "New wheel: $new_wheel_name"
 
           # Replace old wheel file with the new one
-          rm -f ssf-morph/wheels/gwas_sumstats_tools-*.whl
-          cp "$new_wheel" ssf-morph/wheels/
+          rm -f apps/ssf-morph/wheels/gwas_sumstats_tools-*.whl
+          cp "$new_wheel" apps/ssf-morph/wheels/
 
           # Update webworker.js to reference the new wheel filename
-          sed -i "s|./wheels/gwas_sumstats_tools-[^'\"]*\.whl|./wheels/${new_wheel_name}|g" ssf-morph/webworker.js
+          sed -i "s|./wheels/gwas_sumstats_tools-[^'\"]*\.whl|./wheels/${new_wheel_name}|g" apps/ssf-morph/webworker.js
           echo "Updated webworker.js to load $new_wheel_name"
 
       - name: Commit and push wheel update to master
@@ -73,7 +73,7 @@ jobs:
           git fetch origin master
           git checkout master
           if [[ -n $(git status -s) ]]; then
-            git add ssf-morph/wheels/gwas_sumstats_tools-*.whl ssf-morph/webworker.js
+            git add apps/ssf-morph/wheels/gwas_sumstats_tools-*.whl apps/ssf-morph/webworker.js
             git commit -m "chore: update gwas_sumstats_tools wheel to ${GITHUB_REF_NAME}"
             git push origin master
           fi
