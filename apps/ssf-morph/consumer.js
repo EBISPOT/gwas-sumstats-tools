@@ -1,5 +1,5 @@
 import "https://cdn.datatables.net/2.0.3/js/dataTables.js"
-import { asyncRun } from "./py-worker.js";
+import { asyncRun, stopWorker } from "./py-worker.js";
 
 const read_input = await fetch('./python_bin/read_input.py').then(response => response.text());
 const generate_config = await fetch('./python_bin/generate_config.py').then(response => response.text());
@@ -542,7 +542,9 @@ async function apply(outputFileName, config) {
     if (!inputFile) { console.error('inputFile is not defined'); return {}; }
     const context = formatContext({ outputFileName, config, returnOutput: true });
     try {
-        const { results, error, outputData } = await asyncRun(apply_config, context);
+        const result = await asyncRun(apply_config, context);
+        if (result.stopped) return { stopped: true };
+        const { results, error, outputData } = result;
         if (!error) {
             fileInWorker = true;
             console.log("pyodideWorker return results: ", results);
@@ -559,7 +561,7 @@ async function apply(outputFileName, config) {
 }
 
 async function validation() {
-    if (!validateFile) { console.error('validateFile is not defined'); return; }
+    if (!validateFile) { console.error('validateFile is not defined'); return {}; }
     const context = {
         validateBuffer: validateFileBuffer,
         outputFileName: validateFile.name,
@@ -568,9 +570,11 @@ async function validation() {
         validateAll: validateAll ? 'True' : 'False',
     };
     try {
-        const { results, error } = await asyncRun(validate, context, (msg) => {
+        const result = await asyncRun(validate, context, (msg) => {
             validation_out.value += msg + '\n';
         });
+        if (result.stopped) return { stopped: true };
+        const { results, error } = result;
         if (results) {
             validation_out.value = results;
             console.log("pyodideWorker return results: ", results);
@@ -586,6 +590,7 @@ async function validation() {
         validation_out.value = `Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`;
         console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`);
     }
+    return {};
 }
 
 async function appendAlertToElement(elementId, message, type) {
@@ -629,7 +634,9 @@ function setupDropZone(zoneId, inputId, onFile) {
 // Format wizard — input file
 setupDropZone('format-drop-zone', 'format-file-input', async (file) => {
     inputFile       = file;
-    inputFileBuffer = await file.arrayBuffer();
+    // Read only the first 1MB for fast generate/read/test operations.
+    // Apply loads the full file lazily when the button is clicked.
+    inputFileBuffer = await file.slice(0, 1048576).arrayBuffer();
     fileInWorker    = false;
     appendAlertToElement('selectdiv', 'You have selected the file ' + file.name, 'success');
     document.querySelector('#generate').disabled     = false;
@@ -772,8 +779,20 @@ document.querySelector('#download').addEventListener('click', async () => {
 // ── Apply ─────────────────────────────────────────────────────────
 
 document.querySelector('#apply').addEventListener('click', async () => {
-    $('#apply').removeClass('btn-success').addClass('btn-primary')
+    const applyBtn = document.querySelector('#apply');
+    const stopBtn  = document.querySelector('#stop-apply');
+    document.getElementById('stop-apply-suggestion').style.display = 'none';
+
+    // Apply needs the whole file — reload if we only have the 1MB preview slice.
+    if (inputFile && inputFile.size > inputFileBuffer.byteLength) {
+        inputFileBuffer = await inputFile.arrayBuffer();
+        fileInWorker = false;  // force re-write to MEMFS with the full file
+    }
+
+    $(applyBtn).removeClass('btn-success').addClass('btn-primary')
                .html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Formatting...');
+    applyBtn.disabled = true;
+    stopBtn.style.display = 'inline-block';
     $('#apply_configure').text('Applying configuration to ' + inputFile.name + '...');
 
     const config    = formToConfig();
@@ -782,15 +801,53 @@ document.querySelector('#apply').addEventListener('click', async () => {
                       ? configObj.fileConfig.outFileSuffix : 'formatted_';
     const outputFileName = suffix + inputFile.name;
 
-    const { outputData } = await apply(outputFileName, config);
+    const { outputData, stopped } = await apply(outputFileName, config);
+    stopBtn.style.display = 'none';
+    applyBtn.disabled = false;
+    if (stopped) return;
     if (outputData) {
         triggerDownload(outputData, outputFileName);
         $('#apply_configure').text('Download started: ' + outputFileName);
     }
-    $('#apply').removeClass('btn-primary').addClass('btn-success').text('Done');
+    $(applyBtn).removeClass('btn-primary').addClass('btn-success').text('Done');
 });
 
+document.querySelector('#stop-apply').addEventListener('click', async () => {
+    stopWorker();
+    fileInWorker = false;
+    // Restore preview slice so generate/test don't re-send the full file next time
+    if (inputFile) inputFileBuffer = await inputFile.slice(0, 1048576).arrayBuffer();
+    const applyBtn = document.querySelector('#apply');
+    const stopBtn  = document.querySelector('#stop-apply');
+    $(applyBtn).removeClass('btn-primary').addClass('btn-success').text('Apply & Download');
+    applyBtn.disabled = false;
+    stopBtn.style.display = 'none';
+    document.getElementById('apply_configure').textContent = '';
+    document.getElementById('stop-apply-suggestion').style.display = 'block';
+});
+
+window.downloadConfigAfterStop = function () {
+    const config = formToConfig();
+    const filename = inputFile ? `config_${inputFile.name}.json` : 'config.json';
+    triggerDownload(new TextEncoder().encode(config), filename);
+};
+
 // ── Validate ──────────────────────────────────────────────────────
+
+function validateStart(btn) {
+    document.querySelector('#validate-quick').disabled = true;
+    document.querySelector('#validate-full').disabled  = true;
+    document.querySelector('#stop-validate').style.display = 'inline-block';
+    document.getElementById('stop-validate-suggestion').style.display = 'none';
+    btn.innerHTML = '<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...';
+}
+
+function validateEnd(btn, label) {
+    document.querySelector('#validate-quick').disabled = false;
+    document.querySelector('#validate-full').disabled  = false;
+    document.querySelector('#stop-validate').style.display = 'none';
+    btn.textContent = label;
+}
 
 document.querySelector('#validate-quick').addEventListener('click', async () => {
     zeropvalues = document.getElementById('zeropvalues').value;
@@ -798,9 +855,10 @@ document.querySelector('#validate-quick').addEventListener('click', async () => 
     validateAll = false;
     validation_out.value = "Initializing quick validation (first 1M rows)...\n";
     const btn = document.querySelector('#validate-quick');
-    btn.innerHTML = '<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...';
-    await validation();
-    btn.textContent = 'Quick Validate';
+    validateStart(btn);
+    const result = await validation();
+    if (result && result.stopped) return;
+    validateEnd(btn, 'Quick Validate');
 });
 
 document.querySelector('#validate-full').addEventListener('click', async () => {
@@ -809,9 +867,22 @@ document.querySelector('#validate-full').addEventListener('click', async () => {
     validateAll = true;
     validation_out.value = "Initializing full validation...\n";
     const btn = document.querySelector('#validate-full');
-    btn.innerHTML = '<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...';
-    await validation();
-    btn.textContent = 'Full Validate';
+    validateStart(btn);
+    const result = await validation();
+    if (result && result.stopped) return;
+    validateEnd(btn, 'Full Validate');
+});
+
+document.querySelector('#stop-validate').addEventListener('click', () => {
+    stopWorker();
+    fileInWorker = false;
+    document.querySelector('#validate-quick').disabled = false;
+    document.querySelector('#validate-full').disabled  = false;
+    document.querySelector('#validate-quick').textContent = 'Quick Validate';
+    document.querySelector('#validate-full').textContent  = 'Full Validate';
+    document.querySelector('#stop-validate').style.display = 'none';
+    validation_out.value = '';
+    document.getElementById('stop-validate-suggestion').style.display = 'block';
 });
 
 // ── DataTable lazy-init ───────────────────────────────────────────

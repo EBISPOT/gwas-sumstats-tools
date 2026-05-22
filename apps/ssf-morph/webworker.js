@@ -16,21 +16,24 @@ async function loadPyodideAndPackages() {
     // Install the local stub so micropip's dependency resolution accepts it.
     await micropip.install("./wheels/bsub-0.3.5-py3-none-any.whl");
 
-    // Install gwas_sumstats_tools with full dep resolution — micropip fetches
-    // remaining pure-Python deps (pandera, typer, requests, rich, etc.) from PyPI.
-    await micropip.install("./wheels/gwas_sumstats_tools-1.0.24-py3-none-any.whl");
+    // Install gwas_sumstats_tools; pass keep_going=true (second positional arg) so
+    // a transient PyPI failure for one dep doesn't abort the whole init.
+    await micropip.install("./wheels/gwas_sumstats_tools-1.0.24-py3-none-any.whl", true);
 
     await micropip.install("tabulate");
 }
 let pyodideReadyPromise = loadPyodideAndPackages();
 
 self.onmessage = async (event) => {
-    await pyodideReadyPromise;
     const { id, python, ...context } = event.data;
     for (const key of Object.keys(context)) {
         self[key] = context[key];
     }
     try {
+        // Inside the try-catch so any init failure is reported back as an error
+        // rather than hanging silently (pyodideReadyPromise rejection was previously
+        // outside the try-catch, causing asyncRun to never resolve).
+        await pyodideReadyPromise;
         await self.pyodide.loadPackagesFromImports(python);
 
         // Create /data directory once

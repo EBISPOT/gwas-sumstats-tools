@@ -24,6 +24,7 @@
       <a href="https://www.ebi.ac.uk/gwas/home" target="_blank" rel="noopener">GWAS Catalog</a>
       <a href="https://www.ebi.ac.uk/gwas/docs/summary-statistics-format" target="_blank" rel="noopener">GWAS-SSF standard</a>
       <a href="mailto:gwas-info@ebi.ac.uk">Contact</a>
+      <a href="https://github.com/EBISPOT/gwas-sumstats-tools" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </div>
 </div>
@@ -363,9 +364,21 @@
       <div class="card">
         <div class="card-body">
           <h5 class="card-title">Step 4: Apply configuration and download</h5>
-          <p class="card-text">Apply your configuration to the entire input file. The formatted output will be saved to the folder you permitted.</p>
+          <p class="card-text">Apply your configuration to the entire input file. The formatted output will be downloaded to your browser's default download folder.</p>
           <p id="apply_configure" class="text-muted small"></p>
-          <button id="apply" disabled class="btn btn-success btn-lg">Apply &amp; Download</button>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <button id="apply" disabled class="btn btn-success btn-lg">Apply &amp; Download</button>
+            <button id="stop-apply" class="btn btn-danger btn-lg" style="display:none">&#9632; Stop</button>
+          </div>
+          <div id="stop-apply-suggestion" class="alert alert-warning mt-3" style="display:none">
+            <strong>Operation stopped.</strong> For large files, the offline CLI is much faster:<br>
+            <code>pip install gwas-sumstats-tools</code><br>
+            <code>gwas-ssf format -f &lt;your-file&gt; -c &lt;config.json&gt;</code><br>
+            <a href="/gwas/apps/gwas-sumstats-tools/docs/CLI_format" target="_blank" rel="noopener">See formatting CLI docs</a>
+            <div class="mt-2">
+              <button id="download-config-after-stop" class="btn btn-sm btn-outline-dark" onclick="downloadConfigAfterStop()">&#11015; Download config file</button>
+            </div>
+          </div>
           <div id="step4error" class="mt-2"></div>
         </div>
       </div>
@@ -425,7 +438,7 @@
         </p>
 
         <p class="card-text">5.3&nbsp; Run validation:</p>
-        <div class="d-flex flex-wrap gap-4 mb-2">
+        <div class="d-flex flex-wrap gap-4 mb-2 align-items-start">
           <div>
             <button id="validate-quick" disabled class="btn btn-success">Quick Validate</button>
             <div class="text-muted small mt-1">First 1M rows &mdash; ~3 min</div>
@@ -435,6 +448,15 @@
             <div id="validate-full-estimate" class="text-muted small mt-1">~5 min per 0.5 GB</div>
             <div class="text-muted small mt-1">or <a href="/gwas/apps/gwas-sumstats-tools/docs/install" target="_blank" rel="noopener">run locally via PyPI</a> for faster results</div>
           </div>
+          <div class="align-self-center">
+            <button id="stop-validate" class="btn btn-danger" style="display:none">&#9632; Stop</button>
+          </div>
+        </div>
+        <div id="stop-validate-suggestion" class="alert alert-warning mt-2" style="display:none">
+          <strong>Validation stopped.</strong> For large files, the offline CLI is much faster:<br>
+          <code>pip install gwas-sumstats-tools</code><br>
+          <code>gwas-ssf validate &lt;your-file&gt;</code><br>
+          <a href="/gwas/apps/gwas-sumstats-tools/docs/CLI_validate" target="_blank" rel="noopener">See validation CLI docs</a>
         </div>
         <div id="validate-large-file-hint" class="alert alert-warning mt-2" style="display:none">
           <strong>Large file detected.</strong> Full validation may take 30+ minutes in the browser.

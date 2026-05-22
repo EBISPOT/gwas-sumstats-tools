@@ -1,10 +1,10 @@
 // This script is setting up a way to run Python scripts asynchronously in a web worker. It sends the Python script to the worker and sets up a callback to handle the result when the worker has finished executing the script.
-const pyodideWorker = new Worker("./webworker.js");
+let pyodideWorker = new Worker("./webworker.js");
 
 const callbacks = {};
 const stdoutCallbacks = {};
 
-pyodideWorker.onmessage = (event) => {
+function handleMessage(event) {
   const { id, type, msg, ...data } = event.data;
   if (type === 'stdout') {
     if (stdoutCallbacks[id]) stdoutCallbacks[id](msg);
@@ -14,10 +14,24 @@ pyodideWorker.onmessage = (event) => {
   delete callbacks[id];
   delete stdoutCallbacks[id];
   onSuccess(data);
-};
+}
+
+pyodideWorker.onmessage = handleMessage;
+
+// Terminates the running worker, resolves all pending promises with {stopped:true},
+// then recreates a fresh worker ready for the next operation.
+function stopWorker() {
+  pyodideWorker.terminate();
+  for (const id of Object.keys(callbacks)) {
+    callbacks[id]({ stopped: true });
+    delete callbacks[id];
+    delete stdoutCallbacks[id];
+  }
+  pyodideWorker = new Worker("./webworker.js");
+  pyodideWorker.onmessage = handleMessage;
+}
+
 //This id is incremented each time the function is invoked and is kept within the safe integer limit.
-
-
 const asyncRun = (() => {
   let id = 0; // identify a Promise
   return (script, context, onProgress) => {
@@ -35,4 +49,4 @@ const asyncRun = (() => {
   };
 })();
 
-export { asyncRun };
+export { asyncRun, stopWorker };
