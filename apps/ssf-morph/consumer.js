@@ -538,22 +538,41 @@ async function test(file, config) {
     }
 }
 
-async function apply(outputFileName, config) {
+// writableStream: FileSystemWritableFileStream to stream chunks directly to disk,
+// or null to accumulate chunks in memory and trigger a Blob download at the end.
+async function apply(outputFileName, config, writableStream) {
     if (!inputFile) { console.error('inputFile is not defined'); return {}; }
     const context = formatContext({ outputFileName, config, returnOutput: true });
+    const chunks = writableStream ? null : [];
+    const onChunk = writableStream
+        ? (chunk) => writableStream.write(chunk)
+        : (chunk) => chunks.push(chunk);
     try {
-        const result = await asyncRun(apply_config, context);
-        if (result.stopped) return { stopped: true };
-        const { results, error, outputData } = result;
-        if (!error) {
-            fileInWorker = true;
-            console.log("pyodideWorker return results: ", results);
-            alert("Format apply finish!");
-            return { results, outputData };
+        const result = await asyncRun(apply_config, context, undefined, onChunk);
+        if (result.stopped) {
+            if (writableStream) await writableStream.abort().catch(() => {});
+            return { stopped: true };
         }
+        const { results, error } = result;
+        if (!error) {
+            // Input was deleted from MEMFS in the worker; reset so the next
+            // call re-sends the file rather than assuming it is cached.
+            fileInWorker = false;
+            inputFileBuffer = await inputFile.slice(0, 1048576).arrayBuffer();
+            console.log("pyodideWorker return results: ", results);
+            if (writableStream) {
+                await writableStream.close();
+            } else {
+                triggerDownload(new Blob(chunks), outputFileName);
+            }
+            alert("Format apply finish!");
+            return { results };
+        }
+        if (writableStream) await writableStream.abort().catch(() => {});
         console.log("pyodideWorker error: ", error);
         appendAlertToElement("step4error", 'Error: ' + error, 'danger');
     } catch (e) {
+        if (writableStream) await writableStream.abort().catch(() => {});
         console.log(`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`);
         appendAlertToElement("step4error", 'Error in pyodideWorker', 'danger');
     }
@@ -783,8 +802,25 @@ document.querySelector('#apply').addEventListener('click', async () => {
     const stopBtn  = document.querySelector('#stop-apply');
     document.getElementById('stop-apply-suggestion').style.display = 'none';
 
+    const config    = formToConfig();
+    const configObj = JSON.parse(config);
+    const suffix    = (configObj.fileConfig && configObj.fileConfig.outFileSuffix)
+                      ? configObj.fileConfig.outFileSuffix : 'formatted_';
+    const outputFileName = suffix + inputFile.name;
+
+    // showSaveFilePicker requires a synchronous user-gesture context — call it
+    // before any unrelated awaits so the browser allows it.
+    let writableStream = null;
+    if (window.showSaveFilePicker) {
+        try {
+            const handle = await window.showSaveFilePicker({ suggestedName: outputFileName });
+            writableStream = await handle.createWritable();
+        } catch (_) { /* user cancelled or API unavailable — fall back to Blob */ }
+    }
+
     // Apply needs the whole file — reload if we only have the 1MB preview slice.
-    if (inputFile && inputFile.size > inputFileBuffer.byteLength) {
+    // Also catches the case where the buffer was transferred (byteLength becomes 0).
+    if (inputFile && inputFile.size > (inputFileBuffer ? inputFileBuffer.byteLength : 0)) {
         inputFileBuffer = await inputFile.arrayBuffer();
         fileInWorker = false;  // force re-write to MEMFS with the full file
     }
@@ -795,20 +831,11 @@ document.querySelector('#apply').addEventListener('click', async () => {
     stopBtn.style.display = 'inline-block';
     $('#apply_configure').text('Applying configuration to ' + inputFile.name + '...');
 
-    const config    = formToConfig();
-    const configObj = JSON.parse(config);
-    const suffix    = (configObj.fileConfig && configObj.fileConfig.outFileSuffix)
-                      ? configObj.fileConfig.outFileSuffix : 'formatted_';
-    const outputFileName = suffix + inputFile.name;
-
-    const { outputData, stopped } = await apply(outputFileName, config);
+    const { stopped } = await apply(outputFileName, config, writableStream);
     stopBtn.style.display = 'none';
     applyBtn.disabled = false;
     if (stopped) return;
-    if (outputData) {
-        triggerDownload(outputData, outputFileName);
-        $('#apply_configure').text('Download started: ' + outputFileName);
-    }
+    $('#apply_configure').text(writableStream ? 'File saved: ' + outputFileName : 'Download started: ' + outputFileName);
     $(applyBtn).removeClass('btn-primary').addClass('btn-success').text('Done');
 });
 

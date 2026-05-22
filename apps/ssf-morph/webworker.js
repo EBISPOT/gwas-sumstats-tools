@@ -65,22 +65,33 @@ self.onmessage = async (event) => {
 
         self.pyodide.setStdout({ batched: (msg) => console.log(msg) });
 
-        // Read output file back if the caller requested it (apply step)
-        let outputData;
+        // Free input from MEMFS only during apply (returnOutput) so the MEMFS
+        // cache remains valid for subsequent read/generate/test calls.
+        if (self.returnOutput && self.inputFileName) {
+            try { self.pyodide.FS.unlink('/data/' + self.inputFileName); } catch (_) {}
+        }
+
+        // Stream output file back in 4 MiB chunks (transferable, zero-copy)
         if (self.returnOutput && self.outputFileName) {
+            const CHUNK = 4 << 20; // 4 MiB
             try {
-                const bytes = self.pyodide.FS.readFile('/data/' + self.outputFileName);
-                outputData = bytes.buffer;
+                const stat = self.pyodide.FS.stat('/data/' + self.outputFileName);
+                const fd   = self.pyodide.FS.open('/data/' + self.outputFileName, 'r');
+                for (let off = 0; off < stat.size; off += CHUNK) {
+                    const len = Math.min(CHUNK, stat.size - off);
+                    const buf = new Uint8Array(len);
+                    self.pyodide.FS.read(fd, buf, 0, len, off);
+                    const ab = buf.buffer;
+                    self.postMessage({ type: 'chunk', id, chunk: ab }, [ab]);
+                }
+                self.pyodide.FS.close(fd);
+                self.pyodide.FS.unlink('/data/' + self.outputFileName);
             } catch (e) {
-                console.warn('Could not read output file from MEMFS:', e);
+                console.warn('Could not stream output file from MEMFS:', e);
             }
         }
 
-        if (outputData) {
-            self.postMessage({ results, id, outputData }, [outputData]);
-        } else {
-            self.postMessage({ results, id });
-        }
+        self.postMessage({ results, id });
     } catch (error) {
         self.postMessage({ error: error.message, id });
     }

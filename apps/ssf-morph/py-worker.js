@@ -3,16 +3,22 @@ let pyodideWorker = new Worker("./webworker.js");
 
 const callbacks = {};
 const stdoutCallbacks = {};
+const chunkCallbacks = {};
 
 function handleMessage(event) {
-  const { id, type, msg, ...data } = event.data;
+  const { id, type, msg, chunk, ...data } = event.data;
   if (type === 'stdout') {
     if (stdoutCallbacks[id]) stdoutCallbacks[id](msg);
+    return;
+  }
+  if (type === 'chunk') {
+    if (chunkCallbacks[id]) chunkCallbacks[id](chunk);
     return;
   }
   const onSuccess = callbacks[id];
   delete callbacks[id];
   delete stdoutCallbacks[id];
+  delete chunkCallbacks[id];
   onSuccess(data);
 }
 
@@ -26,6 +32,7 @@ function stopWorker() {
     callbacks[id]({ stopped: true });
     delete callbacks[id];
     delete stdoutCallbacks[id];
+    delete chunkCallbacks[id];
   }
   pyodideWorker = new Worker("./webworker.js");
   pyodideWorker.onmessage = handleMessage;
@@ -34,17 +41,22 @@ function stopWorker() {
 //This id is incremented each time the function is invoked and is kept within the safe integer limit.
 const asyncRun = (() => {
   let id = 0; // identify a Promise
-  return (script, context, onProgress) => {
+  return (script, context, onProgress, onChunk) => {
     // the id could be generated more carefully
     id = (id + 1) % Number.MAX_SAFE_INTEGER;
     if (onProgress) stdoutCallbacks[id] = onProgress;
+    if (onChunk)    chunkCallbacks[id]  = onChunk;
+    // Transfer large buffers instead of copying them to save memory
+    const transferables = [];
+    if (context.fileBuffer     instanceof ArrayBuffer) transferables.push(context.fileBuffer);
+    if (context.validateBuffer instanceof ArrayBuffer) transferables.push(context.validateBuffer);
     return new Promise((onSuccess) => {
       callbacks[id] = onSuccess;
       pyodideWorker.postMessage({
         ...context,
         python: script,
         id,
-      });
+      }, transferables);
     });
   };
 })();
