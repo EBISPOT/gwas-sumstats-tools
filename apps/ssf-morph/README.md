@@ -2,11 +2,13 @@
 
 SSF-morph is a browser-based tool for formatting and validating GWAS (Genome-Wide Association Studies) summary statistics files to comply with the [GWAS Catalog standard format (gwas-ssf)](https://github.com/EBISPOT/gwas-summary-statistics-standard).
 
-It runs entirely in the browser — no server required, no data leaves your machine — by executing Python code via [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly) and reading/writing local files through the [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
+It runs entirely in the browser — no server required, no data leaves your machine — by executing Python code via [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly).
 
-> **Browser requirement**: Requires a Chromium-based browser (Google Chrome, Microsoft Edge) that supports the File System Access API. Safari is not supported.
+> **Browser requirement**: Requires a modern browser. Google Chrome and Microsoft Edge offer the best experience (native save-file dialog via the File System Access API). Firefox works but downloads the output via the standard browser download mechanism instead.
 
 > **File limit**: Single file only, maximum 2 GB.
+
+> **Performance**: Apply typically takes ~4 minutes for a 0.5 GB file.
 
 ---
 
@@ -38,9 +40,9 @@ wheels/                 — Pre-built Python wheels loaded by Pyodide at startup
 ### Execution Flow
 
 1. **Startup**: When the page loads, `webworker.js` initialises Pyodide in a Web Worker, installs Python packages from `wheels/` (plus `numpy`, `pandas`, `pydantic` from PyPI), and stands by for tasks.
-2. **File access**: The user grants folder permission via the File System Access API (`showDirectoryPicker`). Pyodide mounts this folder at `/data` inside the Web Worker so Python scripts can read and write files directly.
-3. **Python execution**: `consumer.js` calls `py-worker.js` with a script name and parameters. `py-worker.js` posts a message to the Web Worker, which runs the corresponding `python_bin/*.py` script inside Pyodide and returns the result.
-4. **Output sync**: After `apply_config.py` writes the output file, the Web Worker syncs the Pyodide virtual filesystem back to the real local folder.
+2. **File transfer**: The user selects an input file via the drop zone. The file is read into an `ArrayBuffer` and transferred (zero-copy) to the Web Worker, which writes it into Pyodide's in-memory filesystem (`/data`) so Python can access it by path.
+3. **Python execution**: `consumer.js` calls `py-worker.js` with a script and parameters. `py-worker.js` posts a message to the Web Worker, which runs the corresponding `python_bin/*.py` script inside Pyodide and returns the result.
+4. **Output streaming**: After `apply_config.py` writes the output to `/data`, the Web Worker streams it back to the main thread in 4 MiB chunks. On Chrome/Edge the chunks are written directly to a user-chosen file via `showSaveFilePicker`; on Firefox they are assembled into a Blob and downloaded normally.
 
 ### Python Back-end (via Pyodide)
 
@@ -77,9 +79,8 @@ No build step is required — all dependencies are loaded at runtime.
 
 #### Step 1 — Select input file
 
-1. Click **Grant Permission** to give the browser access to a local folder.
-2. Click **Select Input File** and choose your summary statistics file from that folder.
-3. A confirmation message appears once the file is selected.
+1. Drag and drop your summary statistics file onto the drop zone, or click it to open a file picker.
+2. A confirmation message appears once the file is selected.
 
 #### Step 2 — Prepare the configuration file
 
@@ -97,7 +98,7 @@ The configuration file tells SSF-morph how to map your columns to the gwas-ssf s
 
 #### Step 4 — Apply and download
 
-Click **Apply** to run the config over the entire file. A save dialog lets you choose the output filename and location.
+Click **Apply** to run the config over the entire file. On Chrome/Edge a save-file dialog appears before processing starts so the output streams directly to disk. On Firefox the output is downloaded automatically when processing completes.
 
 ---
 
@@ -192,7 +193,8 @@ The following gwas-ssf fields must appear in the output (via `rename` or `split`
 |---|---|
 | [gwas-sumstats-tools](https://github.com/EBISPOT/gwas-sumstats-tools) | Core format/validate logic |
 | [Pyodide](https://pyodide.org/) v0.24.1 | Python runtime in the browser (WASM) |
-| [petl](https://petl.readthedocs.io/) | Streaming tabular data transforms |
+| [pandas](https://pandas.pydata.org/) | Chunked apply pipeline (C-speed CSV parsing and transforms) |
+| [petl](https://petl.readthedocs.io/) | Used by read, generate, and test steps |
 | [frictionless](https://frictionlessdata.io/) | Schema-based data validation |
 | [Bootstrap 5](https://getbootstrap.com/) + EBI Visual Framework | UI components |
 | [DataTables](https://datatables.net/) | Interactive data preview tables |
