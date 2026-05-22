@@ -2,12 +2,12 @@ from pathlib import Path
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from src.gwas_sumstats_tools.interfaces.metadata import (
+from gwas_sumstats_tools.interfaces.metadata import (
     MetadataClient,
     metadata_dict_from_gwas_cat,
     get_file_metadata,
 )
-from src.gwas_sumstats_tools.utils import (
+from gwas_sumstats_tools.utils import (
     parse_accession_id,
     append_to_path,
     exit_if_no_data,

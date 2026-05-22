@@ -51,10 +51,16 @@ self.onmessage = async (event) => {
             self.validateBuffer = undefined;
         }
 
+        self.pyodide.setStdout({
+            batched: (msg) => self.postMessage({ type: 'stdout', id, msg })
+        });
+
         var startTime = performance.now();
         let results = await self.pyodide.runPythonAsync(python);
         var endTime = performance.now();
         console.log(`Python execution took ${(endTime - startTime) / 1000} seconds`);
+
+        self.pyodide.setStdout({ batched: (msg) => console.log(msg) });
 
         // Read output file back if the caller requested it (apply step)
         let outputData;

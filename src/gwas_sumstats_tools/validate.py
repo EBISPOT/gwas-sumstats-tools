@@ -5,9 +5,9 @@ import petl as etl
 from pandera import errors
 from rich import print
 
-from src.gwas_sumstats_tools.schema.data_table import SumStatsSchema
-from src.gwas_sumstats_tools.interfaces.data_table import SumStatsTable
-from src.gwas_sumstats_tools.interfaces.metadata import init_metadata_from_file
+from gwas_sumstats_tools.schema.data_table import SumStatsSchema
+from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
+from gwas_sumstats_tools.interfaces.metadata import init_metadata_from_file
 
 
 class Validator(SumStatsTable):
@@ -37,11 +37,11 @@ class Validator(SumStatsTable):
                                 pval_zero=self.pval_zero)
         return schema
 
-    def validate(self) -> tuple[bool, str]:
+    def validate(self, full_file: bool = True) -> tuple[bool, str]:
         """Validate sumstats data.
-        First validate a sample of 100,000 records,
+        First validate a sample of records,
         if this sample is valid, validate the rest of
-        the data.
+        the data (only when full_file=True).
 
         Returns:
             Validation status, message
@@ -71,21 +71,24 @@ class Validator(SumStatsTable):
             self.valid, message = self._validate_df(sample_df)
         if self.valid:
             print("--> [green]Ok[/green]")
-            print("Validating the rest of the file...")
-            try:
-                df_iter = self.as_pd_df(chunksize=self.chunksize,
-                                        skiprows=nrows)
+            if not full_file:
+                print(f"Quick validation complete (first {nrows} rows validated).")
+            else:
+                print("Validating the rest of the file...")
+                try:
+                    df_iter = self.as_pd_df(chunksize=self.chunksize,
+                                            skiprows=nrows)
 
-                offset = nrows + 2  # +2 for header and 0-indexing
-                for df in df_iter:
-                    df = df.reset_index(drop=True)
-                    df.index += offset
-                    self.valid, message = self._validate_df(df)
-                    offset += len(df)
-                    if self.valid is False:
-                        break
-            except pd.errors.EmptyDataError:
-                print("Nothing left to validate")
+                    offset = nrows + 2  # +2 for header and 0-indexing
+                    for df in df_iter:
+                        df = df.reset_index(drop=True)
+                        df.index += offset
+                        self.valid, message = self._validate_df(df)
+                        offset += len(df)
+                        if self.valid is False:
+                            break
+                except pd.errors.EmptyDataError:
+                    print("Nothing left to validate")
         self._evaluate_errors()
         return self.valid, message
 
@@ -130,10 +133,9 @@ class Validator(SumStatsTable):
         if "chromosome" not in self.header():
             return False, "Chromosome column is missing from the input file."
         else:
-            table=etl.convert(self.sumstats,'chromosome', str)
-            chr_column=etl.values(table,'chromosome')
-            
-            unique_chr = set(chr_column)
+            chr_series = pd.read_table(self.filename, sep=self.delimiter,
+                                       usecols=['chromosome'], dtype=str)['chromosome']
+            unique_chr = set(chr_series.unique())
             autosomes_chromosomes=set(map(str, range(1, 23)))
             optional_chromosomes = set(map(str, range(23, 26)))
             
@@ -242,7 +244,8 @@ def validate(filename: Path,
              pval_zero: bool = False,
              minimum_rows: int = 100_000,
              chunksize: int = 1_000_000,
-             infer_from_metadata: bool = False) -> tuple[bool,
+             infer_from_metadata: bool = False,
+             full_file: bool = True) -> tuple[bool,
                                                          str,
                                                          Union[etl.Table, None],
                                                          Union[str, None]
@@ -271,11 +274,13 @@ def validate(filename: Path,
         else:
             print("Cannot infer options from metadata file, because metadata file cannot be found.")
 
+    sample_size = 1_000_000 if not full_file else 100_000
     validator = Validator(pval_zero=pval_zero,
                           minimum_rows=minimum_rows,
                           sumstats_file=filename,
-                          chunksize=chunksize)
-    valid, message = validator.validate()
+                          chunksize=chunksize,
+                          sample_size=sample_size)
+    valid, message = validator.validate(full_file=full_file)
     if not valid:
         if validator.errors_table:
             error_preview = validator.errors_table.head(10)

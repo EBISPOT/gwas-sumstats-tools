@@ -10,8 +10,8 @@ import ruamel.yaml
 logger = logging.getLogger(__name__)
 
 from pydantic import ValidationError
-from src.gwas_sumstats_tools.config import REST_API_STUDIES_URL, INGEST_API_STUDIES_URL
-from src.gwas_sumstats_tools.constants import (
+from gwas_sumstats_tools.config import REST_API_STUDIES_URL, INGEST_API_STUDIES_URL
+from gwas_sumstats_tools.constants import (
     REST_API_STUDY_MAPPINGS,
     REST_API_SAMPLE_MAPPINGS,
     INGEST_API_STUDY_MAPPINGS,
@@ -20,7 +20,7 @@ from src.gwas_sumstats_tools.constants import (
     SAMPLE_FIELD_TO_SPLIT,
     GENOME_ASSEMBLY_MAPPINGS,
 )
-from src.gwas_sumstats_tools.utils import (download_with_requests,
+from gwas_sumstats_tools.utils import (download_with_requests,
                                        parse_accession_id,
                                        parse_genome_assembly,
                                        get_md5sum,
@@ -92,7 +92,7 @@ class IngestSampleResponse(TypedDict):
     stage: NotRequired[str]
 
 
-from src.gwas_sumstats_tools.schema.metadata import SumStatsMetadata, SumStatsMetadataAPI, SumStatsMetadataFile, SampleMetadata
+from gwas_sumstats_tools.schema.metadata import SumStatsMetadata, SumStatsMetadataAPI, SumStatsMetadataFile, SampleMetadata
 
 
 class MetadataClient:

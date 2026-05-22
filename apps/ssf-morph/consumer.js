@@ -18,6 +18,7 @@ let removecomments;
 let analysisSoftware;
 let nrows;
 let zeropvalues;
+let validateAll = true;
 window.configGenerated = false;
 
 // ── Config form helpers ───────────────────────────────────────────
@@ -564,9 +565,12 @@ async function validation() {
         outputFileName: validateFile.name,
         zeropvalues,
         nrows,
+        validateAll: validateAll ? 'True' : 'False',
     };
     try {
-        const { results, error } = await asyncRun(validate, context);
+        const { results, error } = await asyncRun(validate, context, (msg) => {
+            validation_out.value += msg + '\n';
+        });
         if (results) {
             validation_out.value = results;
             console.log("pyodideWorker return results: ", results);
@@ -640,7 +644,21 @@ setupDropZone('validate-drop-zone', 'validate-file-input', async (file) => {
     validateFile       = file;
     validateFileBuffer = await file.arrayBuffer();
     appendAlertToElement('validatediv', 'You have selected the file ' + file.name + ' for validation', 'success');
-    document.querySelector('#validate').disabled = false;
+
+    const compressionFactor = file.name.endsWith('.gz') ? 5 : 1;
+    const sizeGB = (file.size * compressionFactor) / (1024 * 1024 * 1024);
+    const fullMinutes = Math.max(10, Math.round(sizeGB * 15));
+    const estEl = document.getElementById('validate-full-estimate');
+    estEl.textContent = sizeGB < 0.1
+        ? '~5 min'
+        : `~${fullMinutes} min for ${sizeGB.toFixed(1)} GB file`;
+
+    if (sizeGB > 1) {
+        document.getElementById('validate-large-file-hint').style.display = 'block';
+    }
+
+    document.querySelector('#validate-quick').disabled = false;
+    document.querySelector('#validate-full').disabled  = false;
 });
 
 // ── Generate ──────────────────────────────────────────────────────
@@ -774,14 +792,26 @@ document.querySelector('#apply').addEventListener('click', async () => {
 
 // ── Validate ──────────────────────────────────────────────────────
 
-document.querySelector('#validate').addEventListener('click', async () => {
+document.querySelector('#validate-quick').addEventListener('click', async () => {
     zeropvalues = document.getElementById('zeropvalues').value;
     nrows       = document.getElementById('nrows').value;
-
-    validation_out.value = "Initializing validation...\n";
-    $('#validate').html('<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...');
+    validateAll = false;
+    validation_out.value = "Initializing quick validation (first 1M rows)...\n";
+    const btn = document.querySelector('#validate-quick');
+    btn.innerHTML = '<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...';
     await validation();
-    $('#validate').html('Validate');
+    btn.textContent = 'Quick Validate';
+});
+
+document.querySelector('#validate-full').addEventListener('click', async () => {
+    zeropvalues = document.getElementById('zeropvalues').value;
+    nrows       = document.getElementById('nrows').value;
+    validateAll = true;
+    validation_out.value = "Initializing full validation...\n";
+    const btn = document.querySelector('#validate-full');
+    btn.innerHTML = '<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Validating...';
+    await validation();
+    btn.textContent = 'Full Validate';
 });
 
 // ── DataTable lazy-init ───────────────────────────────────────────

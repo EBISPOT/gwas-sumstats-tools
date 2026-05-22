@@ -390,6 +390,11 @@
       <div class="card-body">
         <h5 class="card-title">Validate your formatted file</h5>
 
+        <div class="alert alert-info" role="alert">
+          <strong>Tip:</strong> For large files or repeated use, you can run the validator locally via the command-line tool.
+          See <a href="/gwas/apps/gwas-sumstats-tools/docs/installation" target="_blank" rel="noopener">how to install from PyPI</a>.
+        </div>
+
         <p class="card-text">5.1&nbsp; Select the file to validate:</p>
         <div class="ssf-drop-zone" id="validate-drop-zone">
           <div class="ssf-drop-zone__text">Drop file here or <strong>click to browse</strong></div>
@@ -419,10 +424,22 @@
           (see <a href="https://www.ebi.ac.uk/gwas/docs/submission-summary-statistics-plus-metadata" target="_blank" rel="noopener">GWAS Catalog submission documentation</a> for details).
         </p>
 
-        <p class="card-text">
-          5.3&nbsp; Run validation:&nbsp;
-          <button id="validate" disabled class="btn btn-success">Validate</button>
-        </p>
+        <p class="card-text">5.3&nbsp; Run validation:</p>
+        <div class="d-flex flex-wrap gap-4 mb-2">
+          <div>
+            <button id="validate-quick" disabled class="btn btn-success">Quick Validate</button>
+            <div class="text-muted small mt-1">First 1M rows &mdash; ~3 min</div>
+          </div>
+          <div>
+            <button id="validate-full" disabled class="btn btn-outline-success">Full Validate</button>
+            <div id="validate-full-estimate" class="text-muted small mt-1">~5 min per 0.5 GB</div>
+            <div class="text-muted small mt-1">or <a href="/gwas/apps/gwas-sumstats-tools/docs/install" target="_blank" rel="noopener">run locally via PyPI</a> for faster results</div>
+          </div>
+        </div>
+        <div id="validate-large-file-hint" class="alert alert-warning mt-2" style="display:none">
+          <strong>Large file detected.</strong> Full validation may take 30+ minutes in the browser.
+          Consider using the <a href="/gwas/apps/gwas-sumstats-tools/docs/install" target="_blank" rel="noopener">offline command-line tool</a> for faster validation.
+        </div>
         <textarea id="validation_out" class="form-control" rows="8" disabled></textarea>
         <div id="step5error" class="mt-2"></div>
       </div>

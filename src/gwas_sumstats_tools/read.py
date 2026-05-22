@@ -3,10 +3,10 @@ from typing import Union
 import yaml
 import petl as etl
 
-from src.gwas_sumstats_tools.interfaces.data_table import SumStatsTable
-from src.gwas_sumstats_tools.interfaces.metadata import (MetadataClient,
+from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
+from gwas_sumstats_tools.interfaces.metadata import (MetadataClient,
                                                      SumStatsMetadata)
-from src.gwas_sumstats_tools.utils import exit_if_no_data
+from gwas_sumstats_tools.utils import exit_if_no_data
 
 
 class Reader():

@@ -2,11 +2,17 @@
 const pyodideWorker = new Worker("./webworker.js");
 
 const callbacks = {};
+const stdoutCallbacks = {};
 
 pyodideWorker.onmessage = (event) => {
-  const { id, ...data } = event.data;
+  const { id, type, msg, ...data } = event.data;
+  if (type === 'stdout') {
+    if (stdoutCallbacks[id]) stdoutCallbacks[id](msg);
+    return;
+  }
   const onSuccess = callbacks[id];
   delete callbacks[id];
+  delete stdoutCallbacks[id];
   onSuccess(data);
 };
 //This id is incremented each time the function is invoked and is kept within the safe integer limit.
@@ -14,9 +20,10 @@ pyodideWorker.onmessage = (event) => {
 
 const asyncRun = (() => {
   let id = 0; // identify a Promise
-  return (script, context) => {
+  return (script, context, onProgress) => {
     // the id could be generated more carefully
     id = (id + 1) % Number.MAX_SAFE_INTEGER;
+    if (onProgress) stdoutCallbacks[id] = onProgress;
     return new Promise((onSuccess) => {
       callbacks[id] = onSuccess;
       pyodideWorker.postMessage({
