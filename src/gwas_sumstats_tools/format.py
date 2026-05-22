@@ -2,7 +2,8 @@ from pathlib import Path
 import petl as etl
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
-import json,re,os,subprocess
+import gzip, json, re, os, subprocess, time
+import pandas as pd
 from bsub import bsub
 
 from gwas_sumstats_tools.schema.headermap import header_mapper
@@ -342,11 +343,136 @@ class Formatter:
         return edit_table
     
     def data_to_file(self) -> None:
-        """
-        if the --ss-out is available, this function will store the output file into a file
-        """
+        """Write formatted data to file using chunked pandas for performance."""
         print(self.data_outfile)
-        self.formating().to_file(self.data_outfile)
+        self._apply_pandas(self.data_outfile)
+
+    # ── pandas-based apply pipeline ───────────────────────────────────────────
+
+    @staticmethod
+    def _pd_apply_splits(df: pd.DataFrame, split_config: list) -> pd.DataFrame:
+        for col in split_config:
+            f   = col.get('field')
+            sep = col.get('separator')
+            cap = col.get('capture')
+            nf  = col.get('new_field') or []
+            inc = col.get('include_original', False)
+            if not f or f not in df.columns:
+                continue
+            if sep and nf:
+                parts = df[f].astype(str).str.split(re.escape(sep), expand=True)
+                for i, name in enumerate(nf):
+                    if i < parts.shape[1]:
+                        df[name] = parts.iloc[:, i]
+                if not inc:
+                    df = df.drop(columns=[f])
+            elif cap and nf:
+                parts = df[f].astype(str).str.extract(cap)
+                for i, name in enumerate(nf):
+                    if i < parts.shape[1]:
+                        df[name] = parts.iloc[:, i]
+                if not inc:
+                    df = df.drop(columns=[f])
+        return df
+
+    @staticmethod
+    def _pd_apply_edits(df: pd.DataFrame, edit_config: list) -> pd.DataFrame:
+        rename = {}
+        for col in edit_config:
+            f = col.get('field')
+            if not f or f not in df.columns:
+                continue
+            if col.get('extract'):
+                df[f] = df[f].astype(str).str.extract(f"({col['extract']})", expand=False)
+            if col.get('find') is not None and col.get('replace') is not None:
+                df[f] = df[f].astype(str).str.replace(col['find'], col['replace'], regex=True)
+            if col.get('rename') and col['rename'] != f:
+                rename[f] = col['rename']
+        return df.rename(columns=rename)
+
+    @staticmethod
+    def _pd_normalise(df: pd.DataFrame, na_value: str) -> pd.DataFrame:
+        df = df.replace(['NA', '', None], '#NA').fillna('#NA')
+        if na_value:
+            df = df.replace(na_value, '#NA')
+        return df
+
+    @staticmethod
+    def _pd_column_order(cols: list) -> list:
+        col_set = set(cols)
+        all_std = set(list(SumStatsTable.FIELDS_REQUIRED) +
+                      list(SumStatsTable.FIELDS_EFFECT) +
+                      list(SumStatsTable.FIELDS_OPTIONAL))
+        order  = [h for h in SumStatsTable.FIELDS_REQUIRED if h in col_set]
+        order += [h for h in SumStatsTable.FIELDS_OPTIONAL if h in col_set]
+        order += [h for h in cols if h not in all_std]
+        for eff in SumStatsTable.FIELDS_EFFECT:
+            if eff in col_set:
+                order.insert(4, eff)
+                break
+        order += [e for e in SumStatsTable.FIELDS_EFFECT if e in col_set and e not in order]
+        seen, result = set(), []
+        for c in order:
+            if c not in seen and c in col_set:
+                seen.add(c); result.append(c)
+        return result
+
+    def _apply_pandas(self, outfile: Path, chunk_size: int = 200_000) -> None:
+        """Chunked pandas implementation of the apply pipeline."""
+        split_config     = self.config_dict.get('columnConfig', {}).get('split', [])
+        edit_config      = self.config_dict.get('columnConfig', {}).get('edit', [])
+        convert_neg_log  = self.config_dict.get('fileConfig', {}).get('convertNegLog10Pvalue', False)
+
+        read_kw = dict(
+            sep=self.delimiter,
+            dtype=str,
+            chunksize=chunk_size,
+            skipinitialspace=True,
+            keep_default_na=False,
+            na_values=[],
+            on_bad_lines='warn',
+        )
+        if self.removecomments and len(self.removecomments) == 1:
+            read_kw['comment'] = self.removecomments
+
+        output_path = str(outfile)
+        open_out    = gzip.open if output_path.endswith('.gz') else open
+        first_chunk = True
+        final_cols  = None
+        t0          = time.time()
+
+        with open_out(output_path, 'wt', encoding='utf-8') as out:
+            for chunk in pd.read_csv(str(self.data_infile), **read_kw):
+                if self.removecomments and len(self.removecomments) > 1:
+                    chunk = chunk[~chunk.iloc[:, 0].astype(str).str.startswith(self.removecomments)]
+
+                chunk = self._pd_apply_splits(chunk, split_config)
+                chunk = self._pd_apply_edits(chunk, edit_config)
+                chunk = self._pd_normalise(chunk, self.na)
+
+                if convert_neg_log and 'p_value' in chunk.columns:
+                    def _safe_neg_log(x):
+                        try:
+                            return str(10 ** (-float(x)))
+                        except Exception:
+                            return x
+                    chunk['p_value'] = chunk['p_value'].map(_safe_neg_log)
+
+                if first_chunk:
+                    for h in SumStatsTable.FIELDS_REQUIRED:
+                        if h not in chunk.columns:
+                            chunk[h] = '#NA'
+                    if not any(e in chunk.columns for e in SumStatsTable.FIELDS_EFFECT):
+                        chunk['beta'] = '#NA'
+                    final_cols = self._pd_column_order(list(chunk.columns))
+                    chunk = chunk[final_cols]
+                    chunk.to_csv(out, sep='\t', index=False, header=True, lineterminator='\n')
+                    first_chunk = False
+                else:
+                    chunk = chunk[[c for c in final_cols if c in chunk.columns]]
+                    chunk.to_csv(out, sep='\t', index=False, header=False, lineterminator='\n')
+
+        print(f"Done in {time.time() - t0:.1f}s → {output_path}")
 #----------------------------out of the class----------------------------------------------
 # LSF job submission by bsub package, this function activate unless the --batch_apply=true and --lsf
 

@@ -44,8 +44,10 @@ self.onmessage = async (event) => {
 
         // Write input file to MEMFS if a buffer was sent, then free it
         if (self.fileBuffer && self.inputFileName) {
+            const t0 = performance.now();
             self.pyodide.FS.writeFile('/data/' + self.inputFileName, new Uint8Array(self.fileBuffer));
             self.fileBuffer = undefined;
+            console.log(`MEMFS writeFile took ${((performance.now() - t0) / 1000).toFixed(1)}s`);
         }
 
         // Write validate file to MEMFS if a buffer was sent
