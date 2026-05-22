@@ -91,14 +91,17 @@ class Formatter:
     
     def test_config(self):
         """
-        Apply the configure file to a sumstats file and save the format result in a file    
+        Apply the configure file to a sumstats file and save the format result in a file
         """
         test_in=self.data.example_table()
         test_split_table=self.split(config=self.config_dict,data=test_in)
         test_edit_table=self.edit(config=self.config_dict,data=test_split_table)
         test_filled_table=test_edit_table.normalise_missing_values(na_value=self.na)
         test_formatted_data=test_filled_table.map_header()
-        
+
+        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]==True:
+            test_formatted_data=test_formatted_data.convert_neg_log10_pvalue()
+
         return test_formatted_data
     
     def _set_data_outfile_name(self) -> str:

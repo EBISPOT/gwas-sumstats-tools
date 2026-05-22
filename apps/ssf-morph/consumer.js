@@ -111,6 +111,59 @@ function buildNullableInput(val) {
     return inp;
 }
 
+function buildNewFieldControl(val) {
+    // val can be null, a string, or an array
+    const values = Array.isArray(val) ? val : (val ? [val] : []);
+    const wrap = document.createElement('div');
+    wrap.className = 'new-field-list';
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1 mt-1';
+    addBtn.textContent = '+';
+    wrap.appendChild(addBtn);
+
+    function addEntry(v) {
+        const row = document.createElement('div');
+        row.className = 'new-field-entry d-flex gap-1 mb-1';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'form-control form-control-sm';
+        inp.placeholder = 'null';
+        inp.value = v || '';
+
+        // If user types/pastes a JSON array string, expand it into multiple entries
+        inp.addEventListener('change', () => {
+            const raw = inp.value.trim();
+            if (raw.startsWith('[') && raw.endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        row.remove();
+                        for (const item of parsed) addEntry(String(item));
+                        return;
+                    }
+                } catch (_) { /* not valid JSON, leave as-is */ }
+            }
+        });
+
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+        rmBtn.innerHTML = '&times;';
+        rmBtn.addEventListener('click', () => row.remove());
+        row.append(inp, rmBtn);
+        wrap.insertBefore(row, addBtn);
+    }
+
+    addBtn.addEventListener('click', () => addEntry(''));
+
+    const initialValues = values.length > 0 ? values : [''];
+    for (const v of initialValues) addEntry(v);
+
+    return wrap;
+}
+
 function buildDeleteBtn(tr) {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -132,7 +185,7 @@ function buildSplitRow(data = {}) {
     tdField.appendChild(buildFieldSelect(data.field ?? ''));
     tdSep.appendChild(buildSepControl(data.separator ?? null));
     tdCapture.appendChild(buildNullableInput(data.capture));
-    tdNewField.appendChild(buildNullableInput(data.new_field));
+    tdNewField.appendChild(buildNewFieldControl(data.new_field));
 
     const selInclOrig = document.createElement('select');
     selInclOrig.className = 'form-select form-select-sm';
@@ -190,11 +243,22 @@ function formToConfig() {
     const splitRules = Array.from(document.querySelectorAll('#split-rules-body tr')).map(tr => {
         const tds = tr.querySelectorAll('td');
         const inclOrigVal = tds[4].querySelector('select').value;
+        const newFieldVals = Array.from(tds[3].querySelectorAll('.new-field-entry input'))
+            .flatMap(i => {
+                const raw = i.value.trim();
+                if (raw.startsWith('[') && raw.endsWith(']')) {
+                    try {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed)) return parsed.map(String).filter(v => v);
+                    } catch (_) {}
+                }
+                return raw ? [raw] : [];
+            });
         return {
             field:            tds[0].querySelector('select').value || null,
             separator:        getSepValue(tds[1]),
             capture:          tds[2].querySelector('input').value || null,
-            new_field:        tds[3].querySelector('input').value || null,
+            new_field:        newFieldVals.length > 0 ? newFieldVals : null,
             include_original: inclOrigVal === '' ? null : inclOrigVal === 'true',
         };
     });
