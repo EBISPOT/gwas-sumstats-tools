@@ -663,6 +663,14 @@ setupDropZone('format-drop-zone', 'format-file-input', async (file) => {
     document.querySelector('#test').disabled         = false;
     document.querySelector('#apply').disabled        = false;
     document.querySelector('#format-next-1').disabled = false;
+
+    // Time estimate: ~4 min per 0.5 GB
+    const sizeGB = file.size / (1024 * 1024 * 1024);
+    const minutes = Math.max(1, Math.round(sizeGB * 8));
+    const estEl = document.getElementById('apply-estimate');
+    estEl.textContent = sizeGB < 0.05
+        ? 'Estimated time: < 1 min'
+        : `Estimated time: ~${minutes} min for ${sizeGB.toFixed(1)} GB file`;
 });
 
 // Validate wizard — file to validate
