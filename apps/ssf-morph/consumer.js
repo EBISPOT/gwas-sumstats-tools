@@ -505,7 +505,7 @@ async function generate(file) {
         if (results) {
             fileInWorker = true;
             console.log("pyodideWorker return results: ", results);
-            alert("Generating configure file finish!");
+            alert("Configuration file generated!");
             return results;
         }
         if (error) {

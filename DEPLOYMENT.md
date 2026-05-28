@@ -41,7 +41,7 @@ This project has two independent release flows:
 | `gwas-dev` | Development (auto-deployed on every `dev` push) |
 | `gwas` | Production (auto-deployed on every tag) |
 
-**EBI HX cluster (`gwas-depo-hx-config.yml`)** — fallback only, manually triggered.
+**EBI HX cluster** — fallback only, manually triggered.
 
 ---
 
