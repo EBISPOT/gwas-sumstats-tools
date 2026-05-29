@@ -26,7 +26,7 @@ gwas-sumstats-tools/
 ├── Dockerfile.docs             # Docker image: nginx serving ssf-morph + docs
 ├── nginx.conf                  # nginx routing config for the Docker image
 ├── DEPLOYMENT.md               # End-to-end deployment guide
-├── pyproject.toml              # Poetry project configuration
+├── pyproject.toml              # uv/PEP 621 project configuration
 └── .github/                    # CI/CD pipelines
 ```
 
@@ -114,9 +114,10 @@ Architecture Decision Records (ADRs) — lightweight design documents explaining
 |---|---|
 | `0001-validator.md` | Decision record for the validation approach |
 | `0002-deployment.md` | Decision record for the deployment architecture |
+| `0003-uv-package-manager.md` | Migration from Poetry to uv; Python 3.12 and dependency upgrades |
 
 ### `dist/`
-Pre-built Python distribution archives (wheels and source tarballs) produced by `poetry build`. The latest wheel is also copied into `apps/ssf-morph/wheels/` for use by the browser app.
+Pre-built Python distribution archives (wheels and source tarballs) produced by `uv build`. The latest wheel is also copied into `apps/ssf-morph/wheels/` for use by the browser app.
 
 ---
 
@@ -124,7 +125,7 @@ Pre-built Python distribution archives (wheels and source tarballs) produced by 
 
 ### CLI (pip)
 ```bash
-pip install gwas-sumstats-tools      # requires Python 3.9–3.11
+pip install gwas-sumstats-tools      # requires Python 3.9–3.12
 gwas-ssf --help
 ```
 
@@ -134,10 +135,10 @@ Open [SSF-morph](https://ebispot.github.io/gwas-sumstats-tools-ssf-morph/) in Ch
 ### Local development
 ```bash
 # Install dependencies
-poetry install
+uv sync
 
 # Run tests
-pytest
+uv run pytest
 
 # Preview the docs locally
 cd docs/gwas-sumstats-tools-doc

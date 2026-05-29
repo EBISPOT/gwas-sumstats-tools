@@ -36,7 +36,7 @@ class Formatter:
         self.format_data = format_data
         self.data_infile = Path(data_infile)
         self.config_outfile = Path(config_outfile) if config_outfile else None
-        self.config = Formatconfig.construct()
+        self.config = Formatconfig.model_construct()
         self.config_infile = Path(config_infile) if config_infile else None
 
         self.analysis_software = analysis_software if analysis_software in pre_defined_configure.keys() else None
@@ -123,10 +123,9 @@ class Formatter:
                 self.data_outfile = append_to_path(
                     self.data_infile, "-FORMATTED.tsv.gz"
                 )
-        elif self.config_dict.get("fileConfig", {}).get("outFileSuffix", None):
-            self.data_outfile = append_to_path(
-                    self.data_infile, self.config_dict["fileConfig"]["outFileSuffix"]
-                )
+        elif self.config_dict.get("fileConfig", {}).get("outFilePrefix", None):
+            prefix = self.config_dict["fileConfig"]["outFilePrefix"]
+            self.data_outfile = self.data_infile.parent / (prefix + self.data_infile.name)
         else:
             self.data_outfile = append_to_path(
                     self.data_infile, "-FORMATTED.tsv.gz"
@@ -246,7 +245,7 @@ class Formatter:
         append file configure, split and edit dict into json format
         """
         fileConfig={
-            "outFileSuffix": "formatted_",
+            "outFilePrefix": "formatted_",
             "fieldSeparator": self.delimiter,
             "naValue": None,
             "convertNegLog10Pvalue": False,

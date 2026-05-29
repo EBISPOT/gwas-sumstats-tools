@@ -25,13 +25,13 @@ For instructions on how to use the SSF-morph, please visit our [UI Guide Page](U
 However, if you require full access to all functions, or if you need to process larger files or multiple files simultaneously, we recommend using the command-line interface. Please follow the instructions provided here to install and use the command-line tools.
 
 #### Local Installation with pip
-Installation requirements: Python  version 3.9 to 3.11.
+Installation requirements: Python version 3.9 to 3.12.
 ```bash
 $ pip3 install gwas-sumstats-tools
 $ gwas-ssf --help
 ```
 
-If you have a different Python version installed on your local computer and encounter compatibility issues, you can create a virtual environment with Python 3.9. Please follow the instructions [here](install)
+If you have a different Python version installed on your local computer and encounter compatibility issues, you can create a virtual environment with Python 3.12. Please follow the instructions [here](install)
 
 ----
 Copyright © EMBL-EBI 2024 | EMBL-EBI is an Outstation of the [European Molecular Biology Laboratory](https://www.embl.org/) | [Terms of use](https://www.ebi.ac.uk/about/terms-of-use) | [Data Preservation Statement](https://www.ebi.ac.uk/long-term-data-preservation)

@@ -5,9 +5,9 @@ Keep the same scheme with https://github.com/EBISPOT/gwas-summary-statistics-sta
 """
 
 import re
-from pydantic import (BaseModel, constr, validator, Field)
+from pydantic import BaseModel, Field, field_validator, ConfigDict, StringConstraints
+from typing import Annotated, List, Optional
 from datetime import date
-from typing import List, Optional
 from enum import Enum
 """
 Enums
@@ -72,7 +72,7 @@ class SumStatsMetadataFile(BaseModel):
     genome_assembly: str
     date_metadata_last_modified: date
     # Optional calculated
-    gwas_id: Optional[constr(regex=r'^GCST\d+$')] = None
+    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r'^GCST\d+$')]] = None
     gwas_catalog_api: Optional[str] = None
     data_file_md5sum: str
     file_type: str = Field(description="summary stats file type", default="NR")
@@ -81,7 +81,7 @@ class SumStatsMetadataFile(BaseModel):
 class SumStatsMetadata(BaseModel):
     """Full metadata model with fields in canonical YAML output order."""
     # Study meta-data
-    gwas_id: Optional[constr(regex=r'^GCST\d+$')] = None
+    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r'^GCST\d+$')]] = None
     author_notes: Optional[str] = None
     gwas_catalog_api: Optional[str] = None
     date_metadata_last_modified: date
@@ -109,12 +109,11 @@ class SumStatsMetadata(BaseModel):
     is_sorted: Optional[bool] = None
     harmonisation_reference: Optional[str] = None
 
-    @validator('file_type')
+    model_config = ConfigDict(title='GWAS Summary Statistics metadata schema', use_enum_values=True)
+
+    @field_validator('file_type')
+    @classmethod
     def validate_file_type(cls, v):
         if not FILE_TYPE_PATTERN.match(v):
             raise ValueError(f"file_type '{v}' must be 'pre-GWAS-SSF', 'non-GWAS-SSF', 'GWAS-SSF v<version>', or 'NR'")
         return v
-
-    class Config:
-        title = 'GWAS Summary Statistics metadata schema'
-        use_enum_values = True

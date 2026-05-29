@@ -192,7 +192,7 @@ The following gwas-ssf fields must appear in the output (via `rename` or `split`
 | Package | Role |
 |---|---|
 | [gwas-sumstats-tools](https://github.com/EBISPOT/gwas-sumstats-tools) | Core format/validate logic |
-| [Pyodide](https://pyodide.org/) v0.24.1 | Python runtime in the browser (WASM) |
+| [Pyodide](https://pyodide.org/) v0.26.0 | Python runtime in the browser (WASM) |
 | [pandas](https://pandas.pydata.org/) | Chunked apply pipeline (C-speed CSV parsing and transforms) |
 | [petl](https://petl.readthedocs.io/) | Used by read, generate, and test steps |
 | [frictionless](https://frictionlessdata.io/) | Schema-based data validation |

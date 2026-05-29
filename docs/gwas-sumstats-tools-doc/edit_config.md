@@ -5,7 +5,7 @@
 
 The configuration file is a blueprint for all formatting options. It has two top-level sections:
 
-- **`fileConfig`** — applied first; controls file-level settings (separator, output suffix, missing values, etc.)
+- **`fileConfig`** — applied first; controls file-level settings (separator, output prefix, missing values, etc.)
 - **`columnConfig`** — applied after `fileConfig`; controls column-level operations via two subsections:
   - `split` — runs first; splits or extracts values from a column into new columns
   - `edit` — runs after `split`; renames, finds/replaces, or extracts values within a column
@@ -16,7 +16,7 @@ The configuration file is a blueprint for all formatting options. It has two top
 ```json
 {
     "fileConfig": {
-        "outFileSuffix": null,
+        "outFilePrefix": null,
         "convertNegLog10Pvalue": false,
         "fieldSeparator": "\t",
         "naValue": null,
@@ -52,7 +52,7 @@ The configuration file is a blueprint for all formatting options. It has two top
 
 | Field | Description | Example value |
 |---|---|---|
-| `outFileSuffix` | Suffix appended to the output filename | `"_formatted"` |
+| `outFilePrefix` | Prefix prepended to the output filename | `"formatted_"` |
 | `fieldSeparator` | Delimiter used in the input file | `"\t"` (tab), `","` (comma) |
 | `naValue` | Missing value string to convert to `#NA` | `"NaN"` |
 | `removeComments` | Strip lines beginning with this character | `"#"` |

@@ -1,35 +1,43 @@
-[tool.poetry]
+[project]
 name = "gwas-sumstats-tools"
 version = "1.0.24"
 description = ""
-authors = ["jdhayhurst <jhayhurst@ebi.ac.uk>", "yueji <jiyue1214@gmail.com>"]
+authors = [
+    {name = "jdhayhurst", email = "jhayhurst@ebi.ac.uk"},
+    {name = "yueji", email = "jiyue1214@gmail.com"},
+]
 readme = "README.md"
-packages = [{include = "gwas_sumstats_tools", from = "src"}]
+requires-python = ">=3.9,<3.13"
+dependencies = [
+    "petl>=1.7.12,<2",
+    "requests>=2.28.2,<3",
+    "pyyaml>=6.0,<7",
+    "pydantic>=2.0,<3",
+    "typer>=0.9.0,<1",
+    "pandera>=0.17,<1",
+    "pandas>=2.1,<3",
+    "numpy>=1.26,<3",
+    "ruamel-yaml>=0.17.32,<1",
+    "bsub>=0.3.5,<1",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<3.12"
-petl = "^1.7.12"
-requests = "^2.28.2"
-pyyaml = "^6.0"
-pydantic = "^1.10.4"
-typer = {extras = ["all"], version = "^0.7.0"}
-pandera = {version = "^0.13.4"}
-pandas = "1.5.3"
-ruamel-yaml = "0.17.32"
-bsub = "^0.3.5"
-
-[tool.poetry.scripts]
+[project.scripts]
 gwas-ssf = "gwas_sumstats_tools.cli:app"
 
-[tool.poetry.group.dev.dependencies]
-flake8 = "^6.0.0"
-pytest = "^7.2.1"
-hypothesis = "^6.68.2"
-pytest-mock = "^3.10.0"
+[dependency-groups]
+dev = [
+    "flake8>=6.0.0,<7",
+    "pytest>=7.2.1,<8",
+    "hypothesis>=6.68.2,<7",
+    "pytest-mock>=3.10.0,<4",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gwas_sumstats_tools"]

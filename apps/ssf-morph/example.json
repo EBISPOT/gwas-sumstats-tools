@@ -1,6 +1,6 @@
 {
     "fileConfig": {
-        "outFileSuffix": null,
+        "outFilePrefix": null,
         "md5": false,
         "convertNegLog10Pvalue": false,
         "fieldSeparator": "\t",
