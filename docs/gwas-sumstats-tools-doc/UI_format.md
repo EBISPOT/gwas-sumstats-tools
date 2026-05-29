@@ -33,7 +33,7 @@ Please review the configuration options described [here](edit_config?id=summary)
 The configuration editor has two tabs:
 
 - **File Config** — controls output-level settings:
-  - *Output file suffix* — appended to the output filename
+  - *Output file prefix* — prepended to the output filename (e.g. `formatted_` produces `formatted_myfile.tsv`)
   - *Field separator* — delimiter for the output file
   - *Missing value text* — string used to represent null/missing values (leave blank for null)
   - *Convert -log₁₀ p-value* — tick to convert -log₁₀ p-values back to linear scale

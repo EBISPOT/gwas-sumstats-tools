@@ -234,7 +234,7 @@ function formToConfig() {
 
     const naRaw = document.getElementById('cfg-naValue').value;
     const fileConfig = {
-        outFileSuffix:           document.getElementById('cfg-outFileSuffix').value,
+        outFilePrefix:           document.getElementById('cfg-outFilePrefix').value,
         fieldSeparator:          sep,
         naValue:                 naRaw === '' ? null : naRaw,
         convertNegLog10Pvalue:   document.getElementById('cfg-convertNegLog10Pvalue').checked,
@@ -280,7 +280,7 @@ function formToConfig() {
 
 function configToForm(obj) {
     const fc = obj.fileConfig || {};
-    document.getElementById('cfg-outFileSuffix').value = fc.outFileSuffix ?? 'formatted_';
+    document.getElementById('cfg-outFilePrefix').value = fc.outFilePrefix ?? 'formatted_';
 
     const sepVal = fc.fieldSeparator ?? '\t';
     const sepPresetEl = document.getElementById('cfg-fieldSeparator-preset');
@@ -812,9 +812,9 @@ document.querySelector('#apply').addEventListener('click', async () => {
 
     const config    = formToConfig();
     const configObj = JSON.parse(config);
-    const suffix    = (configObj.fileConfig && configObj.fileConfig.outFileSuffix)
-                      ? configObj.fileConfig.outFileSuffix : 'formatted_';
-    const outputFileName = suffix + inputFile.name;
+    const prefix    = (configObj.fileConfig && configObj.fileConfig.outFilePrefix)
+                      ? configObj.fileConfig.outFilePrefix : 'formatted_';
+    const outputFileName = prefix + inputFile.name;
 
     // showSaveFilePicker requires a synchronous user-gesture context — call it
     // before any unrelated awaits so the browser allows it.

@@ -3,7 +3,7 @@ from typing import List, Optional
 import json
 
 class FileConfig (BaseModel):
-    outFileSuffix: str = Field(default="formatted_")
+    outFilePrefix: str = Field(default="formatted_")
     fieldSeparator: str = Field(default="tab")
     removeComments: str = Field(default=None)
     naValue: str = Field(default=None)

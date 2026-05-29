@@ -88,6 +88,9 @@ venv/
 *.xls*
 *.yaml
 
+# test output files
+GCST*
+
 
 # images
 *.gif

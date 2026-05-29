@@ -12,8 +12,9 @@ COPY README.md LICENSE ./
 COPY src/ ./src/
 
 # Install dependencies and build the package
-RUN uv sync --no-dev \
-    && uv build
+RUN --mount=type=cache,target=/root/.cache/uv \
+    UV_LINK_MODE=copy uv sync --no-dev
+RUN uv build
 
 # Copy ssf-morph (main landing page) and documentation
 COPY apps/ssf-morph/ ./ssf-morph/

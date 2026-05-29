@@ -1,7 +1,7 @@
 #----------------REGENIE----------------
 regenie = {
     "fileConfig": {
-        "outFileSuffix": "regenie_formatted",
+        "outFilePrefix": "regenie_formatted",
         "fieldSeparator": " ",
         "naValue": "NA",
         "convertNegLog10Pvalue": True,
@@ -88,7 +88,7 @@ regenie = {
 #----------------BOLT-LMM----------------
 boltlmm = {
     "fileConfig": {
-        "outFileSuffix": None,
+        "outFilePrefix": None,
         "fieldSeparator": None,
         "naValue": None,
         "convertNegLog10Pvalue": False,
@@ -189,7 +189,7 @@ boltlmm = {
 #----------------SNPTEST----------------
 snptest = {
     "fileConfig": {
-        "outFileSuffix": None,
+        "outFilePrefix": None,
         "fieldSeparator": " ",
         "naValue": None,
         "convertNegLog10Pvalue": False,
@@ -276,7 +276,7 @@ snptest = {
 #----------------SAIGE------------------
 saige={
     "fileConfig": {
-        "outFileSuffix": None,
+        "outFilePrefix": None,
         "fieldSeparator": "\t",
         "naValue": None,
         "convertNegLog10Pvalue": False,

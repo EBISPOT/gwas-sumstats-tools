@@ -4,11 +4,15 @@ import requests
 import logging
 from typing import Any, Optional, Union
 from pathlib import Path
-import typer
 import petl as etl
-from rich import print
 from requests.adapters import HTTPAdapter, Retry
 import importlib.metadata
+
+try:
+    import typer
+    from rich import print
+except ImportError:
+    typer = None
 
 
 logging.basicConfig(level=logging.ERROR, format='(%(levelname)s): %(message)s')
@@ -22,7 +26,7 @@ def get_version() -> str:
 def exit_if_no_data(table: Union[etl.Table, None]) -> None:
     if table is None:
         print("No data in table. Exiting.")
-        raise typer.Exit()
+        raise typer.Exit() if typer is not None else SystemExit(1)
 
 
 def parse_accession_id(filename: Path) -> Union[str, None]:

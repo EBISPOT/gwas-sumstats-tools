@@ -6,6 +6,7 @@ WORKDIR /application
 
 COPY . /application/
 
-RUN uv sync --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+    UV_LINK_MODE=copy uv sync --no-dev
 
 ENTRYPOINT ["uv", "run", "gwas-ssf"]
