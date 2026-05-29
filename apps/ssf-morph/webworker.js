@@ -1,5 +1,5 @@
 // webworker.js
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js");
+importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.js");
 
 async function loadPyodideAndPackages() {
     self.pyodide = await loadPyodide();
@@ -7,7 +7,7 @@ async function loadPyodideAndPackages() {
     const micropip = pyodide.pyimport("micropip");
 
     // C-extension packages from Pyodide's curated builds (no pure-Python wheel on PyPI)
-    await pyodide.loadPackage(["ssl", "numpy", "pytz", "ruamel.yaml", "pyyaml", "pandas", "pydantic", "wrapt", "click"]);
+    await pyodide.loadPackage(["ssl", "numpy", "pytz", "ruamel.yaml", "pyyaml", "pandas", "pydantic", "click"]);
 
     // petl: local wheel (specific version)
     await micropip.install("./wheels/petl-1.7.14-py3-none-any.whl");

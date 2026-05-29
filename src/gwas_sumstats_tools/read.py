@@ -69,10 +69,10 @@ class Reader():
         if self.meta:
             self.meta.from_file()
             if include:
-                metadata_dict = {field: self.meta.metadata.dict(**kwargs).get(field)
+                metadata_dict = {field: self.meta.metadata.model_dump(**kwargs).get(field)
                                  for field in include}
             else:
-                return self.meta.metadata.dict(**kwargs)
+                return self.meta.metadata.model_dump(**kwargs)
         return metadata_dict
 
     def head(self, **kwargs) -> Union[etl.Table, None]:

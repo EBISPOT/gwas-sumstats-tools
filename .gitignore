@@ -138,3 +138,6 @@ dmypy.json
 .agent/
 .aider/
 .continue/
+
+# uv test
+GCST*

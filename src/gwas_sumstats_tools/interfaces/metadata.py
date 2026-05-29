@@ -110,7 +110,7 @@ class MetadataClient:
             in_file -- Input metadata YAML file (default: None)
             out_file -- Output metadata YAML file (default: None)
         """
-        self.metadata = SumStatsMetadata.construct()
+        self.metadata = SumStatsMetadata.model_construct()
         self._meta_dict = meta_dict if meta_dict else {}
         self._in_file = in_file
         self._out_file = out_file
@@ -127,7 +127,7 @@ class MetadataClient:
     def to_file(self) -> None:
         """Write metadata to YAML file
         """
-        yaml_data =yaml.dump(self.metadata.dict(exclude_none=True), default_flow_style=False,sort_keys=False)
+        yaml_data =yaml.dump(self.metadata.model_dump(exclude_none=True), default_flow_style=False,sort_keys=False)
         yaml_yaml=ruamel.yaml.YAML().load(str(yaml_data))
         yaml_yaml.yaml_set_start_comment("Study meta-data")
         yaml_yaml.yaml_set_comment_before_after_key('trait_description','\nTrait Information')
@@ -152,7 +152,7 @@ class MetadataClient:
             data_dict["file_type"] = normalize_file_type(data_dict["file_type"])
         self._meta_dict.update(data_dict)
         try:
-            self.metadata = self.metadata.parse_obj(self._meta_dict)
+            self.metadata = SumStatsMetadata.model_validate(self._meta_dict)
         except ValidationError as e:
             logger.error(f"Metadata not updated due to the following error:\n {e}\n")
 
@@ -167,10 +167,10 @@ class MetadataClient:
         Returns:
             Dict of metadata
         """
-        return self.metadata.dict()
+        return self.metadata.model_dump()
 
     def as_yaml(self, **kwargs) -> str:
-        return yaml.dump(self.metadata.dict(**kwargs),sort_keys=False,default_flow_style=False)
+        return yaml.dump(self.metadata.model_dump(**kwargs),sort_keys=False,default_flow_style=False)
     
     def yscbak(self, key: str, before: Optional[str] = None, indent: int = 0, after: Optional[str] = None, after_indent: Optional[int] = None) -> None:
         """
@@ -244,7 +244,7 @@ def metadata_dict_from_gwas_cat(
                     replace_dict=REST_API_STUDY_MAPPINGS,
                     fields_to_split=STUDY_FIELD_TO_SPLIT,
                 )
-                meta_dict.update(rest_study_dict.dict(exclude_none=True))
+                meta_dict.update(rest_study_dict.model_dump(exclude_none=True))
             except Exception as e:
                 logger.exception("Error processing REST API response")
    
@@ -260,7 +260,7 @@ def metadata_dict_from_gwas_cat(
                 replace_dict=INGEST_API_STUDY_MAPPINGS,
                 fields_to_split=STUDY_FIELD_TO_SPLIT,
             )
-            meta_dict.update(ingest_study_dict.dict(exclude_none=True))
+            meta_dict.update(ingest_study_dict.model_dump(exclude_none=True))
         except Exception as e:
             logger.exception("Error processing Ingest API response")
     
@@ -298,7 +298,7 @@ def metadata_dict_from_gwas_cat(
                 )
 
     meta_dict["samples"] = sample_list
-    return SumStatsMetadataAPI.construct(**meta_dict)
+    return SumStatsMetadataAPI.model_construct(**meta_dict)
 
 def _parse_ingest_study_response(
     response: bytes,
@@ -334,7 +334,7 @@ def _parse_ingest_study_response(
             data_dict=result_dict,
             fields=fields_to_split,
         )
-    return SumStatsMetadataAPI.construct(**result_dict)
+    return SumStatsMetadataAPI.model_construct(**result_dict)
 
 
 def _parse_gwas_rest_study_response(response: bytes,
@@ -368,7 +368,7 @@ def _parse_gwas_rest_study_response(response: bytes,
     if fields_to_split:
         result_dict = split_fields_on_delimiter(data_dict=result_dict,
                                                     fields=fields_to_split)
-    return SumStatsMetadataAPI.construct(**result_dict)
+    return SumStatsMetadataAPI.model_construct(**result_dict)
 
 
 def _parse_gwas_api_samples_response(response: bytes,
@@ -400,7 +400,7 @@ def _parse_gwas_api_samples_response(response: bytes,
                 if fields_to_split:
                     element = split_fields_on_delimiter(data_dict=element,
                                                         fields=fields_to_split)
-                formatted_list.append(SampleMetadata.construct(**element))
+                formatted_list.append(SampleMetadata.model_construct(**element))
     return formatted_list
 
 def _parse_gwas_rest_samples_response(ancestry_response: Optional[bytes] = None,
@@ -439,7 +439,7 @@ def _parse_gwas_rest_samples_response(ancestry_response: Optional[bytes] = None,
             if fields_to_split:
                 element=split_fields_on_delimiter(data_dict=element,
                                                         fields=fields_to_split)
-            formatted_list.append(SampleMetadata.construct(**element))
+            formatted_list.append(SampleMetadata.model_construct(**element))
 
     return formatted_list
 
@@ -456,7 +456,7 @@ def get_file_metadata(in_file: Path, out_file: str) -> SumStatsMetadataFile:
     if not Path(out_file).exists():
         raise FileNotFoundError(f"Cannot compute md5sum: file not found: {out_file}")
     accession_id = parse_accession_id(filename=in_file)
-    return SumStatsMetadataFile.construct(
+    return SumStatsMetadataFile.model_construct(
         gwas_id=accession_id,
         data_file_name=Path(out_file).name,
         file_type='GWAS-SSF v1.0',

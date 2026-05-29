@@ -36,7 +36,7 @@ class Formatter:
         self.format_data = format_data
         self.data_infile = Path(data_infile)
         self.config_outfile = Path(config_outfile) if config_outfile else None
-        self.config = Formatconfig.construct()
+        self.config = Formatconfig.model_construct()
         self.config_infile = Path(config_infile) if config_infile else None
 
         self.analysis_software = analysis_software if analysis_software in pre_defined_configure.keys() else None
