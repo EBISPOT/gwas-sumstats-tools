@@ -1,4 +1,4 @@
-# 3. Migrate from Poetry to uv; upgrade to Python 3.12 and current dependencies
+# 3. Migrate from Poetry to uv; upgrade to Python 3.13 and current dependencies
 Decision made date: 2026-05-29
 
 ## Status
@@ -16,19 +16,20 @@ Key pain points with Poetry in this project:
 - `poetry run` added overhead to every CLI invocation in Docker entrypoints
 - CI pipelines installed Poetry via pip before any project dependencies could be resolved
 
-### Python version constraint — driven by Pyodide
+### Python version — CLI/Docker vs. browser runtime
 
-The target Python version (3.12) is not an arbitrary choice: it is constrained by [Pyodide](https://pyodide.org/), the WebAssembly Python runtime used by the browser app [SSF-morph](../../apps/ssf-morph/).
+The CLI and Docker images target **Python 3.13**. The browser app ([SSF-morph](../../apps/ssf-morph/)) runs inside [Pyodide](https://pyodide.org/), a WebAssembly Python runtime that bundles its own CPython build. These two runtimes are now intentionally decoupled: the CLI tracks the latest stable CPython, while the browser tracks the latest stable Pyodide release.
 
-Pyodide bundles a specific CPython version and a fixed set of pre-compiled packages. Each Pyodide release ships one Python version and one pandas version:
+Pyodide bundles a specific CPython version and a fixed set of pre-compiled packages:
 
 | Pyodide | Python | pandas |
 |---|---|---|
-| 0.24.1 (previous) | 3.11 | 1.5.3 |
+| 0.24.1 | 3.11 | 1.5.3 |
 | 0.25.x | 3.11 | 2.0.3 |
-| **0.26.0 (current)** | **3.12** | **2.1.4** |
+| 0.26.0 | 3.12 | 2.1.4 |
+| **0.26.4 (current)** | **3.12** | **2.1.4** |
 
-To move from `pandas==1.5.3` to pandas 2.x in the browser we had to upgrade Pyodide. Pyodide 0.26.0 is the first release with Python 3.12. Therefore **Python 3.12 is the maximum version the browser app can target**, and we align the CLI and Docker images to the same version to eliminate drift between environments.
+The initial migration (0.26.0) was needed to reach pandas 2.x in the browser. The subsequent bump to 0.26.4 picks up upstream bug fixes within the 3.12-based release line. Upgrading the browser to Python 3.13 requires Pyodide 0.27.x, which is tracked as a future step.
 
 ## Decision
 Replace Poetry with [uv](https://github.com/astral-sh/uv) across all environments and upgrade all major dependencies to current releases:
@@ -44,11 +45,11 @@ Replace Poetry with [uv](https://github.com/astral-sh/uv) across all environment
 
 | Package | Before | After | Driver |
 |---|---|---|---|
-| Python | 3.9 | 3.12 | Pyodide 0.26.0 (see above) |
-| `pandas` | ==1.5.3 | >=2.1,<3 | Pyodide 0.26.0 bundles pandas 2.1.4 |
+| Python | 3.9 | 3.13 | Latest stable CPython; CLI/Docker decoupled from Pyodide |
+| `pandas` | ==1.5.3 | >=2.1,<3 | Pyodide 0.26.x bundles pandas 2.1.4 |
 | `pydantic` | >=1.10.4,<2 | >=2.0,<3 | pydantic v2 required by pandera ≥0.17 |
 | `pandera` | >=0.13.4,<0.14 | >=0.17,<1 | pandas 2.x support; pydantic v2 support |
-| `numpy` | <2 | >=1.26,<3 | pandas 2.1+ requires numpy ≥1.26 |
+| `numpy` | <2 | >=2.0,<3 | numpy 2.x required for Python 3.13 (pre-built wheels; 1.26.x has no 3.13 wheel) |
 | `typer` | [all]>=0.7.0,<1 | >=0.9.0,<1 | `[all]` extra removed in typer 0.9+ |
 
 ### Source code changes (pydantic v1 → v2)
@@ -65,10 +66,10 @@ pydantic v2 removed several v1-only APIs. Migrated across the codebase:
 | `.dict()` | `.model_dump()` |
 
 ### Docker base image
-- `python:3.9-slim-buster` (Debian 10, EOL June 2024) → `python:3.12-slim-bookworm` (Debian 12, current LTS)
+- `python:3.9-slim-buster` (Debian 10, EOL June 2024) → `python:3.13-slim-bookworm` (Debian 12, current LTS)
 
 ### SSF-morph browser app
-- Pyodide `v0.24.1` → `v0.26.0`
+- Pyodide `v0.24.1` → `v0.26.4`
 - `wrapt` removed from `loadPackage` (was a pydantic v1 runtime dependency; pydantic v2 does not need it)
 - `gwas_sumstats_tools` wheel rebuilt from updated source and replaced in `apps/ssf-morph/wheels/`
 
@@ -80,14 +81,14 @@ Positive
   - Faster dependency resolution and installation (uv is 10–100x faster than pip/Poetry in benchmarks)
   - Simpler Dockerfiles — uv is copied as a single binary with no bootstrap venv required
   - Standard PEP 621 `pyproject.toml` improves interoperability with other tooling
-  - Python version is now consistent across CLI, Docker images, and browser runtime
+  - CLI and Docker images are on Python 3.13 (latest stable); browser runtime (Pyodide 0.26.4) remains on Python 3.12 and is independently upgradeable
   - 85/85 existing tests pass after migration with no test changes required
 
 Trade-offs
 
   - Contributors familiar with Poetry commands will need to switch to uv equivalents (`uv sync`, `uv run`, `uv add`)
-  - Python version ceiling (3.12) is tied to the Pyodide release cycle; upgrading Python further requires a corresponding Pyodide upgrade and wheel rebuild
+  - The browser runtime (Pyodide 0.26.4) still runs Python 3.12; the CLI and browser now diverge by one minor version until Pyodide 0.27.x lands
 
 Future Considerations
 
-  - When a new Pyodide version ships with Python 3.13+, bump `requires-python`, both Dockerfiles, and the Pyodide CDN URL in `apps/ssf-morph/webworker.js` together to keep environments in sync
+  - When Pyodide 0.27.x ships (Python 3.13), bump the CDN URL in `apps/ssf-morph/webworker.js` and rebuild the wheels in `apps/ssf-morph/wheels/` to bring the browser runtime in line with the CLI
