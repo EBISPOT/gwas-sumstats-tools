@@ -9,6 +9,9 @@ on:
       - 'nginx.conf'
   workflow_dispatch:
 
+permissions:
+   contents: read
+
 jobs:
   test-image:
     runs-on: ubuntu-latest
