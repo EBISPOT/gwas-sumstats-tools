@@ -1,20 +1,24 @@
 // webworker.js
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js");
+importScripts("https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js");
 
 async function loadPyodideAndPackages() {
     self.pyodide = await loadPyodide();
     await pyodide.loadPackage("micropip");
     const micropip = pyodide.pyimport("micropip");
 
-    // C-extension packages from Pyodide's curated builds (no pure-Python wheel on PyPI)
-    await pyodide.loadPackage(["ssl", "numpy", "pytz", "ruamel.yaml", "pyyaml", "pandas", "pydantic", "click", "requests"]);
+    // Resolve local wheel paths to absolute URLs — micropip 0.7+ rejects relative paths.
+    const wheel = (name) => new URL(`./wheels/${name}`, self.location.href).href;
+
+    // C-extension packages from Pyodide's curated builds (no pure-Python wheel on PyPI).
+    // Note: package was renamed ruamel.yaml -> ruamel-yaml in Pyodide 0.28+.
+    await pyodide.loadPackage(["ssl", "numpy", "pytz", "ruamel-yaml", "pyyaml", "pandas", "pydantic", "click", "requests"]);
 
     // petl: local wheel (specific version)
-    await micropip.install("./wheels/petl-1.7.14-py3-none-any.whl");
+    await micropip.install(wheel("petl-1.7.14-py3-none-any.whl"));
 
     // bsub has no wheel on PyPI (sdist only) and is unused in the browser.
     // Install the local stub so micropip's dependency resolution accepts it.
-    await micropip.install("./wheels/bsub-0.3.5-py3-none-any.whl");
+    await micropip.install(wheel("bsub-0.3.5-py3-none-any.whl"));
 
     // pandera and its transitive deps are bundled locally to avoid PyPI fetches at
     // runtime. micropip in Pyodide can fail with BadZipFile when the network returns
@@ -22,15 +26,15 @@ async function loadPyodideAndPackages() {
     //   mypy_extensions <- typing_inspect <- pandera
     //   typeguard <- pandera
     await micropip.install([
-        "./wheels/mypy_extensions-1.1.0-py3-none-any.whl",
-        "./wheels/typing_inspect-0.9.0-py3-none-any.whl",
-        "./wheels/typeguard-4.3.0-py3-none-any.whl",
-        "./wheels/pandera-0.26.1-py3-none-any.whl",
+        wheel("mypy_extensions-1.1.0-py3-none-any.whl"),
+        wheel("typing_inspect-0.9.0-py3-none-any.whl"),
+        wheel("typeguard-4.3.0-py3-none-any.whl"),
+        wheel("pandera-0.26.1-py3-none-any.whl"),
     ]);
 
     // Install gwas_sumstats_tools; pass keep_going=true (second positional arg) so
     // a transient PyPI failure for one dep doesn't abort the whole init.
-    await micropip.install("./wheels/gwas_sumstats_tools-1.0.24-py3-none-any.whl", true);
+    await micropip.install(wheel("gwas_sumstats_tools-1.0.24-py3-none-any.whl"), true);
 
     await micropip.install("tabulate");
 }
