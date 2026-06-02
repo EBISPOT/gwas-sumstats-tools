@@ -1,6 +1,6 @@
 # ── Stage 1: build ────────────────────────────────────────────────────────────
 # Build the Python package and prepare ssf-morph + documentation for static hosting
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.13-slim-bookworm AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
