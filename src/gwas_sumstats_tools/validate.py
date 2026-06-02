@@ -175,6 +175,10 @@ class Validator(SumStatsTable):
         except errors.SchemaErrors as err:
             failure_cases = err.failure_cases
             if len(failure_cases) > 0:
+                # Drop coerce_dtype rows — they duplicate the accompanying dtype error
+                failure_cases = failure_cases[
+                    ~failure_cases["check"].str.contains(r"coerce_dtype", na=False)
+                ]
                 # Sort primarily by error type (schema context), then by row index and column
                 failure_cases = failure_cases.sort_values(
                     by=["schema_context", "index", "column"],

@@ -255,7 +255,7 @@ class TestValidator:
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
         assert v.primary_error_type == "data"
-        assert v.errors_table.nrows() == 5
+        assert v.errors_table.nrows() == 4
 
     def test_invalid_effect_allele(self, sumstats_file):
         sumstats_file.replace_values("effect_allele", ["D", "I", "N", None])
@@ -272,15 +272,15 @@ class TestValidator:
         assert v.validate()[0] is False
         assert v.primary_error_type == "data"
         print(v.errors_table.look(limit=10))
-        assert v.errors_table.nrows() == 5
-    
+        assert v.errors_table.nrows() == 4
+
     def test_invalid_effect_allele_frequency(self, sumstats_file):
         sumstats_file.replace_values("effect_allele_frequency", ["str", None, -1, 1.1])
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
         assert v.primary_error_type == "data"
-        assert v.errors_table.nrows() == 4
+        assert v.errors_table.nrows() == 3
 
     def test_pvalue_scientific_notation(self, sumstats_file):
         sumstats_file.replace_values("p_value", ["1E-90000", "20e-2", "1e-90000", "200e-100"])
@@ -329,7 +329,7 @@ class TestValidator:
         assert v.validate()[0] is False
         assert v.primary_error_type == "data"
         print(v.errors_table.look(limit=10))
-        assert v.errors_table.nrows() == 3
+        assert v.errors_table.nrows() == 2
 
     def test_invalid_info(self, sumstats_file):
         sumstats_file.replace_values("info", ["a", None, 1.1, -1])
@@ -338,8 +338,8 @@ class TestValidator:
         assert v.validate()[0] is False
         assert v.primary_error_type == "data"
         print(v.errors_table.look(limit=10))
-        assert v.errors_table.nrows() == 3
-        
+        assert v.errors_table.nrows() == 2
+
     def test_invalid_n(self, sumstats_file):
         sumstats_file.replace_values("n", ["a", None, 1.1, -1])
         sumstats_file.to_file()
@@ -347,7 +347,7 @@ class TestValidator:
         assert v.validate()[0] is False
         assert v.primary_error_type == "data"
         print(v.errors_table.look(limit=10))
-        assert v.errors_table.nrows() == 5
+        assert v.errors_table.nrows() == 4
 # ---------------- p_value check ---------------------------------------------
     def test_pval_zero_true_1(self, sumstats_file):
         # Set up the data with various p-values, including valid and invalid cases
