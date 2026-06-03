@@ -114,7 +114,7 @@ Architecture Decision Records (ADRs) — lightweight design documents explaining
 |---|---|
 | `0001-validator.md` | Decision record for the validation approach |
 | `0002-deployment.md` | Decision record for the deployment architecture |
-| `0003-uv-package-manager.md` | Migration from Poetry to uv; Python 3.12 and dependency upgrades |
+| `0003-uv-package-manager.md` | Migration from Poetry to uv; Python 3.13 and dependency upgrades |
 
 ### `dist/`
 Pre-built Python distribution archives (wheels and source tarballs) produced by `uv build`. The latest wheel is also copied into `apps/ssf-morph/wheels/` for use by the browser app.
@@ -125,7 +125,7 @@ Pre-built Python distribution archives (wheels and source tarballs) produced by 
 
 ### CLI (pip)
 ```bash
-pip install gwas-sumstats-tools      # requires Python 3.9–3.12
+pip install gwas-sumstats-tools      # requires Python 3.13+
 gwas-ssf --help
 ```
 

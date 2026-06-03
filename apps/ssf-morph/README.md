@@ -121,7 +121,7 @@ Configuration is a JSON object with two top-level keys:
 ```json
 {
   "fileConfig": {
-    "outFileSuffix": "formatted_",
+    "outFilePrefix": "formatted_",
     "fieldSeparator": "\t",
     "naValue": null,
     "convertNegLog10Pvalue": false,

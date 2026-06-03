@@ -861,11 +861,12 @@ document.querySelector('#stop-apply').addEventListener('click', async () => {
     document.getElementById('stop-apply-suggestion').style.display = 'block';
 });
 
-window.downloadConfigAfterStop = function () {
+function downloadConfigAfterStop() {
     const config = formToConfig();
     const filename = inputFile ? `config_${inputFile.name}.json` : 'config.json';
     triggerDownload(new TextEncoder().encode(config), filename);
-};
+}
+document.getElementById('download-config-after-stop').addEventListener('click', downloadConfigAfterStop);
 
 // ── Validate ──────────────────────────────────────────────────────
 

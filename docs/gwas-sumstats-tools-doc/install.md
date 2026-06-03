@@ -2,7 +2,7 @@
 ----
 ## Requirements for Installing Packages
 ### Verify Python Version
-Before proceeding, ensure that you have Python version 3.9 to 3.12 installed on your computer. You can verify your Python version by opening a terminal or command prompt and executing either of the following commands:
+Before proceeding, ensure that you have Python 3.13 or later installed on your computer. You can verify your Python version by opening a terminal or command prompt and executing either of the following commands:
 ```bash
 $ python --version
 # or 
@@ -30,17 +30,17 @@ To confirm successful installation of GWAS-Sumstat-Tools, run the command `gwas-
 ![gwas-ssf](/img/gwas-demo.gif)
 
 ### Optional Installation and Execution Methods for GWAS-Sumstat-Tools 
-If the Python version displayed is not within the range of Python 3.9 to Python 3.11, you may encounter compatibility issues with the package. In such cases, you have two options:
+If the Python version displayed is below Python 3.13, you may encounter compatibility issues with the package. In such cases, you have two options:
 
-#### Option 1: Install Python 3.12 locally
-1. Download and install Python 3.12 from the [official Python website](https://www.python.org/downloads/).
-2. Determine the installation location of Python 3.12 by running:
+#### Option 1: Install Python 3.13 locally
+1. Download and install Python 3.13 from the [official Python website](https://www.python.org/downloads/).
+2. Determine the installation location of Python 3.13 by running:
 ```bash
-$ where python3.12
+$ where python3.13
 ```
-3. Create a virtual environment with Python 3.12 using `venv`. Navigate to your project directory (replace `<DIR>` with your actual project directory) in the terminal and run:
+3. Create a virtual environment with Python 3.13 using `venv`. Navigate to your project directory (replace `<DIR>` with your actual project directory) in the terminal and run:
 ```bash
-$ python3.12 -m venv <DIR>
+$ python3.13 -m venv <DIR>
 ```
 4. Activate the virtual environment.
 ```bash

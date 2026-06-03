@@ -8,4 +8,4 @@ import json
 input_path = Path("/data") / inputFileName
 startTime = datetime.now()
 output=format(filename=input_path,generate_config=True,delimiter=delimiter,remove_comments=removecomments,analysis_software=analysisSoftware)
-f"{json.dumps(output, indent=4)}"
+print(json.dumps(output, indent=4))

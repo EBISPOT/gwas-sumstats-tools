@@ -1,6 +1,6 @@
 import pytest
 
-from src.gwas_sumstats_tools.interfaces.data_table import SumStatsTable
+from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
 from tests.prep_tests import SSTestFile
 
 

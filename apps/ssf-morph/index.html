@@ -7,7 +7,7 @@
   <title>SSF-morph</title>
   <link rel="stylesheet" href="https://assets.emblstatic.net/vf/v2.5.14/css/styles.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <link rel="stylesheet" href="specificstyle.css">
 </head>
 
@@ -153,14 +153,14 @@
             2.1&nbsp; Specify the delimiter in the input file:&nbsp;
             <input type="text" name="delimiter" list="delimiterList" id="delimiter" class="form-control d-inline-block w-auto">
             <datalist id="delimiterList">
-              <option value="\t" label="Tab">
-              <option value="," label="Comma">
-              <option value=" " label="Space">
+              <option value="\t" label="Tab"></option>
+              <option value="," label="Comma"></option>
+              <option value=" " label="Space"></option>
             </datalist>
             &nbsp; If your file contains comment lines (for example, lines starting with #), please let us know which character is used to mark comments:&nbsp;
             <input type="text" name="comments" list="commentsList" id="comments" class="form-control d-inline-block w-auto">
             <datalist id="commentsList">
-              <option value="#">
+              <option value="#"></option>
             </datalist>
             <small class="text-muted">(Leave empty if not applicable.)</small>
           </p>
@@ -377,7 +377,7 @@
             <code>gwas-ssf format -f &lt;your-file&gt; -c &lt;config.json&gt;</code><br>
             <a href="/gwas/apps/gwas-sumstats-tools/docs/CLI_format" target="_blank" rel="noopener">See formatting CLI docs</a>
             <div class="mt-2">
-              <button id="download-config-after-stop" class="btn btn-sm btn-outline-dark" onclick="downloadConfigAfterStop()">&#11015; Download config file</button>
+              <button id="download-config-after-stop" class="btn btn-sm btn-outline-dark">&#11015; Download config file</button>
             </div>
           </div>
           <div id="step4error" class="mt-2"></div>
@@ -422,7 +422,7 @@
             Minimum number of variants (rows):
             <input type="text" name="nrows" list="nrowsList" id="nrows" class="form-control d-inline-block w-auto">
             <datalist id="nrowsList">
-              <option value="100000" label="GWAS Catalog acceptable">
+              <option value="100000" label="GWAS Catalog acceptable"></option>
             </datalist>
             Allow zero p-values:
             <select name="zeropvalues" id="zeropvalues" class="form-select d-inline-block w-auto">
@@ -652,7 +652,7 @@
 <!-- Scripts — order matters: jQuery must load before consumer.js uses it -->
 <script src="https://code.jquery.com/jquery-3.7.1.slim.js" integrity="sha256-UgvvN8vBkgO0luPSUl2s8TIlOSYRoGFAX4jlCIm9Adc=" crossorigin="anonymous"></script>
 <script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 <script type="module" src="consumer.js"></script>
 
 </body>

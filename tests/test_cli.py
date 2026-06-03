@@ -1,6 +1,6 @@
 from typer.testing import CliRunner
 
-from src.gwas_sumstats_tools.cli import app
+from gwas_sumstats_tools.cli import app
 
 runner = CliRunner()
 

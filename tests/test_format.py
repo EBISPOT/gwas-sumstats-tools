@@ -5,7 +5,7 @@ from tests.prep_tests import (SSTestFile,
                               TEST_DATA,
                               MetaTestFile,
                               TEST_METADATA)
-from src.gwas_sumstats_tools.format import Formatter
+from gwas_sumstats_tools.format import Formatter
 
 
 @pytest.fixture()

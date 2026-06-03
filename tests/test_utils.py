@@ -1,6 +1,6 @@
 from pathlib import Path
 from packaging import version
-from src.gwas_sumstats_tools.utils import (append_to_path,
+from gwas_sumstats_tools.utils import (append_to_path,
                                        parse_genome_assembly,
                                        replace_dictionary_keys,
                                        split_fields_on_delimiter,

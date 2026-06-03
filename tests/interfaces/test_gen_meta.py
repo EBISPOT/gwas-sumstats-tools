@@ -2,7 +2,7 @@ import gzip
 
 import pytest
 
-from src.gwas_sumstats_tools.gen_meta import Gen_meta
+from gwas_sumstats_tools.gen_meta import Gen_meta
 
 # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST90013541
 # https://www.ebi.ac.uk/gwas/rest/api/v2/studies/GCST006186

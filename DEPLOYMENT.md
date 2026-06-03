@@ -49,7 +49,7 @@ This project has two independent release flows:
 
 | File | Purpose |
 |------|---------|
-| `Dockerfile.docs` | Multi-stage build: Poetry builder → nginx server |
+| `Dockerfile.docs` | Multi-stage build: uv builder → nginx server |
 | `nginx.conf` | Routes `/apps/gwas_sumstats_tools/` and `/apps/gwas_sumstats_tools/docs/` |
 | `apps/ssf-morph/webworker.js` | Loads Pyodide + the versioned wheel file |
 | `apps/ssf-morph/wheels/` | Wheel files loaded by the browser app |
@@ -93,7 +93,7 @@ On GitHub → Settings → Environments → create an environment named `publish
 
 1. Bump version and push to master:
    ```bash
-   poetry version 1.0.25        # update pyproject.toml
+   uv version 1.0.25            # update pyproject.toml
    git add pyproject.toml
    git commit -m "chore: bump version to 1.0.25"
    git push origin master
@@ -222,7 +222,7 @@ kubectl --namespace gwas get ingress sumstats-tools-ingress
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Image fails to pull on K8S node | OCI media type incompatibility | Ensure `BUILDKIT_OCI_MEDIA_TYPES=0` and `--provenance=false` are set in `build-docs` job |
-| `helm init` fails | Wrong helm version in image | Use `dtzar/helm-kubectl:2.13.1` (Helm 2 — required by EBI cluster) |
+| deploy fails with `Error: UPGRADE FAILED` or `release not found` | Stale or partial release in the namespace | Run `helm list -n <namespace>` to inspect state; `helm uninstall <release> -n <namespace>` then re-run the pipeline. Note: `helm init` and `--purge` are Helm 2 artefacts — if the CI image still runs Helm 2 (`dtzar/helm-kubectl:2.13.1`), upgrade it to a Helm 3 image (e.g. `dtzar/helm-kubectl:3.13.3`) and replace `helm init` / `helm delete --purge` / `helm install --name` with their Helm 3 equivalents (`helm repo update`, `helm uninstall`, `helm upgrade --install`) |
 | `deploy-dev` fails with kubeconfig error | `PLIVE_KUBECONFIG` not set or not base64-encoded | Run `cat gwas-depo-hh-config.yml \| base64 \| tr -d '\n'` and paste into GitLab variable |
 | 404 at `/apps/gwas_sumstats_tools/` | nginx misconfiguration or wrong COPY path | `docker exec <container> ls /usr/share/nginx/html/apps/gwas_sumstats_tools/` |
 | webworker loads wrong wheel version | `webworker.js` not updated | The `publish-pypi.yml` workflow updates it automatically on each release; check the commit it pushes to master |
