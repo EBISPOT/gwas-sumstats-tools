@@ -468,7 +468,7 @@ class Formatter:
                     chunk.to_csv(out, sep='\t', index=False, header=True, lineterminator='\n')
                     first_chunk = False
                 else:
-                    chunk = chunk[[c for c in final_cols if c in chunk.columns]]
+                    chunk = chunk.reindex(columns=final_cols, fill_value='#NA')
                     chunk.to_csv(out, sep='\t', index=False, header=False, lineterminator='\n')
 
         print(f"Done in {time.time() - t0:.1f}s → {output_path}")
