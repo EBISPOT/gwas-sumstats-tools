@@ -3,13 +3,13 @@ Pandera Schema https://pandera.readthedocs.io for defining
 the summary statistics data tables. The schema is dynamically
 generated because of columns that can be defined in multiple
 ways e.g. the effect size column (index 4) can be a beta, an
-odds ratio or a hazard ratio - and these all have differing 
+odds ratio, a hazard ratio or a z-score - and these all have differing 
 validation constraints.
 """
 
 from collections import OrderedDict
+import numpy as np
 from pandera import Column, DataFrameSchema, Check
-from pandera.dtypes import Float128
 
 import platform
 
@@ -22,7 +22,7 @@ class SumStatsSchema:
     Choice of standard allowing zero or 
     -log10 allowing zero. The zero constraint
     is applied to the mantissa.
-    The float type is Float128 but even
+    The p-value float type uses numpy.longdouble where available, but even
     this is not precise enough for some
     datasets, whose very small values evaluate
     to 0, if we don't split mantissa and exp.
@@ -36,11 +36,12 @@ class SumStatsSchema:
         "hazard_ratio": Column(float, [
             Check.ge(0,
                      error="Must be a value greater than or equal to 0")
-            ])
+            ]),
+        "z-score": Column(float)
         }
     PVALUE_FIELD_DEFINITIONS = {
         # 'p_value': Column(float, [
-        'p_value': Column(float if platform.system() == "Windows" else Float128, [
+        'p_value': Column(float if platform.system() == "Windows" else np.longdouble, [
             Check.in_range(0, 1,
                            include_min=True,
                            error="Must be a value between 0 and 1, inclusive of 0")
@@ -83,7 +84,7 @@ class SumStatsSchema:
         return schema
 
     def mandatory_fields(self) -> dict:
-        return OrderedDict({
+        fields = OrderedDict({
                 "chromosome": Column(int, [
                     Check.in_range(1, 25,
                                    error="Must be a value between 1 and 25"),
@@ -102,7 +103,10 @@ class SumStatsSchema:
                                       error="Must be nucleotide sequence")
                     ]),
                 self.effect_field: self.EFFECT_FIELD_DEFINITIONS.get(self.effect_field),
-                "standard_error": Column(float),
+            })
+        if self.effect_field != "z-score":
+            fields["standard_error"] = Column(float)
+        fields.update({
                 "effect_allele_frequency": Column(float, [
                     Check.in_range(0, 1,
                                    error="Must be a value between 0 and 1, inclusive")
@@ -111,6 +115,7 @@ class SumStatsSchema:
                 "_p_value_mantissa": self._get_mantissa_validator(),
                 "_p_value_exponent": Column("Int64", nullable=True)           
             })
+        return fields
 
     def field_order(self) -> tuple:
         return tuple(k for k in self.mandatory_fields() if not k.startswith("_"))

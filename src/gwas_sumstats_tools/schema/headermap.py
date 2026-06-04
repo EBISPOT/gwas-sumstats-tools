@@ -255,10 +255,11 @@ known_header_transformations = {
     'Sample-size': 'n',
     'Sample-size-cases': 'n_cas',
     # signed statistics
-    'zscore': 'z',
-    'z-score': 'z',
-    'gc_zscore': 'z',
-    'z': 'z',
+    'zscore': 'z-score',
+    'z_score': 'z-score',
+    'z-score': 'z-score',
+    'gc_zscore': 'z-score',
+    'z': 'z-score',
     'log_odds': 'log_odds',
     'signed_sumstat': 'signed_sumstat',
     # info
@@ -601,10 +602,13 @@ header_mapper = {
 
     # signed statistics
     # =================
-    'z': [
+    'z-score': [
         'zscore',
+        'z_score',
         'z-score',
         'gc_zscore',
-        'z'
+        'z',
+        'Z',
+        'ZSCORE'
         ],
     }

@@ -399,10 +399,16 @@ class Formatter:
     @staticmethod
     def _pd_column_order(cols: list) -> list:
         col_set = set(cols)
-        all_std = set(list(SumStatsTable.FIELDS_REQUIRED) +
+        required_fields = list(SumStatsTable.FIELDS_REQUIRED)
+        if 'z-score' in col_set:
+            required_fields.remove('standard_error')
+        all_required = list(SumStatsTable.FIELDS_REQUIRED)
+        if 'z-score' in col_set:
+            all_required.remove('standard_error')
+        all_std = set(all_required +
                       list(SumStatsTable.FIELDS_EFFECT) +
                       list(SumStatsTable.FIELDS_OPTIONAL))
-        order  = [h for h in SumStatsTable.FIELDS_REQUIRED if h in col_set]
+        order  = [h for h in required_fields if h in col_set]
         order += [h for h in SumStatsTable.FIELDS_OPTIONAL if h in col_set]
         order += [h for h in cols if h not in all_std]
         for eff in SumStatsTable.FIELDS_EFFECT:
@@ -458,7 +464,10 @@ class Formatter:
                     chunk['p_value'] = chunk['p_value'].map(_safe_neg_log)
 
                 if first_chunk:
-                    for h in SumStatsTable.FIELDS_REQUIRED:
+                    required_fields = list(SumStatsTable.FIELDS_REQUIRED)
+                    if 'z-score' in chunk.columns:
+                        required_fields.remove('standard_error')
+                    for h in required_fields:
                         if h not in chunk.columns:
                             chunk[h] = '#NA'
                     if not any(e in chunk.columns for e in SumStatsTable.FIELDS_EFFECT):
