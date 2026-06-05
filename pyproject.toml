@@ -26,14 +26,23 @@ gwas-ssf = "gwas_sumstats_tools.cli:app"
 
 [dependency-groups]
 dev = [
-    "flake8>=6.0.0,<7",
+    "pre-commit>=4.0.0,<5",
     "pytest>=7.2.1,<8",
     "hypothesis>=6.68.2,<7",
     "pytest-mock>=3.10.0,<4",
+    "ruff>=0.8.0,<1",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
 
 [build-system]
 requires = ["hatchling"]
