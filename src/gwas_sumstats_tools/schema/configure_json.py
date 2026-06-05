@@ -1,35 +1,41 @@
-from pydantic import BaseModel, Field
 from typing import List, Optional
-import json
 
-class FileConfig (BaseModel):
+from pydantic import BaseModel, Field
+
+
+class FileConfig(BaseModel):
     outFilePrefix: str = Field(default="formatted_")
     fieldSeparator: str = Field(default="tab")
     removeComments: str = Field(default=None)
     naValue: str = Field(default=None)
     convertNegLog10Pvalue: bool = Field(default=False)
 
-class SplitConfig (BaseModel):
-    field: Optional[str]=None
-    separator: Optional[str]=None
-    capture: Optional[str]=None
-    new_field:Optional[List]=None
-    include_original:Optional[bool]=False
 
-class EditConfig (BaseModel):
-    field: Optional[str]=None
-    rename: Optional[str]=None
-    find: Optional[str]=None
-    replace: Optional[str]=None
-    extract: Optional[str]=None
+class SplitConfig(BaseModel):
+    field: Optional[str] = None
+    separator: Optional[str] = None
+    capture: Optional[str] = None
+    new_field: Optional[List] = None
+    include_original: Optional[bool] = False
 
-class ColumnConfig (BaseModel):
+
+class EditConfig(BaseModel):
+    field: Optional[str] = None
+    rename: Optional[str] = None
+    find: Optional[str] = None
+    replace: Optional[str] = None
+    extract: Optional[str] = None
+
+
+class ColumnConfig(BaseModel):
     split: List[SplitConfig]
     edit: List[EditConfig]
 
-class Formatconfig (BaseModel):
+
+class Formatconfig(BaseModel):
     fileConfig: FileConfig
     columnConfig: List[ColumnConfig]
+
 
 """
 #Example to show the schema structure of the json file

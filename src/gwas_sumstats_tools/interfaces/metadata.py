@@ -1,33 +1,41 @@
-import logging
-import yaml
 import json
-from typing import Any, Optional, TypedDict
-from typing_extensions import NotRequired
+import logging
 from datetime import date
 from pathlib import Path
+from typing import Any, Optional, TypedDict
+
 import ruamel.yaml
+import yaml
+from pydantic import ValidationError
+from typing_extensions import NotRequired
+
+from gwas_sumstats_tools.config import INGEST_API_STUDIES_URL, REST_API_STUDIES_URL
+from gwas_sumstats_tools.constants import (
+    GENOME_ASSEMBLY_MAPPINGS,
+    INGEST_API_SAMPLE_MAPPINGS,
+    INGEST_API_STUDY_MAPPINGS,
+    REST_API_SAMPLE_MAPPINGS,
+    REST_API_STUDY_MAPPINGS,
+    SAMPLE_FIELD_TO_SPLIT,
+    STUDY_FIELD_TO_SPLIT,
+)
+from gwas_sumstats_tools.schema.metadata import (
+    SampleMetadata,
+    SumStatsMetadata,
+    SumStatsMetadataAPI,
+    SumStatsMetadataFile,
+)
+from gwas_sumstats_tools.utils import (
+    download_with_requests,
+    get_md5sum,
+    normalize_file_type,
+    parse_accession_id,
+    parse_genome_assembly,
+    replace_dictionary_keys,
+    split_fields_on_delimiter,
+)
 
 logger = logging.getLogger(__name__)
-
-from pydantic import ValidationError
-from gwas_sumstats_tools.config import REST_API_STUDIES_URL, INGEST_API_STUDIES_URL
-from gwas_sumstats_tools.constants import (
-    REST_API_STUDY_MAPPINGS,
-    REST_API_SAMPLE_MAPPINGS,
-    INGEST_API_STUDY_MAPPINGS,
-    INGEST_API_SAMPLE_MAPPINGS,
-    STUDY_FIELD_TO_SPLIT,
-    SAMPLE_FIELD_TO_SPLIT,
-    GENOME_ASSEMBLY_MAPPINGS,
-)
-from gwas_sumstats_tools.utils import (download_with_requests,
-                                       parse_accession_id,
-                                       parse_genome_assembly,
-                                       get_md5sum,
-                                       replace_dictionary_keys,
-                                       split_fields_on_delimiter,
-                                       update_dict_if_not_set,
-                                       normalize_file_type)
 
 # These TypedDicts document the raw JSON shapes returned by the GWAS Catalog APIs.
 # They live here (rather than schema/metadata.py) because they reflect an external
@@ -37,16 +45,20 @@ from gwas_sumstats_tools.utils import (download_with_requests,
 
 # REST API  (https://www.ebi.ac.uk/gwas/rest/api/v2/studies/{id})
 
+
 class EfoTraitRest(TypedDict):
     efo_id: str
+
 
 class RestStudyResponse(TypedDict):
     disease_trait: NotRequired[str]
     genotyping_technologies: NotRequired[list[str]]
     efo_traits: NotRequired[list[EfoTraitRest]]
 
+
 class AncestralGroup(TypedDict):
     ancestral_group: str
+
 
 class RestAncestryResponse(TypedDict):
     number_of_individuals: NotRequired[int]
@@ -56,11 +68,14 @@ class RestAncestryResponse(TypedDict):
 
 # Ingest API  (https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/{id})
 
+
 class IngestDiseaseTrait(TypedDict):
     trait: str
 
+
 class IngestEfoTrait(TypedDict):
     shortForm: str
+
 
 class IngestStudyResponse(TypedDict):
     diseaseTrait: NotRequired[IngestDiseaseTrait]
@@ -81,6 +96,7 @@ class IngestStudyResponse(TypedDict):
     coordinateSystem: str
     sex: NotRequired[str]
 
+
 class IngestSampleResponse(TypedDict):
     size: NotRequired[int]
     ancestry_category: NotRequired[str]
@@ -92,15 +108,12 @@ class IngestSampleResponse(TypedDict):
     stage: NotRequired[str]
 
 
-from gwas_sumstats_tools.schema.metadata import SumStatsMetadata, SumStatsMetadataAPI, SumStatsMetadataFile, SampleMetadata
-
-
 class MetadataClient:
     def __init__(
-        self, 
-        meta_dict: Optional[dict] = None, 
-        in_file: Optional[Path] = None, 
-        out_file: Optional[Path] = None
+        self,
+        meta_dict: Optional[dict] = None,
+        in_file: Optional[Path] = None,
+        out_file: Optional[Path] = None,
     ) -> None:
         """
         SumStats Metadata client
@@ -116,8 +129,7 @@ class MetadataClient:
         self._out_file = out_file
 
     def from_file(self) -> None:
-        """Create metadata from YAML file
-        """
+        """Create metadata from YAML file"""
         if self._in_file is None:
             return None
         with open(self._in_file, "r") as fh:
@@ -125,22 +137,32 @@ class MetadataClient:
             self.update_metadata(self._meta_dict)
 
     def to_file(self) -> None:
-        """Write metadata to YAML file
-        """
-        yaml_data =yaml.dump(self.metadata.model_dump(exclude_none=True), default_flow_style=False,sort_keys=False)
-        yaml_yaml=ruamel.yaml.YAML().load(str(yaml_data))
+        """Write metadata to YAML file"""
+        yaml_data = yaml.dump(
+            self.metadata.model_dump(exclude_none=True),
+            default_flow_style=False,
+            sort_keys=False,
+        )
+        yaml_yaml = ruamel.yaml.YAML().load(str(yaml_data))
         yaml_yaml.yaml_set_start_comment("Study meta-data")
-        yaml_yaml.yaml_set_comment_before_after_key('trait_description','\nTrait Information')
-        yaml_yaml.yaml_set_comment_before_after_key('genome_assembly','\nGenotyping Information')
-        yaml_yaml.yaml_set_comment_before_after_key('samples','\nSample Information')
-        yaml_yaml.yaml_set_comment_before_after_key('data_file_name','\nSummary Statistic information')
-        yaml_yaml.yaml_set_comment_before_after_key('is_harmonised','\nHarmonization status')
+        yaml_yaml.yaml_set_comment_before_after_key(
+            "trait_description", "\nTrait Information"
+        )
+        yaml_yaml.yaml_set_comment_before_after_key(
+            "genome_assembly", "\nGenotyping Information"
+        )
+        yaml_yaml.yaml_set_comment_before_after_key("samples", "\nSample Information")
+        yaml_yaml.yaml_set_comment_before_after_key(
+            "data_file_name", "\nSummary Statistic information"
+        )
+        yaml_yaml.yaml_set_comment_before_after_key(
+            "is_harmonised", "\nHarmonization status"
+        )
 
         with open(self._out_file, "w") as fh:
             yml = ruamel.yaml.YAML()
             yml.indent(mapping=2, sequence=4, offset=2)
-            yml.dump(yaml_yaml,
-                      fh)
+            yml.dump(yaml_yaml, fh)
 
     def update_metadata(self, data_dict: dict) -> None:
         """Create a copy of the model and update (no validation occurs)
@@ -157,8 +179,7 @@ class MetadataClient:
             logger.error(f"Metadata not updated due to the following error:\n {e}\n")
 
     def __repr__(self) -> str:
-        """Representation of metadata.
-        """
+        """Representation of metadata."""
         return self.as_yaml()
 
     def as_dict(self) -> dict[str, Any]:
@@ -170,38 +191,53 @@ class MetadataClient:
         return self.metadata.model_dump()
 
     def as_yaml(self, **kwargs) -> str:
-        return yaml.dump(self.metadata.model_dump(**kwargs),sort_keys=False,default_flow_style=False)
-    
-    def yscbak(self, key: str, before: Optional[str] = None, indent: int = 0, after: Optional[str] = None, after_indent: Optional[int] = None) -> None:
+        return yaml.dump(
+            self.metadata.model_dump(**kwargs),
+            sort_keys=False,
+            default_flow_style=False,
+        )
+
+    def yscbak(
+        self,
+        key: str,
+        before: Optional[str] = None,
+        indent: int = 0,
+        after: Optional[str] = None,
+        after_indent: Optional[int] = None,
+    ) -> None:
         """
         expects comment (before/after) to be without `#` and possible have multiple lines
         """
         from ruamel.yaml.error import Mark
         from ruamel.yaml.tokens import CommentToken
-        
+
         def comment_token(s, mark):
             # handle empty lines as having no comment
-            return CommentToken(('# ' if s else '') + s + '\n', mark, None)
-        
+            return CommentToken(("# " if s else "") + s + "\n", mark, None)
+
         if after_indent is None:
             after_indent = indent + 2
-        if before and before[-1] == '\n':
+        if before and before[-1] == "\n":
             before = before[:-1]  # strip final newline if there
-        if after and after[-1] == '\n':
+        if after and after[-1] == "\n":
             after = after[:-1]  # strip final newline if there
         start_mark = Mark(None, None, None, indent, None, None)
         c = self.ca.items.setdefault(key, [None, [], None, None])
         if before:
-            for com in before.split('\n'):
+            for com in before.split("\n"):
                 c[1].append(comment_token(com, start_mark))
         if after:
             start_mark = Mark(None, None, None, after_indent, None, None)
             if c[3] is None:
                 c[3] = []
-            for com in after.split('\n'):
+            for com in after.split("\n"):
                 c[3].append(comment_token(com, start_mark))
-    if not hasattr(ruamel.yaml.comments.CommentedMap,'yaml_set_comment_before_after_key'):
+
+    if not hasattr(
+        ruamel.yaml.comments.CommentedMap, "yaml_set_comment_before_after_key"
+    ):
         ruamel.yaml.comments.CommentedMap.yaml_set_comment_before_after_key = yscbak
+
 
 def metadata_dict_from_gwas_cat(
     accession_id: str,
@@ -220,16 +256,16 @@ def metadata_dict_from_gwas_cat(
     """
     meta_dict = {}
     sample_list = []
-    
+
     # Each step is not rest or ingest, but rest api first and ingest api provide more details it is available.
     # if sandbox, then update URL_API_INGEST in config
     ingest_study_url = INGEST_API_STUDIES_URL + accession_id
     ingest_sample_url = ingest_study_url + "/samples"
     rest_study_url = REST_API_STUDIES_URL + accession_id
-    rest_ancestry_url =  rest_study_url + "/ancestries"
+    rest_ancestry_url = rest_study_url + "/ancestries"
 
     # Old studies get 404 from Ingest API,
-    # e.g. 
+    # e.g.
     # https://www.ebi.ac.uk/gwas/ingest/api/v2/studies/GCST008396, GCST90086118, GCST002047 - single ancestry
 
     # Try the rest api firstly: Every study should have a rest api entry
@@ -245,11 +281,13 @@ def metadata_dict_from_gwas_cat(
                     fields_to_split=STUDY_FIELD_TO_SPLIT,
                 )
                 meta_dict.update(rest_study_dict.model_dump(exclude_none=True))
-            except Exception as e:
+            except Exception:
                 logger.exception("Error processing REST API response")
-   
+
     ingest_study_response = download_with_requests(url=ingest_study_url)
-    ingest_sample_response = download_with_requests(url=ingest_sample_url, params={"size": 100})
+    ingest_sample_response = download_with_requests(
+        url=ingest_sample_url, params={"size": 100}
+    )
     # Ingest API as an internal API, will provide more detailed information if available. Overlapped fields will be overwrite by the ingest API info.
     if ingest_study_response:
         try:
@@ -261,9 +299,9 @@ def metadata_dict_from_gwas_cat(
                 fields_to_split=STUDY_FIELD_TO_SPLIT,
             )
             meta_dict.update(ingest_study_dict.model_dump(exclude_none=True))
-        except Exception as e:
+        except Exception:
             logger.exception("Error processing Ingest API response")
-    
+
     # Sample info is a list and here will be ingest api information firstly, if it does not exist, then fall back on the rest api.
     sample_list = []
     if ingest_sample_response:
@@ -275,13 +313,13 @@ def metadata_dict_from_gwas_cat(
                 fields_to_split=SAMPLE_FIELD_TO_SPLIT,
             )
             sample_list = ingest_samples_list
-        except Exception as e:
+        except Exception:
             logger.exception("Error processing Ingest Samples API response")
-    
+
     # fallback to rest api samples info
     if not sample_list and not is_bypass_rest_api:
-        logger.debug(f'Sample list from Ingest API: {sample_list}')
-        logger.info('Fall back on the REST API.')
+        logger.debug(f"Sample list from Ingest API: {sample_list}")
+        logger.info("Fall back on the REST API.")
         rest_sample_response = download_with_requests(url=rest_ancestry_url)
         if rest_sample_response:
             try:
@@ -292,7 +330,7 @@ def metadata_dict_from_gwas_cat(
                     fields_to_split=SAMPLE_FIELD_TO_SPLIT,
                 )
                 sample_list = rest_samples_list
-            except Exception as e:
+            except Exception:
                 logger.exception(
                     f"Sample info of {accession_id} is missing in the REST API and INGEST API"
                 )
@@ -300,10 +338,11 @@ def metadata_dict_from_gwas_cat(
     meta_dict["samples"] = sample_list
     return SumStatsMetadataAPI.model_construct(**meta_dict)
 
+
 def _parse_ingest_study_response(
     response: bytes,
     replace_dict: Optional[dict] = None,
-    fields_to_split: Optional[tuple] = None
+    fields_to_split: Optional[tuple] = None,
 ) -> SumStatsMetadataAPI:
     result_dict = {}
 
@@ -316,15 +355,12 @@ def _parse_ingest_study_response(
         result_dict.update({"trait_description": [trait_description]})
 
     # handling variable EFO mapping:
-    efo_mapping =  "|".join(
-        d.get("shortForm")
-        for d in result_dict.get("efoTraits", [])
-    )
+    efo_mapping = "|".join(d.get("shortForm") for d in result_dict.get("efoTraits", []))
     if efo_mapping:
         result_dict.update({"ontology_mapping": efo_mapping})
 
     if replace_dict:
-        result_dict= replace_dictionary_keys(
+        result_dict = replace_dictionary_keys(
             data_dict=result_dict,
             replace_dict=replace_dict,
         )
@@ -337,10 +373,11 @@ def _parse_ingest_study_response(
     return SumStatsMetadataAPI.model_construct(**result_dict)
 
 
-def _parse_gwas_rest_study_response(response: bytes,
-                                   replace_dict: Optional[dict] = None,
-                                   fields_to_split: Optional[tuple] = None
-                                   ) -> SumStatsMetadataAPI:
+def _parse_gwas_rest_study_response(
+    response: bytes,
+    replace_dict: Optional[dict] = None,
+    fields_to_split: Optional[tuple] = None,
+) -> SumStatsMetadataAPI:
     """Parse study repsonse from GWAS cat rest api
 
     Arguments:
@@ -356,25 +393,32 @@ def _parse_gwas_rest_study_response(response: bytes,
     result_dict: dict[str, Any] = {}
     response_dict: RestStudyResponse = json.loads(response.decode())
     # study
-    result_dict["trait_description"]=[response_dict['disease_trait']]
+    result_dict["trait_description"] = [response_dict["disease_trait"]]
     # multiple genotyping technology example: GCST005544
-    result_dict["genotyping_technology"]="|".join(response_dict['genotyping_technologies'])
+    result_dict["genotyping_technology"] = "|".join(
+        response_dict["genotyping_technologies"]
+    )
     # multiple efo trait example: GCST000854
-    result_dict["ontology_mapping"]="|".join(d.get("efo_id") for d in response_dict['efo_traits'])
+    result_dict["ontology_mapping"] = "|".join(
+        d.get("efo_id") for d in response_dict["efo_traits"]
+    )
 
     if replace_dict:
-        result_dict = replace_dictionary_keys(data_dict=result_dict,
-                                                  replace_dict=replace_dict)
+        result_dict = replace_dictionary_keys(
+            data_dict=result_dict, replace_dict=replace_dict
+        )
     if fields_to_split:
-        result_dict = split_fields_on_delimiter(data_dict=result_dict,
-                                                    fields=fields_to_split)
+        result_dict = split_fields_on_delimiter(
+            data_dict=result_dict, fields=fields_to_split
+        )
     return SumStatsMetadataAPI.model_construct(**result_dict)
 
 
-def _parse_gwas_api_samples_response(response: bytes,
-                                     replace_dict: Optional[dict] = None,
-                                     fields_to_split: Optional[tuple] = None
-                                     ) -> list[SampleMetadata]:
+def _parse_gwas_api_samples_response(
+    response: bytes,
+    replace_dict: Optional[dict] = None,
+    fields_to_split: Optional[tuple] = None,
+) -> list[SampleMetadata]:
     """Parse the samples response from GWAS cat api
 
     Arguments:
@@ -390,23 +434,29 @@ def _parse_gwas_api_samples_response(response: bytes,
     formatted_list = []
     if response:
         result_dict = json.loads(response.decode())
-        sample: list[IngestSampleResponse] = result_dict.get("_embedded", {}).get('samples') or []
-        sample_list=[x for x in sample if x.get('stage') == 'discovery']
+        sample: list[IngestSampleResponse] = (
+            result_dict.get("_embedded", {}).get("samples") or []
+        )
+        sample_list = [x for x in sample if x.get("stage") == "discovery"]
         if sample_list:
             for element in sample_list:
                 if replace_dict:
-                    element = replace_dictionary_keys(data_dict=element,
-                                                      replace_dict=replace_dict)
+                    element = replace_dictionary_keys(
+                        data_dict=element, replace_dict=replace_dict
+                    )
                 if fields_to_split:
-                    element = split_fields_on_delimiter(data_dict=element,
-                                                        fields=fields_to_split)
+                    element = split_fields_on_delimiter(
+                        data_dict=element, fields=fields_to_split
+                    )
                 formatted_list.append(SampleMetadata.model_construct(**element))
     return formatted_list
 
-def _parse_gwas_rest_samples_response(ancestry_response: Optional[bytes] = None,
-                                      replace_dict: Optional[dict] = None,
-                                      fields_to_split: Optional[tuple] = None
-                                      ) -> list[SampleMetadata]:
+
+def _parse_gwas_rest_samples_response(
+    ancestry_response: Optional[bytes] = None,
+    replace_dict: Optional[dict] = None,
+    fields_to_split: Optional[tuple] = None,
+) -> list[SampleMetadata]:
     """Parse the samples response from GWAS cat api
 
     Arguments:
@@ -423,25 +473,38 @@ def _parse_gwas_rest_samples_response(ancestry_response: Optional[bytes] = None,
     ancestry_list = []
     if ancestry_response:
         ancestry_dict = json.loads(ancestry_response.decode())
-        ancestry_list: list[RestAncestryResponse] = ancestry_dict.get("_embedded", {}).get("ancestries", [])
+        ancestry_list: list[RestAncestryResponse] = ancestry_dict.get(
+            "_embedded", {}
+        ).get("ancestries", [])
 
-    sample_list = [x for x in ancestry_list if x.get("type") == "initial"] if ancestry_list else []
+    sample_list = (
+        [x for x in ancestry_list if x.get("type") == "initial"]
+        if ancestry_list
+        else []
+    )
 
     if sample_list:
         for element in sample_list:
-            element=dict((k,element[k]) for k in REST_API_SAMPLE_MAPPINGS.keys() if k in element)
-            if 'ancestral_groups' in element:
-                element['ancestral_groups']=[x.get('ancestral_group') for x in element['ancestral_groups']]
+            element = dict(
+                (k, element[k]) for k in REST_API_SAMPLE_MAPPINGS.keys() if k in element
+            )
+            if "ancestral_groups" in element:
+                element["ancestral_groups"] = [
+                    x.get("ancestral_group") for x in element["ancestral_groups"]
+                ]
 
             if replace_dict:
-                element=replace_dictionary_keys(data_dict=element,
-                                                      replace_dict=replace_dict)
+                element = replace_dictionary_keys(
+                    data_dict=element, replace_dict=replace_dict
+                )
             if fields_to_split:
-                element=split_fields_on_delimiter(data_dict=element,
-                                                        fields=fields_to_split)
+                element = split_fields_on_delimiter(
+                    data_dict=element, fields=fields_to_split
+                )
             formatted_list.append(SampleMetadata.model_construct(**element))
 
     return formatted_list
+
 
 def get_file_metadata(in_file: Path, out_file: str) -> SumStatsMetadataFile:
     """Get file related metadata
@@ -459,16 +522,24 @@ def get_file_metadata(in_file: Path, out_file: str) -> SumStatsMetadataFile:
     return SumStatsMetadataFile.model_construct(
         gwas_id=accession_id,
         data_file_name=Path(out_file).name,
-        file_type='GWAS-SSF v1.0',
-        genome_assembly=GENOME_ASSEMBLY_MAPPINGS.get(parse_genome_assembly(filename=in_file), 'unknown'),
+        file_type="GWAS-SSF v1.0",
+        genome_assembly=GENOME_ASSEMBLY_MAPPINGS.get(
+            parse_genome_assembly(filename=in_file), "unknown"
+        ),
         data_file_md5sum=get_md5sum(out_file),
         date_metadata_last_modified=date.today(),
         gwas_catalog_api=REST_API_STUDIES_URL + accession_id if accession_id else None,
     )
 
 
-def init_metadata_from_file(filename: Path, metadata_infile: Optional[Path] = None) -> Optional[SumStatsMetadata]:
-    m_in = metadata_infile if metadata_infile else filename.with_suffix(filename.suffix + "-meta.yaml")
+def init_metadata_from_file(
+    filename: Path, metadata_infile: Optional[Path] = None
+) -> Optional[SumStatsMetadata]:
+    m_in = (
+        metadata_infile
+        if metadata_infile
+        else filename.with_suffix(filename.suffix + "-meta.yaml")
+    )
     if m_in.exists():
         ssm = MetadataClient(in_file=m_in)
         ssm.from_file()

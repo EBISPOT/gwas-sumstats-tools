@@ -5,29 +5,33 @@ Keep the same scheme with https://github.com/EBISPOT/gwas-summary-statistics-sta
 """
 
 import re
-from pydantic import BaseModel, Field, field_validator, ConfigDict, StringConstraints
-from typing import Annotated, List, Optional
 from datetime import date
 from enum import Enum
+from typing import Annotated, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+
 """
 Enums
 """
 
 
 class SexEnum(str, Enum):
-    male = 'M'
-    female = 'F'
-    combined = 'combined'
-    unknown='NR'
+    male = "M"
+    female = "F"
+    combined = "combined"
+    unknown = "NR"
 
 
 class CoordinateSystemEnum(str, Enum):
-    zero = '0-based'
-    one = '1-based'
-    unknown = 'NR'
+    zero = "0-based"
+    one = "1-based"
+    unknown = "NR"
 
 
-FILE_TYPE_PATTERN = re.compile(r'^(pre-GWAS-SSF|non-GWAS-SSF|GWAS-SSF v\d+(\.\d+)*|NR)$')
+FILE_TYPE_PATTERN = re.compile(
+    r"^(pre-GWAS-SSF|non-GWAS-SSF|GWAS-SSF v\d+(\.\d+)*|NR)$"
+)
 
 
 """
@@ -47,6 +51,7 @@ class SampleMetadata(BaseModel):
 
 class SumStatsMetadataAPI(BaseModel):
     """Fields sourced from the GWAS Catalog REST / Ingest APIs."""
+
     # Trait Information
     trait_description: Optional[List[str]] = None
     ontology_mapping: Optional[List[str]] = None
@@ -67,12 +72,13 @@ class SumStatsMetadataAPI(BaseModel):
 
 class SumStatsMetadataFile(BaseModel):
     """Fields derived from the file itself (calculated at ingest time)."""
+
     # Required
     data_file_name: str
     genome_assembly: str
     date_metadata_last_modified: date
     # Optional calculated
-    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r'^GCST\d+$')]] = None
+    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r"^GCST\d+$")]] = None
     gwas_catalog_api: Optional[str] = None
     data_file_md5sum: str
     file_type: str = Field(description="summary stats file type", default="NR")
@@ -80,8 +86,9 @@ class SumStatsMetadataFile(BaseModel):
 
 class SumStatsMetadata(BaseModel):
     """Full metadata model with fields in canonical YAML output order."""
+
     # Study meta-data
-    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r'^GCST\d+$')]] = None
+    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r"^GCST\d+$")]] = None
     author_notes: Optional[str] = None
     gwas_catalog_api: Optional[str] = None
     date_metadata_last_modified: date
@@ -109,11 +116,15 @@ class SumStatsMetadata(BaseModel):
     is_sorted: Optional[bool] = None
     harmonisation_reference: Optional[str] = None
 
-    model_config = ConfigDict(title='GWAS Summary Statistics metadata schema', use_enum_values=True)
+    model_config = ConfigDict(
+        title="GWAS Summary Statistics metadata schema", use_enum_values=True
+    )
 
-    @field_validator('file_type')
+    @field_validator("file_type")
     @classmethod
     def validate_file_type(cls, v):
         if not FILE_TYPE_PATTERN.match(v):
-            raise ValueError(f"file_type '{v}' must be 'pre-GWAS-SSF', 'non-GWAS-SSF', 'GWAS-SSF v<version>', or 'NR'")
+            raise ValueError(
+                f"file_type '{v}' must be 'pre-GWAS-SSF', 'non-GWAS-SSF', 'GWAS-SSF v<version>', or 'NR'"
+            )
         return v

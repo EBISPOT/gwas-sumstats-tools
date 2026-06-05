@@ -1,11 +1,9 @@
-import pytest
 from pathlib import Path
 
-from tests.prep_tests import (SSTestFile,
-                              TEST_DATA,
-                              MetaTestFile,
-                              TEST_METADATA)
+import pytest
+
 from gwas_sumstats_tools.format import Formatter
+from tests.prep_tests import MetaTestFile, SSTestFile
 
 
 @pytest.fixture()
@@ -31,12 +29,12 @@ class TestFormatter:
         assert isinstance(f.data_outfile, Path)
         assert str(f.data_outfile) == str((Path(sumstats_file))) + "-FORMATTED.tsv.gz"
 
-    def test_set_data_outfile_name_when_not_formatting(self, sumstats_file):  
+    def test_set_data_outfile_name_when_not_formatting(self, sumstats_file):
         f = Formatter(sumstats_file, format_data=False)
         assert isinstance(f.data_infile, Path)
         assert isinstance(f.data_outfile, Path)
 
-    def test_set_data_outfile_name_when_given_custom_outfile_name(self, sumstats_file):  
+    def test_set_data_outfile_name_when_given_custom_outfile_name(self, sumstats_file):
         f = Formatter(sumstats_file, data_outfile="TEST_OUT", format_data=True)
         assert isinstance(f.data_outfile, Path)
         assert str(f.data_outfile) == "TEST_OUT"
@@ -79,16 +77,18 @@ class TestFormatter:
             sumstats.remove()
 
     def test_pandas_column_order_keeps_z_score_standard_error_as_extra(self):
-        ordered = Formatter._pd_column_order([
-            "chromosome",
-            "base_pair_location",
-            "effect_allele",
-            "other_allele",
-            "z-score",
-            "standard_error",
-            "effect_allele_frequency",
-            "p_value",
-        ])
+        ordered = Formatter._pd_column_order(
+            [
+                "chromosome",
+                "base_pair_location",
+                "effect_allele",
+                "other_allele",
+                "z-score",
+                "standard_error",
+                "effect_allele_frequency",
+                "p_value",
+            ]
+        )
         assert ordered[:7] == [
             "chromosome",
             "base_pair_location",
@@ -99,4 +99,3 @@ class TestFormatter:
             "p_value",
         ]
         assert ordered[7] == "standard_error"
-        
