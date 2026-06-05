@@ -259,6 +259,8 @@ Extract only the rsID portion from a combined `rsid` column and rename the colum
 
 Beyond the configuration file, the formatter automatically applies these steps to every file:
 
+`z-score` is accepted as a fallback effect size type. Where possible, submit `beta`, `odds_ratio`, or `hazard_ratio` instead.
+
 1. **Reorder mandatory columns** to match the GWAS-SSF sequence:
    `chromosome` → `base_pair_location` → `effect_allele` → `other_allele` → `effect` (beta / odds ratio / hazard ratio / `z-score`) → `standard_error` → `effect_allele_frequency` → `p_value` (or `neg_log_10_p_value`). For `z-score` files, `standard_error` remains in this position and is populated with `#NA`.
    Any extra columns follow in their original order.

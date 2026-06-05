@@ -4,6 +4,7 @@ import petl as etl
 from tests.prep_tests import SSTestFile, EFFECT_FIELDS
 from pandera import DataFrameSchema
 
+from gwas_sumstats_tools.constants import Z_SCORE_FALLBACK_WARNING
 from gwas_sumstats_tools.validate import Validator
 
 
@@ -187,6 +188,29 @@ class TestValidator:
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v._validate_field_order()[0] is True
         assert v.validate()[0] is True
+
+    def test_validate_z_score_prints_fallback_warning(self, sumstats_file, capsys):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
+                                              "beta",
+                                              "z-score")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is True
+        captured = capsys.readouterr().out
+        assert "WARNING: z-score is accepted only as a fallback effect size" in captured
+        assert "beta" in captured
+        assert "odds ratio (OR)" in captured
+        assert "hazard ratio" in captured
+
+    def test_validate_non_z_score_does_not_print_fallback_warning(self, sumstats_file, capsys):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["odds_ratio"],
+                                              "beta",
+                                              "odds_ratio")
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is True
+        assert Z_SCORE_FALLBACK_WARNING not in capsys.readouterr().out
 
     def test_validate_z_score_with_numeric_standard_error(self, sumstats_file):
         sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],

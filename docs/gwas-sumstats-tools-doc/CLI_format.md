@@ -114,6 +114,8 @@ Each input file in the list will be submitted as an independent job to run, allo
 ## Default Functions
 Beyond formatting the input file according to the configuration file, the format tool also applies several default settings to every summary statistic:
 
+`z-score` is accepted as a fallback effect size type. Where possible, submit `beta`, `odds_ratio`, or `hazard_ratio` instead.
+
 1. Reorder the mandatory columns in your dataset to match the GWAS-SSF specified sequence: 
 ```text
 chromosome, base_pair_location, effect_allele, other_allele, effect (beta/odds ratio/hazard ratio/z-score), standard_error, effect_allele_frequency, pval (or negativelog10Pvalue). For z-score files, standard_error remains in this position and is populated with #NA.

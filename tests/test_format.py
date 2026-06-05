@@ -5,6 +5,7 @@ from tests.prep_tests import (SSTestFile,
                               TEST_DATA,
                               MetaTestFile,
                               TEST_METADATA)
+from gwas_sumstats_tools.constants import Z_SCORE_FALLBACK_WARNING
 from gwas_sumstats_tools.format import Formatter
 
 
@@ -90,6 +91,43 @@ class TestFormatter:
             f.data.map_header()
             standard_error_index = f.data.header().index("standard_error")
             assert {row[standard_error_index] for row in list(f.data.sumstats)[1:]} == {"#NA"}
+        finally:
+            sumstats.remove()
+
+    def test_configured_z_score_format_prints_fallback_warning(self, capsys):
+        sumstats = SSTestFile()
+        try:
+            sumstats.replace_header("beta", "zscore")
+            sumstats.test_data.pop("standard_error")
+            sumstats.to_file()
+            config = {
+                "fileConfig": {
+                    "outFilePrefix": None,
+                    "fieldSeparator": "\t",
+                    "naValue": None,
+                    "convertNegLog10Pvalue": False,
+                    "removeComments": None,
+                },
+                "columnConfig": {
+                    "split": [],
+                    "edit": [
+                        {
+                            "field": "zscore",
+                            "rename": "z-score",
+                            "find": None,
+                            "replace": None,
+                            "extract": None,
+                        }
+                    ],
+                },
+            }
+            f = Formatter(sumstats.filepath, config_dict=config)
+            f.test_config()
+            captured = capsys.readouterr().out
+            assert "WARNING: z-score is accepted only as a fallback effect size" in captured
+            assert "beta" in captured
+            assert "odds ratio (OR)" in captured
+            assert "hazard ratio" in captured
         finally:
             sumstats.remove()
 
