@@ -260,7 +260,7 @@ Extract only the rsID portion from a combined `rsid` column and rename the colum
 Beyond the configuration file, the formatter automatically applies these steps to every file:
 
 1. **Reorder mandatory columns** to match the GWAS-SSF sequence:
-   `chromosome` → `base_pair_location` → `effect_allele` → `other_allele` → `effect` (beta / odds ratio / hazard ratio / `z-score`) → `standard_error` → `effect_allele_frequency` → `p_value` (or `neg_log_10_p_value`). For `z-score` files, omit `standard_error`.
+   `chromosome` → `base_pair_location` → `effect_allele` → `other_allele` → `effect` (beta / odds ratio / hazard ratio / `z-score`) → `standard_error` → `effect_allele_frequency` → `p_value` (or `neg_log_10_p_value`). For `z-score` files, `standard_error` remains in this position and is populated with `#NA`.
    Any extra columns follow in their original order.
 
 2. **Fill missing mandatory columns** — if a required column is absent, it is added and filled with `#NA`.

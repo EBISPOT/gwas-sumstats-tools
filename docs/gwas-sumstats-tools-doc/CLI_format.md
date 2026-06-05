@@ -116,7 +116,7 @@ Beyond formatting the input file according to the configuration file, the format
 
 1. Reorder the mandatory columns in your dataset to match the GWAS-SSF specified sequence: 
 ```text
-chromosome, base_pair_location, effect_allele, other_allele, effect (beta/odds ratio/hazard ratio/z-score), standard_error, effect_allele_frequency, pval (or negativelog10Pvalue). For z-score files, omit standard_error.
+chromosome, base_pair_location, effect_allele, other_allele, effect (beta/odds ratio/hazard ratio/z-score), standard_error, effect_allele_frequency, pval (or negativelog10Pvalue). For z-score files, standard_error remains in this position and is populated with #NA.
 ```
 Any additional columns will remain in their original input order.
 

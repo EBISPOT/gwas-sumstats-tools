@@ -70,15 +70,30 @@ class TestFormatter:
                 "effect_allele",
                 "other_allele",
                 "z-score",
+                "standard_error",
                 "effect_allele_frequency",
-                "p_value",
             )
+            assert f.data.header()[7] == "p_value"
+            standard_error_index = f.data.header().index("standard_error")
+            assert {row[standard_error_index] for row in list(f.data.sumstats)[1:]} == {"#NA"}
             assert "beta" not in f.data.header()
-            assert "standard_error" not in f.data.header()
         finally:
             sumstats.remove()
 
-    def test_pandas_column_order_keeps_z_score_standard_error_as_extra(self):
+    def test_map_header_overwrites_z_score_standard_error(self):
+        sumstats = SSTestFile()
+        try:
+            sumstats.replace_header("beta", "zscore")
+            sumstats.to_file()
+            f = Formatter(sumstats.filepath)
+            f.data.rename_headers({"zscore": "z-score"})
+            f.data.map_header()
+            standard_error_index = f.data.header().index("standard_error")
+            assert {row[standard_error_index] for row in list(f.data.sumstats)[1:]} == {"#NA"}
+        finally:
+            sumstats.remove()
+
+    def test_pandas_column_order_keeps_z_score_standard_error_in_standard_position(self):
         ordered = Formatter._pd_column_order([
             "chromosome",
             "base_pair_location",
@@ -95,8 +110,8 @@ class TestFormatter:
             "effect_allele",
             "other_allele",
             "z-score",
+            "standard_error",
             "effect_allele_frequency",
-            "p_value",
         ]
-        assert ordered[7] == "standard_error"
+        assert ordered[7] == "p_value"
         

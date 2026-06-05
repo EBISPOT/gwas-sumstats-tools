@@ -51,6 +51,13 @@ class SumStatsSchema:
                      error="Must be greater than or equal to 0")
             ])
     }
+    STANDARD_ERROR_DEFINITIONS = {
+        'default': Column(float),
+        'z-score': Column(object, [
+            Check(lambda series: series.isna().all(),
+                  error="Must be #NA for z-score files")
+            ], nullable=True)
+    }
     MANTISSA_VALIDATORS = {
         'default': Column(float, [
             Check.gt(0,
@@ -103,9 +110,8 @@ class SumStatsSchema:
                                       error="Must be nucleotide sequence")
                     ]),
                 self.effect_field: self.EFFECT_FIELD_DEFINITIONS.get(self.effect_field),
+                "standard_error": self._get_standard_error_validator(),
             })
-        if self.effect_field != "z-score":
-            fields["standard_error"] = Column(float)
         fields.update({
                 "effect_allele_frequency": Column(float, [
                     Check.in_range(0, 1,
@@ -156,3 +162,8 @@ class SumStatsSchema:
             return self.MANTISSA_VALIDATORS.get('pval_zero')
         else:
             return self.MANTISSA_VALIDATORS.get('default')
+
+    def _get_standard_error_validator(self) -> Column:
+        if self.effect_field == "z-score":
+            return self.STANDARD_ERROR_DEFINITIONS.get('z-score')
+        return self.STANDARD_ERROR_DEFINITIONS.get('default')

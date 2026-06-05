@@ -182,37 +182,36 @@ class TestValidator:
         sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
                                               "beta",
                                               "z-score")
-        sumstats_file.test_data.pop("standard_error")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v._validate_field_order()[0] is True
         assert v.validate()[0] is True
 
-    def test_validate_z_score_with_standard_error_in_mandatory_position(self, sumstats_file):
+    def test_validate_z_score_with_numeric_standard_error(self, sumstats_file):
         sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
                                               "beta",
                                               "z-score")
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
-        assert v.primary_error_type == "field order"
+        assert v.primary_error_type == "data"
 
-    def test_validate_z_score_with_standard_error_as_extra_field(self, sumstats_file):
+    def test_validate_z_score_missing_standard_error(self, sumstats_file):
         sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
                                               "beta",
                                               "z-score")
-        standard_error = sumstats_file.test_data.pop("standard_error")
-        sumstats_file.test_data["standard_error"] = standard_error
+        sumstats_file.test_data.pop("standard_error")
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
-        assert v._validate_field_order()[0] is True
-        assert v.validate()[0] is True
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "field order"
 
     def test_validate_invalid_z_score(self, sumstats_file):
         sumstats_file.replace_header_and_data(["str", None, "a", "b"] + [1] * 22,
                                               "beta",
                                               "z-score")
-        sumstats_file.test_data.pop("standard_error")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
@@ -222,7 +221,7 @@ class TestValidator:
         sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
                                               "beta",
                                               "z-score")
-        sumstats_file.test_data.pop("standard_error")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
         sumstats_file.replace_header_and_data(header_from="p_value",
                                               header_to="neg_log_10_p_value",
                                               data_to=[10, 2, 3, 4] + [i for i in range(1,23)])

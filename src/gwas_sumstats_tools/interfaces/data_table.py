@@ -50,6 +50,7 @@ class SumStatsTable:
         missing_headers = self._get_missing_headers()
         if missing_headers:
             self._add_missing_headers(missing_headers)
+        self._normalise_z_score_standard_error()
         header_order = self._set_header_order()
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self.sumstats
@@ -63,6 +64,7 @@ class SumStatsTable:
         missing_headers = self._get_missing_headers()
         if missing_headers:
             self._add_missing_headers(missing_headers)
+        self._normalise_z_score_standard_error()
         header_order = self._set_header_order()
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self
@@ -171,13 +173,15 @@ class SumStatsTable:
         Returns:
             set of missing headers
         """
-        required_fields = set(self.FIELDS_REQUIRED)
-        if "z-score" in self.header():
-            required_fields.discard("standard_error")
-        missing_headers = required_fields - set(self.header())
+        missing_headers = set(self.FIELDS_REQUIRED) - set(self.header())
         if set(self.FIELDS_EFFECT).isdisjoint(set(self.header())):
             missing_headers.add("beta")
         return missing_headers
+
+    def _normalise_z_score_standard_error(self) -> etl.Table:
+        if "z-score" in self.header() and "standard_error" in self.header():
+            self.sumstats = etl.convert(self.sumstats, "standard_error", lambda _: "#NA")
+        return self.sumstats
 
     def _effect_field_in_header(self) -> Union[str, None]:
         for field in self.FIELDS_EFFECT:
@@ -193,11 +197,7 @@ class SumStatsTable:
         """
         effect_field = self._effect_field_in_header()
         required_fields = [h for h in self.FIELDS_REQUIRED]
-        if effect_field == "z-score":
-            required_fields.remove("standard_error")
         all_headers = [h for h in self.FIELDS_REQUIRED]
-        if effect_field == "z-score":
-            all_headers.remove("standard_error")
         all_headers.extend([h for h in self.FIELDS_OPTIONAL])
         all_headers.extend([h for h in self.FIELDS_EFFECT])
         header_order = [h for h in required_fields]
