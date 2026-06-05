@@ -108,7 +108,6 @@ class SSTestFile(TestFileBase):
         df.to_csv(self.filepath, sep=self.sep, index=False, mode="w")
 
     def replace_data(self, header: str, data_to: list) -> OrderedDict:
-
         self.test_data = OrderedDict(
             (header, data_to) if k == header else (k, v)
             for k, v in self.test_data.items()
@@ -126,7 +125,6 @@ class SSTestFile(TestFileBase):
         return self.test_data
 
     def replace_values(self, header: str, new_values: list) -> OrderedDict:
-
         if header not in self.test_data:
             raise KeyError(f"Header '{header}' not found in data.")
 

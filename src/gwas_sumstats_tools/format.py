@@ -36,7 +36,6 @@ class Formatter:
         format_data: bool = False,
         analysis_software: str = None,
     ) -> None:
-
         self.format_data = format_data
         self.data_infile = Path(data_infile)
         self.config_outfile = Path(config_outfile) if config_outfile else None
@@ -521,8 +520,10 @@ class Formatter:
                     )
                     first_chunk = False
                 else:
-                    chunk = chunk.reindex(columns=final_cols, fill_value='#NA')
-                    chunk.to_csv(out, sep='\t', index=False, header=False, lineterminator='\n')
+                    chunk = chunk.reindex(columns=final_cols, fill_value="#NA")
+                    chunk.to_csv(
+                        out, sep="\t", index=False, header=False, lineterminator="\n"
+                    )
 
         print(f"Done in {time.time() - t0:.1f}s → {output_path}")
 
@@ -558,7 +559,6 @@ def lsf_apply_config(config_infile, analysis_software, file_info, memory):
 
 # slurm job submission, this function activate unless the --batch_apply=true and --slurm
 def slurm_apply_config(config_infile, analysis_software, file_info, memory):
-
     # Define output and error file paths
     output_file = "slurm-%j.out"  # %j will be replaced with the job ID
     error_file = "slurm-%j.err"  # %j will be replaced with the job ID
