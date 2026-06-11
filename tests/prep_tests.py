@@ -32,7 +32,8 @@ TEST_DATA = OrderedDict({
 })
 
 EFFECT_FIELDS = {"odds_ratio": [0.92090, 1.01440, 0.97385, 0.99302] + [0.99301] * 22,
-                 "hazard_ratio": [0.92090, 1.01440, 0.97385, 0.99302] + [0.99301] * 22 }
+                 "hazard_ratio": [0.92090, 1.01440, 0.97385, 0.99302] + [0.99301] * 22,
+                 "z-score": [1.2, -2.4, 0, 3.8] + [-0.5] * 22}
 
 TEST_METADATA = {
     "genotyping_technology": ["Genome-wide genotyping array"],

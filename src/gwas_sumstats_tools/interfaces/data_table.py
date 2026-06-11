@@ -29,7 +29,8 @@ class SumStatsTable:
     FIELDS_REQUIRED = ("chromosome", "base_pair_location", "effect_allele",
                        "other_allele", "standard_error",
                        "effect_allele_frequency", "p_value")
-    FIELDS_EFFECT = ("beta", "odds_ratio", "hazard_ratio")
+    FIELDS_EFFECT = ("beta", "odds_ratio", "hazard_ratio", "z-score")
+    FIELDS_PVALUE = ("p_value", "neg_log_10_p_value")
     FIELDS_OPTIONAL = ("variant_id", "rsid", "info", "ci_upper", "ci_lower", "ref_allele")
 
     def __init__(self, sumstats_file: Path, delimiter: str = None, removecomments: str = None) -> None:
@@ -49,6 +50,7 @@ class SumStatsTable:
         missing_headers = self._get_missing_headers()
         if missing_headers:
             self._add_missing_headers(missing_headers)
+        self._normalise_z_score_standard_error()
         header_order = self._set_header_order()
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self.sumstats
@@ -62,6 +64,7 @@ class SumStatsTable:
         missing_headers = self._get_missing_headers()
         if missing_headers:
             self._add_missing_headers(missing_headers)
+        self._normalise_z_score_standard_error()
         header_order = self._set_header_order()
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self
@@ -175,29 +178,43 @@ class SumStatsTable:
             missing_headers.add("beta")
         return missing_headers
 
+    def _normalise_z_score_standard_error(self) -> etl.Table:
+        # Only blank the standard_error when z-score is the effective effect
+        # field. When a real effect field (beta/odds_ratio/hazard_ratio) is
+        # present, z-score is just an extra column and its standard_error must
+        # be preserved.
+        if (
+            self._effect_field_in_header() == "z-score"
+            and "standard_error" in self.header()
+        ):
+            self.sumstats = etl.convert(self.sumstats, "standard_error", lambda _: "#NA")
+        return self.sumstats
+
+    def _effect_field_in_header(self) -> Union[str, None]:
+        for field in self.FIELDS_EFFECT:
+            if field in self.header():
+                return field
+        return None
+
     def _set_header_order(self) -> list:
         """Set the header order
 
         Returns:
             List of headers in standard order
         """
+        effect_field = self._effect_field_in_header()
+        required_fields = [h for h in self.FIELDS_REQUIRED]
         all_headers = [h for h in self.FIELDS_REQUIRED]
         all_headers.extend([h for h in self.FIELDS_OPTIONAL])
         all_headers.extend([h for h in self.FIELDS_EFFECT])
-        header_order = [h for h in self.FIELDS_REQUIRED]
+        header_order = [h for h in required_fields]
         header_order.extend([h for h in self.FIELDS_OPTIONAL if h in self.header()])
         header_order.extend([h for h in self.header() if h not in all_headers])
-        if 'beta' in self.header():
-            header_order.insert(4, 'beta')
-            for h in ('odds_ratio', 'hazard_ratio'):
-                header_order.append(h) if h in self.header() else None
-        elif 'beta' not in self.header() and 'odds_ratio' in self.header():
-            header_order.insert(4, 'odds_ratio')
-            header_order.append('hazard_ratio') if 'hazard_ratio' in self.header() else None
-        elif 'odds_ratio' not in self.header() and 'hazard_ratio' in self.header():
-            header_order.insert(4, 'hazard_ratio')
-        else:
-            pass
+        if effect_field:
+            header_order.insert(4, effect_field)
+            for h in self.FIELDS_EFFECT:
+                if h != effect_field and h in self.header():
+                    header_order.append(h)
         return header_order
 
     def _add_missing_headers(self, missing_headers: set) -> etl.Table:
@@ -237,13 +254,15 @@ class SumStatsTable:
         return field_4
 
     def p_value_field(self) -> Union[str, None]:
-        """Get the p_value field (field index 7).
+        """Get the p_value field.
 
         Returns:
             p_value field label
         """
-        field_4 = self._get_field_label_from_index(7)
-        return field_4
+        for field in self.FIELDS_PVALUE:
+            if field in self.header():
+                return field
+        return None
 
     def _get_field_label_from_index(self, index: int) -> Union[str, None]:
         """Get the field label from specified index

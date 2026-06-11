@@ -7,6 +7,7 @@ from pathlib import Path
 import petl as etl
 from requests.adapters import HTTPAdapter, Retry
 import importlib.metadata
+from gwas_sumstats_tools.constants import Z_SCORE_FALLBACK_WARNING
 
 try:
     import typer
@@ -27,6 +28,10 @@ def exit_if_no_data(table: Union[etl.Table, None]) -> None:
     if table is None:
         print("No data in table. Exiting.")
         raise typer.Exit() if typer is not None else SystemExit(1)
+
+
+def warn_z_score_fallback() -> None:
+    print(f"[bold yellow]{Z_SCORE_FALLBACK_WARNING}[/bold yellow]")
 
 
 def parse_accession_id(filename: Path) -> Union[str, None]:

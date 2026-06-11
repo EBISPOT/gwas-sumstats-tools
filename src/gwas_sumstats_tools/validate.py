@@ -8,6 +8,7 @@ from rich import print
 from gwas_sumstats_tools.schema.data_table import SumStatsSchema
 from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
 from gwas_sumstats_tools.interfaces.metadata import init_metadata_from_file
+from gwas_sumstats_tools.utils import warn_z_score_fallback
 
 
 class Validator(SumStatsTable):
@@ -53,6 +54,8 @@ class Validator(SumStatsTable):
             print("--> [green]Ok[/green]")
             print("Validating column order...")
             self.valid, message = self._validate_field_order()
+            if self.valid and self.effect_field() == "z-score":
+                warn_z_score_fallback()
 
         if self.valid:
             print("--> [green]Ok[/green]")
