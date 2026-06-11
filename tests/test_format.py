@@ -94,6 +94,29 @@ class TestFormatter:
         finally:
             sumstats.remove()
 
+    def test_map_header_keeps_standard_error_when_beta_present(self):
+        # When a real effect field (beta) is present, z-score is just an extra
+        # column and the genuine standard_error must be preserved, not blanked.
+        sumstats = SSTestFile()
+        try:
+            n_rows = len(sumstats.test_data["beta"])
+            sumstats.test_data["zscore"] = [str(i % 3) for i in range(n_rows)]
+            sumstats.to_file()
+            f = Formatter(sumstats.filepath)
+            f.data.rename_headers({"zscore": "z-score"})
+            f.data.map_header()
+            header = f.data.header()
+            # beta remains the effect field at index 4; z-score appended after.
+            assert header[4] == "beta"
+            assert "z-score" in header
+            assert header.index("z-score") > header.index("standard_error")
+            standard_error_index = header.index("standard_error")
+            se_values = {row[standard_error_index] for row in list(f.data.sumstats)[1:]}
+            assert se_values != {"#NA"}
+            assert "#NA" not in se_values
+        finally:
+            sumstats.remove()
+
     def test_configured_z_score_format_prints_fallback_warning(self, capsys):
         sumstats = SSTestFile()
         try:

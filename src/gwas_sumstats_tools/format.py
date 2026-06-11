@@ -458,7 +458,12 @@ class Formatter:
                 chunk = self._pd_apply_edits(chunk, edit_config)
                 chunk = self._pd_normalise(chunk, self.na)
                 if 'z-score' in chunk.columns:
-                    chunk['standard_error'] = '#NA'
+                    # Only blank standard_error when z-score is the effective
+                    # effect field. If a real effect field is present, z-score
+                    # is just an extra column and its standard_error is kept.
+                    if not any(e in chunk.columns
+                               for e in ('beta', 'odds_ratio', 'hazard_ratio')):
+                        chunk['standard_error'] = '#NA'
                     if not z_score_warning_printed:
                         warn_z_score_fallback()
                         z_score_warning_printed = True

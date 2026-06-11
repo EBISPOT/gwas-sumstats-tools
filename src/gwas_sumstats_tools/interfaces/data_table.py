@@ -179,7 +179,14 @@ class SumStatsTable:
         return missing_headers
 
     def _normalise_z_score_standard_error(self) -> etl.Table:
-        if "z-score" in self.header() and "standard_error" in self.header():
+        # Only blank the standard_error when z-score is the effective effect
+        # field. When a real effect field (beta/odds_ratio/hazard_ratio) is
+        # present, z-score is just an extra column and its standard_error must
+        # be preserved.
+        if (
+            self._effect_field_in_header() == "z-score"
+            and "standard_error" in self.header()
+        ):
             self.sumstats = etl.convert(self.sumstats, "standard_error", lambda _: "#NA")
         return self.sumstats
 
