@@ -1,17 +1,17 @@
 from pathlib import Path
+
 from rich import print
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from gwas_sumstats_tools.interfaces.metadata import (
     MetadataClient,
-    metadata_dict_from_gwas_cat,
     get_file_metadata,
+    metadata_dict_from_gwas_cat,
 )
 from gwas_sumstats_tools.utils import (
-    parse_accession_id,
     append_to_path,
-    exit_if_no_data,
+    parse_accession_id,
 )
+
 
 class Gen_meta:
     def __init__(
@@ -33,7 +33,7 @@ class Gen_meta:
         )
 
     def _set_metadata_outfile_name(self) -> str:
-        #return append_to_path(self.data_outfile, "-meta.yaml")
+        # return append_to_path(self.data_outfile, "-meta.yaml")
         return append_to_path(self.data_infile, "-meta.yaml")
 
     def set_metadata(
@@ -55,12 +55,18 @@ class Gen_meta:
         """
 
         # Priority (low → high): inferred from file < infile metadata < GWAS Catalog API < custom
-        meta_dict = get_file_metadata(in_file=self.data_infile, out_file=self.data_infile).model_dump()
+        meta_dict = get_file_metadata(
+            in_file=self.data_infile, out_file=self.data_infile
+        ).model_dump()
         existing = {k: v for k, v in self.meta.as_dict().items() if v is not None}
         meta_dict.update(existing)
         if from_gwas_cat:
             accession_id = parse_accession_id(filename=self.data_infile)
-            meta_dict.update(metadata_dict_from_gwas_cat(accession_id=accession_id).model_dump(exclude_none=True))
+            meta_dict.update(
+                metadata_dict_from_gwas_cat(accession_id=accession_id).model_dump(
+                    exclude_none=True
+                )
+            )
         if custom_metadata:
             meta_dict.update(custom_metadata)
         self.meta.update_metadata(meta_dict)
@@ -81,11 +87,11 @@ def gen_meta(
         metadata_outfile=metadata_outfile,
     )
     # Get metadata
-    
+
     print("[bold]\n---------- METADATA ----------\n[/bold]")
     metadata = gen_meta.set_metadata(
         from_gwas_cat=metadata_from_gwas_cat, custom_metadata=metadata_dict
-        )
+    )
     print(metadata)
     print(f"[green]Writing metadata --> {str(metadata_outfile)}[/green]")
     metadata.to_file()

@@ -1,21 +1,25 @@
+import gzip
+import json
+import os
+import re
+import subprocess
+import time
 from pathlib import Path
+
+import pandas as pd
 import petl as etl
+from bsub import bsub
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
-import gzip, json, re, os, subprocess, time
-import pandas as pd
-from bsub import bsub
-
-from gwas_sumstats_tools.schema.headermap import header_mapper
-from gwas_sumstats_tools.schema.pre_defined_configure import pre_defined_configure
-from gwas_sumstats_tools.schema.configure_json import Formatconfig
 
 from gwas_sumstats_tools.interfaces.data_table import SumStatsTable
-
+from gwas_sumstats_tools.schema.configure_json import Formatconfig
+from gwas_sumstats_tools.schema.headermap import header_mapper
+from gwas_sumstats_tools.schema.pre_defined_configure import pre_defined_configure
 from gwas_sumstats_tools.utils import (
-    parse_accession_id,
     append_to_path,
     exit_if_no_data,
+    parse_accession_id,
     warn_z_score_fallback,
 )
 
@@ -24,7 +28,7 @@ class Formatter:
     def __init__(
         self,
         data_infile: Path,
-        data_outfile : Path = None,
+        data_outfile: Path = None,
         remove_comments: str = None,
         delimiter: str = None,
         config_infile: Path = None,
@@ -33,14 +37,17 @@ class Formatter:
         format_data: bool = False,
         analysis_software: str = None,
     ) -> None:
-        
         self.format_data = format_data
         self.data_infile = Path(data_infile)
         self.config_outfile = Path(config_outfile) if config_outfile else None
         self.config = Formatconfig.model_construct()
         self.config_infile = Path(config_infile) if config_infile else None
 
-        self.analysis_software = analysis_software if analysis_software in pre_defined_configure.keys() else None
+        self.analysis_software = (
+            analysis_software
+            if analysis_software in pre_defined_configure.keys()
+            else None
+        )
 
         if self.config_infile:
             self.config_dict = self._from_config()
@@ -54,22 +61,34 @@ class Formatter:
         self.data_outfile = Path(
             self._set_data_outfile_name() if not data_outfile else data_outfile
         )
-        
+
         if delimiter:
-            self.delimiter=delimiter.encode().decode('unicode_escape')
+            self.delimiter = delimiter.encode().decode("unicode_escape")
         elif self.config_dict:
-            self.delimiter=self.config_dict["fileConfig"]["fieldSeparator"]
+            self.delimiter = self.config_dict["fileConfig"]["fieldSeparator"]
         else:
-            self.delimiter=self._get_delimiter(self.data_infile)
-        
-        self.na=self.config_dict["fileConfig"]["naValue"] if self.config_dict else None
-        self.removecomments = self.config_dict["fileConfig"]["removeComments"] if self.config_dict else remove_comments
-        
+            self.delimiter = self._get_delimiter(self.data_infile)
+
+        self.na = (
+            self.config_dict["fileConfig"]["naValue"] if self.config_dict else None
+        )
+        self.removecomments = (
+            self.config_dict["fileConfig"]["removeComments"]
+            if self.config_dict
+            else remove_comments
+        )
+
         self.data = (
-            SumStatsTable(sumstats_file=self.data_infile, delimiter=self.delimiter, removecomments=self.removecomments) if self.data_infile else None
+            SumStatsTable(
+                sumstats_file=self.data_infile,
+                delimiter=self.delimiter,
+                removecomments=self.removecomments,
+            )
+            if self.data_infile
+            else None
         )
         self.columns_in = list(self.data.header())
-    
+
     def from_config(self):
         return self
 
@@ -78,35 +97,35 @@ class Formatter:
         Generate config file, either only print the config in json format (for weassembly to read) or save in a file
         """
         if self.analysis_software in pre_defined_configure.keys():
-            config_dict=pre_defined_configure[self.analysis_software]  
+            config_dict = pre_defined_configure[self.analysis_software]
             return config_dict
         elif self.config_outfile:
             return self.to_json_file()
         else:
             return self.generate_config_template()
 
-    def apply_config (self):
+    def apply_config(self):
         """
-        Apply the configure file to a sumstats file and save the format result in a file    
+        Apply the configure file to a sumstats file and save the format result in a file
         """
         return self.data_to_file()
-    
+
     def test_config(self):
         """
         Apply the configure file to a sumstats file and save the format result in a file
         """
-        test_in=self.data.example_table()
-        test_split_table=self.split(config=self.config_dict,data=test_in)
-        test_edit_table=self.edit(config=self.config_dict,data=test_split_table)
-        test_filled_table=test_edit_table.normalise_missing_values(na_value=self.na)
-        test_formatted_data=test_filled_table.map_header()
+        test_in = self.data.example_table()
+        test_split_table = self.split(config=self.config_dict, data=test_in)
+        test_edit_table = self.edit(config=self.config_dict, data=test_split_table)
+        test_filled_table = test_edit_table.normalise_missing_values(na_value=self.na)
+        test_formatted_data = test_filled_table.map_header()
         self._warn_if_z_score_fields(test_formatted_data.header())
 
-        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]==True:
-            test_formatted_data=test_formatted_data.convert_neg_log10_pvalue()
+        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"] == True:
+            test_formatted_data = test_formatted_data.convert_neg_log10_pvalue()
 
         return test_formatted_data
-    
+
     def _set_data_outfile_name(self) -> str:
         """Set the data outfile name.
         If the data is to be formatted, the outfile name will be:
@@ -127,13 +146,13 @@ class Formatter:
                 )
         elif self.config_dict.get("fileConfig", {}).get("outFilePrefix", None):
             prefix = self.config_dict["fileConfig"]["outFilePrefix"]
-            self.data_outfile = self.data_infile.parent / (prefix + self.data_infile.name)
+            self.data_outfile = self.data_infile.parent / (
+                prefix + self.data_infile.name
+            )
         else:
-            self.data_outfile = append_to_path(
-                    self.data_infile, "-FORMATTED.tsv.gz"
-                )
+            self.data_outfile = append_to_path(self.data_infile, "-FORMATTED.tsv.gz")
         return self.data_outfile
-        
+
     def _set_config_outfile_name(self) -> str:
         """Set the configure outfile name.
         The outfile name will be:
@@ -151,29 +170,27 @@ class Formatter:
             if accession_id:
                 self.config_outfile = accession_id + "_config.json"
             else:
-                self.config_outfile = append_to_path(
-                self.data_infile, "_config.json"
-                )
+                self.config_outfile = append_to_path(self.data_infile, "_config.json")
             return self.config_outfile
 
     def generate_config_template(self) -> dict:
         """
         1. map the header based on the dict from headermap.py
-        2. edit the split configure and edit configure 
+        2. edit the split configure and edit configure
         """
         columns_out_config = self.suggest_header_mapping()
-        col_config=self.define_columnconfig(columns_out_config)
-        config_dict=self.generate_json_config(col_config)
+        col_config = self.define_columnconfig(columns_out_config)
+        config_dict = self.generate_json_config(col_config)
         return config_dict
-    
-    def suggest_header_mapping(self) ->dict:
+
+    def suggest_header_mapping(self) -> dict:
         """
         map the header based on the dict from headermap.py
         """
         columns_out = dict()
         for field in self.columns_in:
-            if field.lower()  in header_mapper.keys():
-                 columns_out[field] = field.lower()
+            if field.lower() in header_mapper.keys():
+                columns_out[field] = field.lower()
             else:
                 for key, value_list in header_mapper.items():
                     if field.lower() in value_list and key not in columns_out.values():
@@ -182,46 +199,49 @@ class Formatter:
                     else:
                         columns_out[field] = field
         return columns_out
-    
+
     def define_columnconfig(self, col_renames):
         """
         split configure: detect the special character in the column name and suggest it as a seperator
         edit Config: suggest the name of the column to be renamed
         """
-        splitConfig=[]
-        editConfig=[]
-        regex=re.compile('[@!#$%^&*()<>?/|}{~:]')
-        for (col,rename) in col_renames.items():
+        splitConfig = []
+        editConfig = []
+        regex = re.compile("[@!#$%^&*()<>?/|}{~:]")
+        for col, rename in col_renames.items():
             special_char = regex.search(str(col))
-            if rename not in SumStatsTable.FIELDS_REQUIRED and regex.search(col) is not None:
-                split_dict={
-                    'field':col,
-                    'separator':special_char.group(),
-                    'capture':None,
-                    'new_field':[x for x in regex.split(str(col)) if x],
-                    'include_original':False
-                    }
+            if (
+                rename not in SumStatsTable.FIELDS_REQUIRED
+                and regex.search(col) is not None
+            ):
+                split_dict = {
+                    "field": col,
+                    "separator": special_char.group(),
+                    "capture": None,
+                    "new_field": [x for x in regex.split(str(col)) if x],
+                    "include_original": False,
+                }
             else:
-                split_dict={
-                    'field':col,
-                    'separator':None,
-                    'capture':None,
-                    'new_field':None,
-                    'include_original':None
-                    }
+                split_dict = {
+                    "field": col,
+                    "separator": None,
+                    "capture": None,
+                    "new_field": None,
+                    "include_original": None,
+                }
             splitConfig.append(split_dict)
 
-            edit_dict={
-                'field':col,
-                'rename':rename,
-                'find':None,
-                'replace':None,
-                'extract':None
+            edit_dict = {
+                "field": col,
+                "rename": rename,
+                "find": None,
+                "replace": None,
+                "extract": None,
             }
             editConfig.append(edit_dict)
-        columnConfig={"split":splitConfig,"edit":editConfig}
+        columnConfig = {"split": splitConfig, "edit": editConfig}
         return columnConfig
-    
+
     def _get_delimiter(self, filepath: Path) -> str:
         """Get delimiter from file path
 
@@ -233,86 +253,90 @@ class Formatter:
         """
         if not isinstance(filepath, Path):
             filepath = Path(filepath)
-        if '.csv' in filepath.suffixes:
-            return ','
-        elif '.txt' in filepath.suffixes:
-            return ' '
-        elif '.tsv' in filepath.suffixes:
-            return '\t'
+        if ".csv" in filepath.suffixes:
+            return ","
+        elif ".txt" in filepath.suffixes:
+            return " "
+        elif ".tsv" in filepath.suffixes:
+            return "\t"
         else:
             return None
-        
-    def generate_json_config (self,col_config):
+
+    def generate_json_config(self, col_config):
         """
         append file configure, split and edit dict into json format
         """
-        fileConfig={
+        fileConfig = {
             "outFilePrefix": "formatted_",
             "fieldSeparator": self.delimiter,
             "naValue": None,
             "convertNegLog10Pvalue": False,
-            "removeComments": self.removecomments
+            "removeComments": self.removecomments,
         }
-        format_config = {"fileConfig":fileConfig,"columnConfig":col_config}
+        format_config = {"fileConfig": fileConfig, "columnConfig": col_config}
         print(json.dumps(format_config, indent=4))
         return format_config
-    
+
     def to_json_file(self):
         """
         this function works unless the --config-out is available. will writing the configure dict into a file
         """
-        config_dict=self.generate_config_template()
-        with open(self.config_outfile, "w", encoding='utf-8') as fh:
-            json.dump(config_dict, fh, indent=4, ensure_ascii = False)
-    
+        config_dict = self.generate_config_template()
+        with open(self.config_outfile, "w", encoding="utf-8") as fh:
+            json.dump(config_dict, fh, indent=4, ensure_ascii=False)
+
     def _from_config(self) -> None:
         """
         this function works as the first step of apply configure file if the --configure-in is available
         """
         with open(self.config_infile, "r") as fh:
-                  self.config_dict = json.load(fh)
+            self.config_dict = json.load(fh)
         return self.config_dict
-    
+
     def formating(self):
         """
         formating the input sumstats by spliting the columns, rename, find and replace, as well as extract a regex pattern
         """
-        split_table=self.split(config=self.config_dict,data=self.data)
-        edit_table=self.edit(config=self.config_dict,data=split_table)
-        filled_table=edit_table.normalise_missing_values(na_value=self.na)
-        formatted_data=filled_table.map_header()
+        split_table = self.split(config=self.config_dict, data=self.data)
+        edit_table = self.edit(config=self.config_dict, data=split_table)
+        filled_table = edit_table.normalise_missing_values(na_value=self.na)
+        formatted_data = filled_table.map_header()
         self._warn_if_z_score_fields(formatted_data.header())
 
-        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]==True:
-            formatted_data=formatted_data.convert_neg_log10_pvalue()
+        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"] == True:
+            formatted_data = formatted_data.convert_neg_log10_pvalue()
         return formatted_data
-    
+
     def split(self, config, data):
         """
         all formatting are acived by in-build function from petl
         1. seperator the column based on the separator or regex pattern (regex1)(regex2)....
         2. need to give new column names after spliting in a list
         """
-        split_config=config['columnConfig']['split']
+        split_config = config["columnConfig"]["split"]
         for col in split_config:
             if col["separator"]:
-                data=data.split_columns_by_separator(
-                     field=col['field'], 
-                     separator=col['separator'], 
-                     newfields=col['new_field'],
-                     include_original=col['include_original'] if col['include_original'] else False
+                data = data.split_columns_by_separator(
+                    field=col["field"],
+                    separator=col["separator"],
+                    newfields=col["new_field"],
+                    include_original=col["include_original"]
+                    if col["include_original"]
+                    else False,
                 )
-            elif col['capture']:
-                 data=data.split_capture(
-                     field=col['field'], 
-                     pattern=col['capture'], 
-                     newfields=col['new_field'],
-                     include_original=col['include_original'] if col['include_original'] else False
+            elif col["capture"]:
+                data = data.split_capture(
+                    field=col["field"],
+                    pattern=col["capture"],
+                    newfields=col["new_field"],
+                    include_original=col["include_original"]
+                    if col["include_original"]
+                    else False,
                 )
             else:
-                 data=data
+                data = data
         return data
-    
+
     def edit(self, config, data):
         """
         all formatting are acived by in-build function from petl
@@ -320,30 +344,28 @@ class Formatter:
         2. find and replace anh string in the column value (not the header)
         3. extract a regex pattern
         """
-        edit_config=config['columnConfig']['edit']
-        edit_table=data
-        rename_dict={}
+        edit_config = config["columnConfig"]["edit"]
+        edit_table = data
+        rename_dict = {}
         for col in edit_config:
-             if col['rename'] is not None:
-                 rename_dict.update({col['field']:col['rename']})
-             else:
-                 rename_dict.update({col['field']:col['field']})
-             if col['field'] is not None:
-                  if col['extract'] is not None:
-                       edit_table=edit_table.extract(
-                           field=col['field'], 
-                           pattern=col['extract'],
-                           newfield=col['field']
-                       )
-                  if col['find'] is not None and col['replace'] is not None:
-                       edit_table=edit_table.find_and_replace(
-                           field=col['field'], 
-                           find=col['find'],
-                           replace=col['replace']
-                       )
-        edit_table=edit_table.rename_headers(rename_dict)
+            if col["rename"] is not None:
+                rename_dict.update({col["field"]: col["rename"]})
+            else:
+                rename_dict.update({col["field"]: col["field"]})
+            if col["field"] is not None:
+                if col["extract"] is not None:
+                    edit_table = edit_table.extract(
+                        field=col["field"],
+                        pattern=col["extract"],
+                        newfield=col["field"],
+                    )
+                if col["find"] is not None and col["replace"] is not None:
+                    edit_table = edit_table.find_and_replace(
+                        field=col["field"], find=col["find"], replace=col["replace"]
+                    )
+        edit_table = edit_table.rename_headers(rename_dict)
         return edit_table
-    
+
     def data_to_file(self) -> None:
         """Write formatted data to file using chunked pandas for performance."""
         print(self.data_outfile)
@@ -353,17 +375,17 @@ class Formatter:
 
     @staticmethod
     def _warn_if_z_score_fields(fields: list | tuple) -> None:
-        if 'z-score' in fields:
+        if "z-score" in fields:
             warn_z_score_fallback()
 
     @staticmethod
     def _pd_apply_splits(df: pd.DataFrame, split_config: list) -> pd.DataFrame:
         for col in split_config:
-            f   = col.get('field')
-            sep = col.get('separator')
-            cap = col.get('capture')
-            nf  = col.get('new_field') or []
-            inc = col.get('include_original', False)
+            f = col.get("field")
+            sep = col.get("separator")
+            cap = col.get("capture")
+            nf = col.get("new_field") or []
+            inc = col.get("include_original", False)
             if not f or f not in df.columns:
                 continue
             if sep and nf:
@@ -386,49 +408,62 @@ class Formatter:
     def _pd_apply_edits(df: pd.DataFrame, edit_config: list) -> pd.DataFrame:
         rename = {}
         for col in edit_config:
-            f = col.get('field')
+            f = col.get("field")
             if not f or f not in df.columns:
                 continue
-            if col.get('extract'):
-                df[f] = df[f].astype(str).str.extract(f"({col['extract']})", expand=False)
-            if col.get('find') is not None and col.get('replace') is not None:
-                df[f] = df[f].astype(str).str.replace(col['find'], col['replace'], regex=True)
-            if col.get('rename') and col['rename'] != f:
-                rename[f] = col['rename']
+            if col.get("extract"):
+                df[f] = (
+                    df[f].astype(str).str.extract(f"({col['extract']})", expand=False)
+                )
+            if col.get("find") is not None and col.get("replace") is not None:
+                df[f] = (
+                    df[f]
+                    .astype(str)
+                    .str.replace(col["find"], col["replace"], regex=True)
+                )
+            if col.get("rename") and col["rename"] != f:
+                rename[f] = col["rename"]
         return df.rename(columns=rename)
 
     @staticmethod
     def _pd_normalise(df: pd.DataFrame, na_value: str) -> pd.DataFrame:
-        df = df.replace(['NA', '', None], '#NA').fillna('#NA')
+        df = df.replace(["NA", "", None], "#NA").fillna("#NA")
         if na_value:
-            df = df.replace(na_value, '#NA')
+            df = df.replace(na_value, "#NA")
         return df
 
     @staticmethod
     def _pd_column_order(cols: list) -> list:
         col_set = set(cols)
-        all_std = set(list(SumStatsTable.FIELDS_REQUIRED) +
-                      list(SumStatsTable.FIELDS_EFFECT) +
-                      list(SumStatsTable.FIELDS_OPTIONAL))
-        order  = [h for h in SumStatsTable.FIELDS_REQUIRED if h in col_set]
+        all_std = set(
+            list(SumStatsTable.FIELDS_REQUIRED)
+            + list(SumStatsTable.FIELDS_EFFECT)
+            + list(SumStatsTable.FIELDS_OPTIONAL)
+        )
+        order = [h for h in SumStatsTable.FIELDS_REQUIRED if h in col_set]
         order += [h for h in SumStatsTable.FIELDS_OPTIONAL if h in col_set]
         order += [h for h in cols if h not in all_std]
         for eff in SumStatsTable.FIELDS_EFFECT:
             if eff in col_set:
                 order.insert(4, eff)
                 break
-        order += [e for e in SumStatsTable.FIELDS_EFFECT if e in col_set and e not in order]
+        order += [
+            e for e in SumStatsTable.FIELDS_EFFECT if e in col_set and e not in order
+        ]
         seen, result = set(), []
         for c in order:
             if c not in seen and c in col_set:
-                seen.add(c); result.append(c)
+                seen.add(c)
+                result.append(c)
         return result
 
     def _apply_pandas(self, outfile: Path, chunk_size: int = 200_000) -> None:
         """Chunked pandas implementation of the apply pipeline."""
-        split_config     = self.config_dict.get('columnConfig', {}).get('split', [])
-        edit_config      = self.config_dict.get('columnConfig', {}).get('edit', [])
-        convert_neg_log  = self.config_dict.get('fileConfig', {}).get('convertNegLog10Pvalue', False)
+        split_config = self.config_dict.get("columnConfig", {}).get("split", [])
+        edit_config = self.config_dict.get("columnConfig", {}).get("edit", [])
+        convert_neg_log = self.config_dict.get("fileConfig", {}).get(
+            "convertNegLog10Pvalue", False
+        )
 
         read_kw = dict(
             sep=self.delimiter,
@@ -437,84 +472,105 @@ class Formatter:
             skipinitialspace=True,
             keep_default_na=False,
             na_values=[],
-            on_bad_lines='warn',
+            on_bad_lines="warn",
         )
         if self.removecomments and len(self.removecomments) == 1:
-            read_kw['comment'] = self.removecomments
+            read_kw["comment"] = self.removecomments
 
         output_path = str(outfile)
-        open_out    = gzip.open if output_path.endswith('.gz') else open
+        open_out = gzip.open if output_path.endswith(".gz") else open
         first_chunk = True
-        final_cols  = None
+        final_cols = None
         z_score_warning_printed = False
-        t0          = time.time()
+        t0 = time.time()
 
-        with open_out(output_path, 'wt', encoding='utf-8') as out:
+        with open_out(output_path, "wt", encoding="utf-8") as out:
             for chunk in pd.read_csv(str(self.data_infile), **read_kw):
                 if self.removecomments and len(self.removecomments) > 1:
-                    chunk = chunk[~chunk.iloc[:, 0].astype(str).str.startswith(self.removecomments)]
+                    chunk = chunk[
+                        ~chunk.iloc[:, 0]
+                        .astype(str)
+                        .str.startswith(self.removecomments)
+                    ]
 
                 chunk = self._pd_apply_splits(chunk, split_config)
                 chunk = self._pd_apply_edits(chunk, edit_config)
                 chunk = self._pd_normalise(chunk, self.na)
-                if 'z-score' in chunk.columns:
+                if "z-score" in chunk.columns:
                     # Only blank standard_error when z-score is the effective
                     # effect field. If a real effect field is present, z-score
                     # is just an extra column and its standard_error is kept.
-                    if not any(e in chunk.columns
-                               for e in ('beta', 'odds_ratio', 'hazard_ratio')):
-                        chunk['standard_error'] = '#NA'
+                    if not any(
+                        e in chunk.columns
+                        for e in ("beta", "odds_ratio", "hazard_ratio")
+                    ):
+                        chunk["standard_error"] = "#NA"
                     if not z_score_warning_printed:
                         warn_z_score_fallback()
                         z_score_warning_printed = True
 
-                if convert_neg_log and 'p_value' in chunk.columns:
+                if convert_neg_log and "p_value" in chunk.columns:
+
                     def _safe_neg_log(x):
                         try:
                             return str(10 ** (-float(x)))
                         except Exception:
                             return x
-                    chunk['p_value'] = chunk['p_value'].map(_safe_neg_log)
+
+                    chunk["p_value"] = chunk["p_value"].map(_safe_neg_log)
 
                 if first_chunk:
                     for h in SumStatsTable.FIELDS_REQUIRED:
                         if h not in chunk.columns:
-                            chunk[h] = '#NA'
+                            chunk[h] = "#NA"
                     if not any(e in chunk.columns for e in SumStatsTable.FIELDS_EFFECT):
-                        chunk['beta'] = '#NA'
+                        chunk["beta"] = "#NA"
                     final_cols = self._pd_column_order(list(chunk.columns))
                     chunk = chunk[final_cols]
-                    chunk.to_csv(out, sep='\t', index=False, header=True, lineterminator='\n')
+                    chunk.to_csv(
+                        out, sep="\t", index=False, header=True, lineterminator="\n"
+                    )
                     first_chunk = False
                 else:
-                    chunk = chunk.reindex(columns=final_cols, fill_value='#NA')
-                    chunk.to_csv(out, sep='\t', index=False, header=False, lineterminator='\n')
+                    chunk = chunk.reindex(columns=final_cols, fill_value="#NA")
+                    chunk.to_csv(
+                        out, sep="\t", index=False, header=False, lineterminator="\n"
+                    )
 
         print(f"Done in {time.time() - t0:.1f}s → {output_path}")
-#----------------------------out of the class----------------------------------------------
+
+
+# ----------------------------out of the class----------------------------------------------
 # LSF job submission by bsub package, this function activate unless the --batch_apply=true and --lsf
 
+
 def lsf_apply_config(config_infile, analysis_software, file_info, memory):
-    sub = bsub("gwas_ssf",
-               M="{}".format(str(memory)),
-               R="rusage[mem={}]".format(str(memory)),
-               N="")
+    sub = bsub(
+        "gwas_ssf",
+        M="{}".format(str(memory)),
+        R="rusage[mem={}]".format(str(memory)),
+        N="",
+    )
     if config_infile:
         command = f"gwas-ssf format {file_info[0]} --apply_config --config_in {config_infile} -o {file_info[1]}"
     elif analysis_software in pre_defined_configure.keys():
         command = f"gwas-ssf format {file_info[0]} --apply_config --analysis_software {analysis_software} -o {file_info[1]}"
     else:
-        print(">>> Cannot find configure file or analysis software. Please check your --config_in or --analysis_software.")
+        print(
+            ">>> Cannot find configure file or analysis software. Please check your --config_in or --analysis_software."
+        )
         os.sys.exit(1)
-        
+
     print(">>>> Submitting job to cluster, job id below")
     print(sub(command).job_id)
-    print(" Formatted files, md5sums and configs will appear in "
-          "the same directory as the input file.")
+    print(
+        " Formatted files, md5sums and configs will appear in "
+        "the same directory as the input file."
+    )
+
 
 # slurm job submission, this function activate unless the --batch_apply=true and --slurm
 def slurm_apply_config(config_infile, analysis_software, file_info, memory):
-
     # Define output and error file paths
     output_file = "slurm-%j.out"  # %j will be replaced with the job ID
     error_file = "slurm-%j.err"  # %j will be replaced with the job ID
@@ -532,11 +588,17 @@ def slurm_apply_config(config_infile, analysis_software, file_info, memory):
         file.write(f"#SBATCH --output={output_file}\n")
         file.write(f"#SBATCH --error={error_file}\n")
         if config_infile:
-            file.write(f"gwas-ssf format {file_info[0]} --apply_config --config_in {config_infile} -o {file_info[1]}\n")
+            file.write(
+                f"gwas-ssf format {file_info[0]} --apply_config --config_in {config_infile} -o {file_info[1]}\n"
+            )
         elif analysis_software in pre_defined_configure.keys():
-            file.write(f"gwas-ssf format {file_info[0]} --apply_config --analysis_software {analysis_software} -o {file_info[1]}\n")
+            file.write(
+                f"gwas-ssf format {file_info[0]} --apply_config --analysis_software {analysis_software} -o {file_info[1]}\n"
+            )
         else:
-            print(">>> Cannot find configure file or analysis software. Please check your --config_in or --analysis_software.")
+            print(
+                ">>> Cannot find configure file or analysis software. Please check your --config_in or --analysis_software."
+            )
             os.sys.exit(1)
 
     # Make the script executable
@@ -546,7 +608,7 @@ def slurm_apply_config(config_infile, analysis_software, file_info, memory):
     sbatch_command = ["sbatch", sbatch_script_path]
 
     # Print the sbatch_command
-    print("Executing command:", ' '.join(sbatch_command))
+    print("Executing command:", " ".join(sbatch_command))
 
     print(">>>> Submitting job to SLURM, job id below")
 
@@ -570,6 +632,7 @@ def slurm_apply_config(config_infile, analysis_software, file_info, memory):
         "Formatted files, md5sums and configs will appear in the same directory as the input file."
     )
 
+
 # --------------------------cluster option finish---------------------------------------------------
 def format(
     filename: Path,
@@ -590,76 +653,99 @@ def format(
 ) -> None:
     if batch_apply:
         if not config_infile and analysis_software not in pre_defined_configure.keys():
-                 print(f"[red]Cannot format file without --config_in [file] or --analysis_software {analysis_software} [/red]")
-                 os.sys.exit(1)
+            print(
+                f"[red]Cannot format file without --config_in [file] or --analysis_software {analysis_software} [/red]"
+            )
+            os.sys.exit(1)
 
-        to_format_file=etl.fromcsv(filename,delimiter="\t")
-        files_info=[list(row) for row in to_format_file]
+        to_format_file = etl.fromcsv(filename, delimiter="\t")
+        files_info = [list(row) for row in to_format_file]
         if lsf:
             for file_info in files_info:
                 lsf_apply_config(config_infile, analysis_software, file_info, "4G")
         elif slurm:
             for file_info in files_info:
-                slurm_apply_config(config_infile, analysis_software, file_info,"4G")
+                slurm_apply_config(config_infile, analysis_software, file_info, "4G")
         else:
             for file_info in files_info:
-                subprocess.run(["gwas-ssf", "format", file_info[0], "--apply_config", "--config_in", config_infile, "-o", file_info[1]])
+                subprocess.run(
+                    [
+                        "gwas-ssf",
+                        "format",
+                        file_info[0],
+                        "--apply_config",
+                        "--config_in",
+                        config_infile,
+                        "-o",
+                        file_info[1],
+                    ]
+                )
     else:
         formatter = Formatter(
-        data_infile=filename,
-        data_outfile=data_outfile,
-        config_dict=config_dict,
-        config_infile=config_infile,
-        config_outfile=config_outfile,
-        format_data=minimal_to_standard,
-        remove_comments=remove_comments,
-        analysis_software=analysis_software,
-        delimiter=delimiter
-    )
-        if minimal_to_standard:
-             exit_if_no_data(table=formatter.data.sumstats)
-             print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
-             print(formatter.data.sumstats)
-             formatter.data.reformat_header() 
-             Formatter._warn_if_z_score_fields(formatter.data.header())
-             formatter.data.normalise_missing_values(None)
-             print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
-             print(formatter.data.sumstats)
-             print(
-            f"[green]Formatting and writing sumstats data --> {str(formatter.data_outfile)}[/green]"
+            data_infile=filename,
+            data_outfile=data_outfile,
+            config_dict=config_dict,
+            config_infile=config_infile,
+            config_outfile=config_outfile,
+            format_data=minimal_to_standard,
+            remove_comments=remove_comments,
+            analysis_software=analysis_software,
+            delimiter=delimiter,
         )
-             with Progress(
-            SpinnerColumn(finished_text="Complete!"),
-            TextColumn("[progress.description]{task.description}"),
-            transient=True,
-        ) as progress:
-                 progress.add_task(description="Processing...", total=None)
-                 formatter.data.to_file(outfile=formatter.data_outfile)   
-                    
+        if minimal_to_standard:
+            exit_if_no_data(table=formatter.data.sumstats)
+            print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
+            print(formatter.data.sumstats)
+            formatter.data.reformat_header()
+            Formatter._warn_if_z_score_fields(formatter.data.header())
+            formatter.data.normalise_missing_values(None)
+            print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
+            print(formatter.data.sumstats)
+            print(
+                f"[green]Formatting and writing sumstats data --> {str(formatter.data_outfile)}[/green]"
+            )
+            with Progress(
+                SpinnerColumn(finished_text="Complete!"),
+                TextColumn("[progress.description]{task.description}"),
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Processing...", total=None)
+                formatter.data.to_file(outfile=formatter.data_outfile)
+
         if generate_config:
             if config_outfile:
                 print(f"[green]Writing config --> {str(config_outfile)}[/green]")
                 formatter.to_json_file()
             else:
-                print(f"[yellow]Note: No config_outfile specified. Configure file will not be saved as a file without --config-out [/yellow]")
-                config=formatter.generate_config()
+                print(
+                    "[yellow]Note: No config_outfile specified. Configure file will not be saved as a file without --config-out [/yellow]"
+                )
+                config = formatter.generate_config()
                 return config
         elif apply_config:
-            if not config_infile and not config_dict and analysis_software not in pre_defined_configure.keys():
-                 print(f"[red]Cannot format file without --config-in [file] or --config_dict string or --analysis_software {analysis_software} [/red]")
-                 os.sys.exit(1)
+            if (
+                not config_infile
+                and not config_dict
+                and analysis_software not in pre_defined_configure.keys()
+            ):
+                print(
+                    f"[red]Cannot format file without --config-in [file] or --config_dict string or --analysis_software {analysis_software} [/red]"
+                )
+                os.sys.exit(1)
             if data_outfile:
-                 print(f"[green]Writing formatted data --> {str(data_outfile)}[/green]")
-                 formatter.data_to_file()
+                print(f"[green]Writing formatted data --> {str(data_outfile)}[/green]")
+                formatter.data_to_file()
             else:
-                 print(f"[yellow]Note: No data_outfile specified. Data will be saved in the same folder as the input [/yellow]")
-                 formatter.data_to_file()
-                 print(formatter.data.sumstats)
+                print(
+                    "[yellow]Note: No data_outfile specified. Data will be saved in the same folder as the input [/yellow]"
+                )
+                formatter.data_to_file()
+                print(formatter.data.sumstats)
         elif test_config:
-            print(f"[green]Writing formatted data")
-            test_out=formatter.test_config()
+            print("[green]Writing formatted data")
+            test_out = formatter.test_config()
             print(test_out.sumstats)
             return test_out
-        
+
         if not any([minimal_to_standard, generate_config, apply_config, test_config]):
-         print("Nothing to do.")
+            print("Nothing to do.")

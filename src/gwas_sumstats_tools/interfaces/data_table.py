@@ -1,11 +1,9 @@
 from pathlib import Path
 from typing import Union
-import pandas as pd
-from pandas.io.parsers import TextFileReader
-import numpy as np
-import petl as etl
-import pandas as pd
 
+import pandas as pd
+import petl as etl
+from pandas.io.parsers import TextFileReader
 
 """formatters
 
@@ -26,19 +24,33 @@ normalise_missing_values()
 
 class SumStatsTable:
     FIELD_MAP = {"variant_id": "rsid"}
-    FIELDS_REQUIRED = ("chromosome", "base_pair_location", "effect_allele",
-                       "other_allele", "standard_error",
-                       "effect_allele_frequency", "p_value")
+    FIELDS_REQUIRED = (
+        "chromosome",
+        "base_pair_location",
+        "effect_allele",
+        "other_allele",
+        "standard_error",
+        "effect_allele_frequency",
+        "p_value",
+    )
     FIELDS_EFFECT = ("beta", "odds_ratio", "hazard_ratio", "z-score")
     FIELDS_PVALUE = ("p_value", "neg_log_10_p_value")
-    FIELDS_OPTIONAL = ("variant_id", "rsid", "info", "ci_upper", "ci_lower", "ref_allele")
+    FIELDS_OPTIONAL = (
+        "variant_id",
+        "rsid",
+        "info",
+        "ci_upper",
+        "ci_lower",
+        "ref_allele",
+    )
 
-    def __init__(self, sumstats_file: Path, delimiter: str = None, removecomments: str = None) -> None:
+    def __init__(
+        self, sumstats_file: Path, delimiter: str = None, removecomments: str = None
+    ) -> None:
         self.filename = str(sumstats_file)
         self.delimiter = delimiter if delimiter else self._get_delimiter(sumstats_file)
         self.removecomments = removecomments if removecomments else None
         self.sumstats = self.from_file()
-        
 
     def reformat_header(self, header_map: dict = FIELD_MAP) -> etl.Table:
         """Reformats the headers according to the standard
@@ -54,7 +66,7 @@ class SumStatsTable:
         header_order = self._set_header_order()
         self.sumstats = etl.cut(self.sumstats, *header_order)
         return self.sumstats
-    
+
     def map_header(self) -> etl.Table:
         """Reformats the headers according to the standard
 
@@ -72,9 +84,9 @@ class SumStatsTable:
     def from_file(self) -> Union[etl.Table, None]:
         """Try to read the file in to a Table.
         Files can be TAB seperated and optionally compressed
-        with (B)GZIP. There could be cases where an input file 
-        has been renamed but the data is something different 
-        to that suggested by the name and extension. Most 
+        with (B)GZIP. There could be cases where an input file
+        has been renamed but the data is something different
+        to that suggested by the name and extension. Most
         cases should be covered by the exception clause.
 
         Arguments:
@@ -85,13 +97,17 @@ class SumStatsTable:
         """
         try:
             if len(self.delimiter) == 1:
-                self.sumstats = etl.fromcsv(self.filename, delimiter=self.delimiter,skipinitialspace=True)
+                self.sumstats = etl.fromcsv(
+                    self.filename, delimiter=self.delimiter, skipinitialspace=True
+                )
                 if self.removecomments is not None:
-                    self.sumstats = etl.skipcomments(self.sumstats,self.removecomments)
+                    self.sumstats = etl.skipcomments(self.sumstats, self.removecomments)
             else:
-                df = pd.read_csv(self.filename ,sep=self.delimiter, comment=self.removecomments)
+                df = pd.read_csv(
+                    self.filename, sep=self.delimiter, comment=self.removecomments
+                )
                 self.sumstats = etl.fromdataframe(df)
-            
+
             if not self.is_table_content():
                 return None
             return self.sumstats
@@ -106,7 +122,7 @@ class SumStatsTable:
             Boolean
         """
         return etl.nrows(self.head_table(nrows=1)) > 0
-    
+
     def to_file(self, outfile: Path) -> None:
         """Write table to TSV file
 
@@ -117,7 +133,7 @@ class SumStatsTable:
 
     def head_table(self, nrows: int = 10) -> etl.Table:
         return etl.head(self.sumstats, n=nrows)
-    
+
     def example_table(self, nrows: int = 5) -> etl.Table:
         self.sumstats = etl.head(self.sumstats, n=nrows)
         return self
@@ -133,12 +149,12 @@ class SumStatsTable:
         """
         if not isinstance(filepath, Path):
             filepath = Path(filepath)
-        if '.csv' in filepath.suffixes:
-            return ','
-        elif '.txt' in filepath.suffixes:
-            return ' '
+        if ".csv" in filepath.suffixes:
+            return ","
+        elif ".txt" in filepath.suffixes:
+            return " "
         else:
-            return '\t'
+            return "\t"
 
     def rename_headers(self, header_map: dict) -> etl.Table:
         """Rename headers according to the header map
@@ -150,21 +166,25 @@ class SumStatsTable:
         Returns:
             etl.Table
         """
-        filtered_header_map = {k: v for k, v in header_map.items() if k in self.header()}
+        filtered_header_map = {
+            k: v for k, v in header_map.items() if k in self.header()
+        }
         self.sumstats = etl.rename(self.sumstats, filtered_header_map)
         return self
 
-    def normalise_missing_values(self,na_value:str) -> etl.Table:
-        self.sumstats = etl.replaceall(self.sumstats, 'NA', '#NA')
-        self.sumstats = etl.replaceall(self.sumstats, None, '#NA')
-        self.sumstats = etl.replaceall(self.sumstats, '', '#NA')
-        
+    def normalise_missing_values(self, na_value: str) -> etl.Table:
+        self.sumstats = etl.replaceall(self.sumstats, "NA", "#NA")
+        self.sumstats = etl.replaceall(self.sumstats, None, "#NA")
+        self.sumstats = etl.replaceall(self.sumstats, "", "#NA")
+
         if na_value is not None:
-            self.sumstats = etl.replaceall(self.sumstats, na_value, '#NA')   
+            self.sumstats = etl.replaceall(self.sumstats, na_value, "#NA")
         return self
-    
+
     def convert_neg_log10_pvalue(self) -> etl.Table:
-        self.sumstats = etl.convert(self.sumstats, 'p_value', lambda x: 10**(-float(x)))
+        self.sumstats = etl.convert(
+            self.sumstats, "p_value", lambda x: 10 ** (-float(x))
+        )
         return self
 
     def _get_missing_headers(self) -> set:
@@ -187,7 +207,9 @@ class SumStatsTable:
             self._effect_field_in_header() == "z-score"
             and "standard_error" in self.header()
         ):
-            self.sumstats = etl.convert(self.sumstats, "standard_error", lambda _: "#NA")
+            self.sumstats = etl.convert(
+                self.sumstats, "standard_error", lambda _: "#NA"
+            )
         return self.sumstats
 
     def _effect_field_in_header(self) -> Union[str, None]:
@@ -226,7 +248,7 @@ class SumStatsTable:
         Returns:
             etl.Table
         """
-        add_fields = [(h, '#NA') for h in missing_headers]
+        add_fields = [(h, "#NA") for h in missing_headers]
         if len(add_fields) > 1:
             self.sumstats = etl.addfields(self.sumstats, add_fields)
         else:
@@ -276,13 +298,14 @@ class SumStatsTable:
         return self.header()[index] if len(self.header()) > index else None
 
     def _pval_to_mantissa_and_exponent(self, table: etl.Table) -> etl.Table:
-        table_w_split_p = etl.split(self._square_up_table(table),
-                                    self.p_value_field(),
-                                    'e|E',
-                                    newfields=['_p_value_mantissa',
-                                               '_p_value_exponent'],
-                                    include_original=True,
-                                    maxsplit=1)
+        table_w_split_p = etl.split(
+            self._square_up_table(table),
+            self.p_value_field(),
+            "e|E",
+            newfields=["_p_value_mantissa", "_p_value_exponent"],
+            include_original=True,
+            maxsplit=1,
+        )
         return table_w_split_p
 
     def pval_to_mantissa_and_exponent(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -297,14 +320,12 @@ class SumStatsTable:
         Returns:
             dataframe
         """
-        mant_and_exp = ['_p_value_mantissa', '_p_value_exponent']
-        psplit_row = pd.Series({self.p_value_field(): '1000e1000'}, name=-99)
+        mant_and_exp = ["_p_value_mantissa", "_p_value_exponent"]
+        psplit_row = pd.Series({self.p_value_field(): "1000e1000"}, name=-99)
         df = pd.concat([df, psplit_row.to_frame().T], ignore_index=False)
-        df[mant_and_exp] = (df[self.p_value_field()]
-                            .str.split(r"e|E",
-                                       regex=True,
-                                       n=1,
-                                       expand=True))
+        df[mant_and_exp] = df[self.p_value_field()].str.split(
+            r"e|E", regex=True, n=1, expand=True
+        )
         df = df.drop(index=-99)
         return df
 
@@ -314,10 +335,9 @@ class SumStatsTable:
             table = self._pval_to_mantissa_and_exponent(table=self.sumstats)
         return table
 
-    def as_pd_df(self,
-                 nrows: int = None,
-                 chunksize: int = None,
-                 skiprows: int = None) -> Union[pd.DataFrame, TextFileReader]:
+    def as_pd_df(
+        self, nrows: int = None, chunksize: int = None, skiprows: int = None
+    ) -> Union[pd.DataFrame, TextFileReader]:
         """Sumstats table as a Pandas dataframe or dataframe
         iterator (TextFileReader)
 
@@ -336,14 +356,15 @@ class SumStatsTable:
         else:
             skip = None
         if self.is_table_content():
-            df = pd.read_table(self.filename,
-                               sep=self.delimiter,
-                               chunksize=chunksize,
-                               nrows=nrows,
-                               na_values=["", "#NA", "NA", "N/A", "NaN", "NR"],
-                               dtype=str,
-                               skiprows=skip
-                               )
+            df = pd.read_table(
+                self.filename,
+                sep=self.delimiter,
+                chunksize=chunksize,
+                nrows=nrows,
+                na_values=["", "#NA", "NA", "N/A", "NaN", "NR"],
+                dtype=str,
+                skiprows=skip,
+            )
         return df
 
     def _square_up_table(self, table: etl.Table, missing: str = "#NA") -> etl.Table:
@@ -353,24 +374,34 @@ class SumStatsTable:
             etl.Table
         """
         return etl.cat(table, missing=missing)
-    
-    def split_columns_by_separator(self, field, separator: str, newfields: list,include_original:bool) -> etl.Table:
+
+    def split_columns_by_separator(
+        self, field, separator: str, newfields: list, include_original: bool
+    ) -> etl.Table:
         """
         split(table, field, pattern, newfields=None, include_original=False, maxsplit=0, flags=0)
         """
-        self.sumstats = etl.split(self.sumstats,field,separator,newfields,include_original=include_original)
+        self.sumstats = etl.split(
+            self.sumstats,
+            field,
+            separator,
+            newfields,
+            include_original=include_original,
+        )
         return self
-    
-    def split_capture(self, field, pattern, newfields: list,include_original:bool):
+
+    def split_capture(self, field, pattern, newfields: list, include_original: bool):
         """
         petl.sub(table, field, pattern, repl, count=0, flags=0)
-        OR 
+        OR
         petl.capture(table, field, pattern, newfields=None, include_original=False, flags=0)
         Convenience function to convert values under the given field using a regular expression substitution. See also re.sub().
         """
-        self.sumstats = etl.capture(self.sumstats, field, pattern, newfields, include_original=include_original)
+        self.sumstats = etl.capture(
+            self.sumstats, field, pattern, newfields, include_original=include_original
+        )
         return self
-    
+
     def find_and_replace(self, field, find, replace) -> etl.Table:
         """
         petl.replace(table, field, a, b)
@@ -381,20 +412,20 @@ class SumStatsTable:
         """
         self.sumstats = etl.sub(self.sumstats, field, find, replace, count=0, flags=0)
         return self
-    
+
     def extract(self, field, pattern, newfield):
         """
         capture function to extract regex pattern to original column
         """
-        regexs=f"({pattern})"
-        newfields=[newfield]
-        self.sumstats = etl.capture(self.sumstats, field, regexs, newfields, include_original=False)
+        regexs = f"({pattern})"
+        newfields = [newfield]
+        self.sumstats = etl.capture(
+            self.sumstats, field, regexs, newfields, include_original=False
+        )
         return self
 
-    def _covert_value (self, table: etl.Table, field, value, replace) -> etl.Table:
+    def _covert_value(self, table: etl.Table, field, value, replace) -> etl.Table:
         """
         petl.transform.conversions.convert()
         """
-        return etl.convert(table,field,'replace',value,replace)
-    
-    
+        return etl.convert(table, field, "replace", value, replace)

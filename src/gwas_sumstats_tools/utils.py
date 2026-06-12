@@ -1,12 +1,14 @@
-import re
 import hashlib
-import requests
-import logging
-from typing import Any, Optional, Union
-from pathlib import Path
-import petl as etl
-from requests.adapters import HTTPAdapter, Retry
 import importlib.metadata
+import logging
+import re
+from pathlib import Path
+from typing import Any, Optional, Union
+
+import petl as etl
+import requests
+from requests.adapters import HTTPAdapter, Retry
+
 from gwas_sumstats_tools.constants import Z_SCORE_FALLBACK_WARNING
 
 try:
@@ -16,12 +18,12 @@ except ImportError:
     typer = None
 
 
-logging.basicConfig(level=logging.ERROR, format='(%(levelname)s): %(message)s')
+logging.basicConfig(level=logging.ERROR, format="(%(levelname)s): %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def get_version() -> str:
-    return importlib.metadata.version('gwas-sumstats-tools')
+    return importlib.metadata.version("gwas-sumstats-tools")
 
 
 def exit_if_no_data(table: Union[etl.Table, None]) -> None:
@@ -38,7 +40,7 @@ def parse_accession_id(filename: Path) -> Union[str, None]:
     """Get accession ID from file path
 
     Arguments:
-        filename -- Input file path 
+        filename -- Input file path
 
     Returns:
         GCST or None
@@ -51,7 +53,7 @@ def parse_genome_assembly(filename: Path) -> Union[str, None]:
     """Get genome assembly from file path
 
     Arguments:
-        filename -- Input file path 
+        filename -- Input file path
 
     Returns:
         Genome assembly or None
@@ -60,9 +62,9 @@ def parse_genome_assembly(filename: Path) -> Union[str, None]:
     return gcst_search.group(2) if gcst_search else None
 
 
-def download_with_requests(url,
-                           params: dict = None,
-                           headers: dict = None) -> Union[bytes, None]:
+def download_with_requests(
+    url, params: dict = None, headers: dict = None
+) -> Union[bytes, None]:
     """Download content from URL
 
     Arguments:
@@ -76,10 +78,12 @@ def download_with_requests(url,
     if headers is None:
         headers = {}
 
-    headers.update({'Cache-Control': 'no-cache', 'Pragma': 'no-cache'})
+    headers.update({"Cache-Control": "no-cache", "Pragma": "no-cache"})
 
     s = requests.Session()
-    retries = Retry(total=5, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504])
+    retries = Retry(
+        total=5, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504]
+    )
     s.mount(url, HTTPAdapter(max_retries=retries))
     try:
         r = s.get(url, params=params, headers=headers)
@@ -171,9 +175,9 @@ def update_dict_if_not_set(data_dict: dict, field: str, value: any) -> dict:
     return data_dict
 
 
-def split_fields_on_delimiter(data_dict: dict[str, Any],
-                              fields: tuple[str, ...],
-                              delimiter: str = r"[|,]") -> dict[str, Any]:
+def split_fields_on_delimiter(
+    data_dict: dict[str, Any], fields: tuple[str, ...], delimiter: str = r"[|,]"
+) -> dict[str, Any]:
     """
     Split specified fields in dict on delimiter
 
@@ -191,16 +195,16 @@ def split_fields_on_delimiter(data_dict: dict[str, Any],
         delimited strings into lists, e.g. "EFO_0004348,EFO_0004528" becomes
         ["EFO_0004348", "EFO_0004528"]
     """
+
     def split_fn(s: str) -> list:
         return [x for x in re.split(delimiter, s) if x != ""]
-        
+
     return dict(
         (k, split_fn(v))
         # v1 is str (e.g. "A|B") needs split and v2 is a list while no need split. It does not always need to be split, but keep the function in case.
         if k in fields and isinstance(v, str)
         else (k, v)
-        for k, v
-        in data_dict.items()
+        for k, v in data_dict.items()
     )
 
 
@@ -220,6 +224,7 @@ def normalize_file_type(value: Optional[str]) -> Optional[str]:
         Canonical file_type string, or the original value if not in mapping.
     """
     import re
+
     from gwas_sumstats_tools.constants import FILE_TYPE_MAPPINGS, GWAS_SSF_VERSION
 
     if value is None:
@@ -231,14 +236,14 @@ def normalize_file_type(value: Optional[str]) -> Optional[str]:
         return mapped
     # Regex for "GWAS-SSF v<version>" with loose separators and optional 'v'
     # Bare "gwas-ssf" with no version → default version
-    if re.match(r'^gwas[-_ ]?ssf$', token, re.IGNORECASE):
-        return f'GWAS-SSF v{GWAS_SSF_VERSION}'
+    if re.match(r"^gwas[-_ ]?ssf$", token, re.IGNORECASE):
+        return f"GWAS-SSF v{GWAS_SSF_VERSION}"
     # Versioned "gwas-ssf v<version>" with loose separators
     m = re.match(
-        r'^gwas[-_ ]?ssf[-_ ]?v(\d+(?:\.\d+)*)$',
+        r"^gwas[-_ ]?ssf[-_ ]?v(\d+(?:\.\d+)*)$",
         token,
         re.IGNORECASE,
     )
     if m:
-        return f'GWAS-SSF v{m.group(1)}'
+        return f"GWAS-SSF v{m.group(1)}"
     return token
