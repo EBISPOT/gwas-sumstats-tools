@@ -51,6 +51,11 @@ GENOME_ASSEMBLY_MAPPINGS: Final[dict[str, GenomeAssembly]] = {
 
 GWAS_SSF_VERSION: Final[str] = "1.0"
 
+Z_SCORE_FALLBACK_WARNING: Final[str] = (
+    "WARNING: z-score is accepted only as a fallback effect size. "
+    "Please submit beta, odds ratio (OR), or hazard ratio where available."
+)
+
 # file_type alias -> standard value mapping (keys are lowercased/normalised for lookup)
 FILE_TYPE_MAPPINGS: Final[dict[str, str]] = {
     # pre-GWAS-SSF variants

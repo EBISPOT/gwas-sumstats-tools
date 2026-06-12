@@ -16,6 +16,7 @@ from gwas_sumstats_tools.utils import (
     parse_accession_id,
     append_to_path,
     exit_if_no_data,
+    warn_z_score_fallback,
 )
 
 
@@ -99,6 +100,7 @@ class Formatter:
         test_edit_table=self.edit(config=self.config_dict,data=test_split_table)
         test_filled_table=test_edit_table.normalise_missing_values(na_value=self.na)
         test_formatted_data=test_filled_table.map_header()
+        self._warn_if_z_score_fields(test_formatted_data.header())
 
         if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]==True:
             test_formatted_data=test_formatted_data.convert_neg_log10_pvalue()
@@ -279,6 +281,7 @@ class Formatter:
         edit_table=self.edit(config=self.config_dict,data=split_table)
         filled_table=edit_table.normalise_missing_values(na_value=self.na)
         formatted_data=filled_table.map_header()
+        self._warn_if_z_score_fields(formatted_data.header())
 
         if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]==True:
             formatted_data=formatted_data.convert_neg_log10_pvalue()
@@ -347,6 +350,11 @@ class Formatter:
         self._apply_pandas(self.data_outfile)
 
     # ── pandas-based apply pipeline ───────────────────────────────────────────
+
+    @staticmethod
+    def _warn_if_z_score_fields(fields: list | tuple) -> None:
+        if 'z-score' in fields:
+            warn_z_score_fallback()
 
     @staticmethod
     def _pd_apply_splits(df: pd.DataFrame, split_config: list) -> pd.DataFrame:
@@ -438,6 +446,7 @@ class Formatter:
         open_out    = gzip.open if output_path.endswith('.gz') else open
         first_chunk = True
         final_cols  = None
+        z_score_warning_printed = False
         t0          = time.time()
 
         with open_out(output_path, 'wt', encoding='utf-8') as out:
@@ -448,6 +457,16 @@ class Formatter:
                 chunk = self._pd_apply_splits(chunk, split_config)
                 chunk = self._pd_apply_edits(chunk, edit_config)
                 chunk = self._pd_normalise(chunk, self.na)
+                if 'z-score' in chunk.columns:
+                    # Only blank standard_error when z-score is the effective
+                    # effect field. If a real effect field is present, z-score
+                    # is just an extra column and its standard_error is kept.
+                    if not any(e in chunk.columns
+                               for e in ('beta', 'odds_ratio', 'hazard_ratio')):
+                        chunk['standard_error'] = '#NA'
+                    if not z_score_warning_printed:
+                        warn_z_score_fallback()
+                        z_score_warning_printed = True
 
                 if convert_neg_log and 'p_value' in chunk.columns:
                     def _safe_neg_log(x):
@@ -602,6 +621,7 @@ def format(
              print("[bold]\n-------- SUMSTATS DATA --------\n[/bold]")
              print(formatter.data.sumstats)
              formatter.data.reformat_header() 
+             Formatter._warn_if_z_score_fields(formatter.data.header())
              formatter.data.normalise_missing_values(None)
              print("[bold]\n-------- REFORMATTED DATA --------\n[/bold]")
              print(formatter.data.sumstats)

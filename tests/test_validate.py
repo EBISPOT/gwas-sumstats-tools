@@ -4,6 +4,7 @@ import petl as etl
 from tests.prep_tests import SSTestFile, EFFECT_FIELDS
 from pandera import DataFrameSchema
 
+from gwas_sumstats_tools.constants import Z_SCORE_FALLBACK_WARNING
 from gwas_sumstats_tools.validate import Validator
 
 
@@ -178,6 +179,80 @@ class TestValidator:
         assert v._validate_field_order()[0] is True
         assert v.validate()[0] is True
 
+    def test_validate_z_score_instead_of_beta(self, sumstats_file):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
+                                              "beta",
+                                              "z-score")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v._validate_field_order()[0] is True
+        assert v.validate()[0] is True
+
+    def test_validate_z_score_prints_fallback_warning(self, sumstats_file, capsys):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
+                                              "beta",
+                                              "z-score")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is True
+        captured = capsys.readouterr().out
+        assert "WARNING: z-score is accepted only as a fallback effect size" in captured
+        assert "beta" in captured
+        assert "odds ratio (OR)" in captured
+        assert "hazard ratio" in captured
+
+    def test_validate_non_z_score_does_not_print_fallback_warning(self, sumstats_file, capsys):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["odds_ratio"],
+                                              "beta",
+                                              "odds_ratio")
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is True
+        assert Z_SCORE_FALLBACK_WARNING not in capsys.readouterr().out
+
+    def test_validate_z_score_with_numeric_standard_error(self, sumstats_file):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
+                                              "beta",
+                                              "z-score")
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+
+    def test_validate_z_score_missing_standard_error(self, sumstats_file):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
+                                              "beta",
+                                              "z-score")
+        sumstats_file.test_data.pop("standard_error")
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "field order"
+
+    def test_validate_invalid_z_score(self, sumstats_file):
+        sumstats_file.replace_header_and_data(["str", None, "a", "b"] + [1] * 22,
+                                              "beta",
+                                              "z-score")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "data"
+
+    def test_validate_z_score_neg_log_pvalue(self, sumstats_file):
+        sumstats_file.replace_header_and_data(EFFECT_FIELDS["z-score"],
+                                              "beta",
+                                              "z-score")
+        sumstats_file.replace_values("standard_error", ["#NA"] * len(EFFECT_FIELDS["z-score"]))
+        sumstats_file.replace_header_and_data(header_from="p_value",
+                                              header_to="neg_log_10_p_value",
+                                              data_to=[10, 2, 3, 4] + [i for i in range(1,23)])
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is True
+
     def test_validate_mandatory_field_missing(self, sumstats_file):
         sumstats_file.test_data.pop("chromosome")
         sumstats_file.to_file()
@@ -187,6 +262,13 @@ class TestValidator:
 
     def test_validate_p_value_field_missing(self, sumstats_file):
         sumstats_file.test_data.pop("p_value")
+        sumstats_file.to_file()
+        v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+        assert v.validate()[0] is False
+        assert v.primary_error_type == "field order"
+
+    def test_validate_non_z_score_standard_error_missing(self, sumstats_file):
+        sumstats_file.test_data.pop("standard_error")
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False

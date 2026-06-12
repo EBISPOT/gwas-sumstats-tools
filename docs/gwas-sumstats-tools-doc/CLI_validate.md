@@ -15,6 +15,9 @@ The validation tool is crafted to verify if the selected summary statistics file
 |`--chunksize`|`-s`|int|1,000,000|Number of rows to store in memory at once. Increase this number for more speed at the cost of more memory. Decrease to save memory, at the cost of speed|
 |`--infer-from-metadata`|`-i`|Boolean|False|Infer validation options from the metadata file `<filename>-meta.yaml`. E.g. fields for analysis software and negative log10 p-values affect the data validation behaviour.|
 
+## Effect Size Fields
+`z-score` is accepted as a fallback effect size type. Where possible, submit `beta`, `odds_ratio`, or `hazard_ratio` instead. When `z-score` is used, `standard_error` remains in the standard column position and must be populated with `#NA`.
+
 
 ## Examples
 Suppose you have a file named `GCST12345_formatted.tsv` that needs to be validated to see if it adheres to the GWAS-SSF schema.
