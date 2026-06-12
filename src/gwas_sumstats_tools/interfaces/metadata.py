@@ -6,11 +6,8 @@ from typing import Any, Optional, TypedDict
 
 import ruamel.yaml
 import yaml
-from typing_extensions import NotRequired
-
-logger = logging.getLogger(__name__)
-
 from pydantic import ValidationError
+from typing_extensions import NotRequired
 
 from gwas_sumstats_tools.config import INGEST_API_STUDIES_URL, REST_API_STUDIES_URL
 from gwas_sumstats_tools.constants import (
@@ -22,6 +19,12 @@ from gwas_sumstats_tools.constants import (
     SAMPLE_FIELD_TO_SPLIT,
     STUDY_FIELD_TO_SPLIT,
 )
+from gwas_sumstats_tools.schema.metadata import (
+    SampleMetadata,
+    SumStatsMetadata,
+    SumStatsMetadataAPI,
+    SumStatsMetadataFile,
+)
 from gwas_sumstats_tools.utils import (
     download_with_requests,
     get_md5sum,
@@ -31,6 +34,8 @@ from gwas_sumstats_tools.utils import (
     replace_dictionary_keys,
     split_fields_on_delimiter,
 )
+
+logger = logging.getLogger(__name__)
 
 # These TypedDicts document the raw JSON shapes returned by the GWAS Catalog APIs.
 # They live here (rather than schema/metadata.py) because they reflect an external
@@ -101,14 +106,6 @@ class IngestSampleResponse(TypedDict):
     caseCount: NotRequired[int]
     controlCount: NotRequired[int]
     stage: NotRequired[str]
-
-
-from gwas_sumstats_tools.schema.metadata import (
-    SampleMetadata,
-    SumStatsMetadata,
-    SumStatsMetadataAPI,
-    SumStatsMetadataFile,
-)
 
 
 class MetadataClient:

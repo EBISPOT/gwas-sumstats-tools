@@ -121,7 +121,7 @@ class Formatter:
         test_formatted_data = test_filled_table.map_header()
         self._warn_if_z_score_fields(test_formatted_data.header())
 
-        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"] == True:
+        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]:
             test_formatted_data = test_formatted_data.convert_neg_log10_pvalue()
 
         return test_formatted_data
@@ -303,7 +303,7 @@ class Formatter:
         formatted_data = filled_table.map_header()
         self._warn_if_z_score_fields(formatted_data.header())
 
-        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"] == True:
+        if self.config_dict["fileConfig"]["convertNegLog10Pvalue"]:
             formatted_data = formatted_data.convert_neg_log10_pvalue()
         return formatted_data
 
