@@ -1,0 +1,211 @@
+/* ══════════════════════════════════════════════════════════════
+   SSF-morph custom styles
+   Layered on top of EBI Visual Framework (VF) v2.5.14 + Bootstrap 5
+══════════════════════════════════════════════════════════════ */
+
+/* ── Global header ──────────────────────────────────────────── */
+.ssf-global-header {
+  background-color: #FFFFFF;
+  padding: 1rem 1rem;
+  border-bottom: 5px solid #3B9E52;
+}
+
+.ssf-global-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ssf-global-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.ssf-global-header__nav a {
+  color: #3B9E52;
+  text-decoration: none;
+  font-size: 1.0rem;
+  white-space: nowrap;
+  opacity: 0.9;
+  transition: opacity 0.15s;
+}
+
+.ssf-global-header__nav a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* ── Landing page ───────────────────────────────────────────── */
+.ssf-landing {
+  padding-top: 2.5rem;
+  padding-bottom: 3rem;
+}
+
+.ssf-landing__title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.ssf-landing__subtitle {
+  font-size: 1.1rem;
+  color: #555;
+}
+
+/* Mode cards (Format / Validate) */
+.ssf-mode-card {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  transition: box-shadow 0.2s ease;
+}
+
+.ssf-mode-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.13);
+}
+
+.ssf-mode-card__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 0;
+}
+
+/* Numbered step overview list on landing page */
+.ssf-step-overview {
+  padding-left: 1.4rem;
+  color: #444;
+}
+
+.ssf-step-overview li {
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+}
+
+.ssf-step-overview li::marker {
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+/* ── Format wizard stepper ──────────────────────────────────── */
+.ssf-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.5rem 0 1rem;
+}
+
+.ssf-stepper__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+}
+
+.ssf-stepper__circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #dee2e6;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: background-color 0.25s, color 0.25s;
+  flex-shrink: 0;
+}
+
+.ssf-stepper__step.active .ssf-stepper__circle {
+  background-color: #1a1a2e;
+  color: #fff;
+}
+
+.ssf-stepper__step.completed .ssf-stepper__circle {
+  background-color: #198754;
+  color: #fff;
+}
+
+.ssf-stepper__label {
+  font-size: 0.72rem;
+  margin-top: 0.35rem;
+  color: #888;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ssf-stepper__step.active .ssf-stepper__label {
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+.ssf-stepper__step.completed .ssf-stepper__label {
+  color: #198754;
+}
+
+.ssf-stepper__connector {
+  flex: 1;
+  height: 2px;
+  background-color: #dee2e6;
+  margin: 20px 4px 0;
+  transition: background-color 0.25s;
+}
+
+.ssf-stepper__connector.completed {
+  background-color: #198754;
+}
+
+/* ── DataTables overrides ───────────────────────────────────── */
+table.dataTable thead tr th,
+table.dataTable tbody tr td {
+  word-wrap: break-word;
+  word-break: break-all;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.ssf-footer {
+  background-color: #f1f3f4;
+  border-top: 1px solid #dee2e6;
+  padding: 1.25rem 0;
+  margin-top: 3rem;
+  font-size: 0.82rem;
+  color: #555;
+}
+
+.ssf-footer a {
+  color: #23527c;
+}
+
+/* ── File drop zone ─────────────────────────────────────────── */
+.ssf-drop-zone {
+  border: 2px dashed #adb5bd;
+  border-radius: 0.5rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+  background-color: #f8f9fa;
+  color: #555;
+  user-select: none;
+}
+
+.ssf-drop-zone:hover,
+.ssf-drop-zone.drag-over {
+  border-color: #3B9E52;
+  background-color: #f0faf2;
+}
+
+.ssf-drop-zone__text {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.ssf-drop-zone__hint {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 0.25rem;
+}

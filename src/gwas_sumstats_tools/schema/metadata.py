@@ -1,0 +1,130 @@
+"""
+A pydantic (https://docs.pydantic.dev/) schema that can be
+used by python projects for defining the metadata model.
+Keep the same scheme with https://github.com/EBISPOT/gwas-summary-statistics-standard/blob/master/schema/metadata-yamale-schema.yaml
+"""
+
+import re
+from datetime import date
+from enum import Enum
+from typing import Annotated, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+
+"""
+Enums
+"""
+
+
+class SexEnum(str, Enum):
+    male = "M"
+    female = "F"
+    combined = "combined"
+    unknown = "NR"
+
+
+class CoordinateSystemEnum(str, Enum):
+    zero = "0-based"
+    one = "1-based"
+    unknown = "NR"
+
+
+FILE_TYPE_PATTERN = re.compile(
+    r"^(pre-GWAS-SSF|non-GWAS-SSF|GWAS-SSF v\d+(\.\d+)*|NR)$"
+)
+
+
+"""
+Models
+"""
+
+
+class SampleMetadata(BaseModel):
+    sample_ancestry_category: Optional[List[str]] = None
+    sample_ancestry: Optional[List[str]] = None
+    sample_size: Optional[int] = None
+    ancestry_method: Optional[List[str]] = None
+    case_control_study: Optional[bool] = None
+    case_count: Optional[int] = None
+    control_count: Optional[int] = None
+
+
+class SumStatsMetadataAPI(BaseModel):
+    """Fields sourced from the GWAS Catalog REST / Ingest APIs."""
+
+    # Trait Information
+    trait_description: Optional[List[str]] = None
+    ontology_mapping: Optional[List[str]] = None
+    # Genotyping Information
+    genome_assembly: str  # from Ingest API (summary_statistics_assembly)
+    coordinate_system: Optional[CoordinateSystemEnum] = None
+    genotyping_technology: Optional[List[str]] = None
+    imputation_panel: Optional[str] = None
+    imputation_software: Optional[str] = None
+    # Sample Information
+    samples: Optional[List[SampleMetadata]] = None
+    sex: Optional[SexEnum] = None
+    # Summary Statistic information
+    analysis_software: Optional[str] = None
+    adjusted_covariates: Optional[List[str]] = None
+    minor_allele_freq_lower_limit: Optional[float] = None
+
+
+class SumStatsMetadataFile(BaseModel):
+    """Fields derived from the file itself (calculated at ingest time)."""
+
+    # Required
+    data_file_name: str
+    genome_assembly: str
+    date_metadata_last_modified: date
+    # Optional calculated
+    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r"^GCST\d+$")]] = None
+    gwas_catalog_api: Optional[str] = None
+    data_file_md5sum: str
+    file_type: str = Field(description="summary stats file type", default="NR")
+
+
+class SumStatsMetadata(BaseModel):
+    """Full metadata model with fields in canonical YAML output order."""
+
+    # Study meta-data
+    gwas_id: Optional[Annotated[str, StringConstraints(pattern=r"^GCST\d+$")]] = None
+    author_notes: Optional[str] = None
+    gwas_catalog_api: Optional[str] = None
+    date_metadata_last_modified: date
+    # Trait Information
+    trait_description: Optional[List[str]] = None
+    ontology_mapping: Optional[List[str]] = None
+    # Genotyping Information
+    genome_assembly: str
+    coordinate_system: Optional[CoordinateSystemEnum] = None
+    genotyping_technology: Optional[List[str]] = None
+    imputation_panel: Optional[str] = None
+    imputation_software: Optional[str] = None
+    # Sample Information
+    samples: Optional[List[SampleMetadata]] = None
+    sex: Optional[SexEnum] = None
+    # Summary Statistic information
+    data_file_name: str
+    file_type: str = Field(description="summary stats file type", default="NR")
+    data_file_md5sum: str
+    analysis_software: Optional[str] = None
+    adjusted_covariates: Optional[List[str]] = None
+    minor_allele_freq_lower_limit: Optional[float] = None
+    # Harmonization status
+    is_harmonised: Optional[bool] = None
+    is_sorted: Optional[bool] = None
+    harmonisation_reference: Optional[str] = None
+
+    model_config = ConfigDict(
+        title="GWAS Summary Statistics metadata schema", use_enum_values=True
+    )
+
+    @field_validator("file_type")
+    @classmethod
+    def validate_file_type(cls, v):
+        if not FILE_TYPE_PATTERN.match(v):
+            raise ValueError(
+                f"file_type '{v}' must be 'pre-GWAS-SSF', 'non-GWAS-SSF', 'GWAS-SSF v<version>', or 'NR'"
+            )
+        return v

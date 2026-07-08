@@ -1,0 +1,25 @@
+replicaCount: 1
+
+k8Namespace: gwas
+
+image:
+  repository: ebispot/gwas-sumstats-tools
+  tag: docs-latest
+  pullPolicy: Always
+
+service:
+  name: gwas-sumstats-tools
+  port: 80
+
+ingress:
+  name: sumstats-tools-ingress
+  annotations: {}
+  path: "/gwas/apps/gwas-sumstats-tools(/|$)(.*)"
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi

@@ -1,0 +1,40 @@
+name: Test Docs Image
+
+on:
+  pull_request:
+    paths:
+      - 'docs/gwas-sumstats-tools-doc/**'
+      - 'apps/ssf-morph/**'
+      - 'Dockerfile.docs'
+      - 'nginx.conf'
+  workflow_dispatch:
+
+permissions:
+   contents: read
+
+jobs:
+  test-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.docs
+          push: false
+          load: true
+          tags: test-image:latest
+
+      - name: Test image
+        run: |
+          docker run -d --name test-container -p 8080:80 test-image:latest
+          sleep 3
+          curl -f http://localhost:8080/gwas/apps/gwas-sumstats-tools/ || exit 1
+          curl -f http://localhost:8080/gwas/apps/gwas-sumstats-tools/index.html || exit 1
+          docker stop test-container && docker rm test-container

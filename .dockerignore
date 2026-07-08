@@ -60,9 +60,6 @@ coverage.xml
 # Logs
 *.log
 
-# Documentation
-docs/*
-
 # PyBuilder
 target/
 
@@ -90,6 +87,9 @@ venv/
 *.csv*
 *.xls*
 *.yaml
+
+# test output files
+GCST*
 
 
 # images
