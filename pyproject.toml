@@ -27,7 +27,7 @@ gwas-ssf = "gwas_sumstats_tools.cli:app"
 [dependency-groups]
 dev = [
     "pre-commit>=4.0.0,<5",
-    "pytest>=7.2.1,<8",
+    "pytest>=9.0.3,<10",
     "hypothesis>=6.68.2,<7",
     "pytest-mock>=3.10.0,<4",
     "ruff>=0.8.0,<1",
