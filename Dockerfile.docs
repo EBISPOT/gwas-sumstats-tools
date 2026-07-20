@@ -18,6 +18,7 @@ RUN uv build
 
 # copy wheel file to fixed file name
 RUN rm -f ./ssf-morph/wheels/gwas_sumstats_tools-*.whl && \
+    mkdir -p ./ssf-morph/wheels && \
     cp dist/gwas_sumstats_tools-*.whl \
        ./ssf-morph/wheels/gwas_sumstats_tools.whl
        
