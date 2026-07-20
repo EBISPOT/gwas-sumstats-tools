@@ -29,7 +29,7 @@ COPY docs/gwas-sumstats-tools-doc ./docs
        
 # ── Stage 2: serve ────────────────────────────────────────────────────────────
 # Lightweight nginx container to serve ssf-morph (landing page) + documentation
-FROM nginx:alpine
+FROM nginx:1.29.8-alpine
 
 # Copy ssf-morph as the landing page (root of the site)
 COPY --from=builder /app/ssf-morph /usr/share/nginx/html/gwas/apps/gwas-sumstats-tools
@@ -45,6 +45,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost/gwas/apps/gwas-sumstats-tools/ || exit 1
 
 EXPOSE 80
-
-# Default command
-CMD ["nginx", "-g", "daemon off;"]
