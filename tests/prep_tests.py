@@ -64,7 +64,7 @@ TEST_METADATA = {
     "trait_description": ["breast carcinoma"],
     "minor_allele_freq_lower_limit": 0.001,
     "data_file_name": "0000123.tsv",
-    "file_type": "GWAS-SSF v1.0",
+    "file_type": "GWAS-SSF v1.1.0",
     "data_file_md5sum": "32ce41c3dca4cd9f463a0ce7351966fd",
     "is_harmonised": False,
     "is_sorted": False,

@@ -12,6 +12,7 @@ from typing_extensions import NotRequired
 from gwas_sumstats_tools.config import INGEST_API_STUDIES_URL, REST_API_STUDIES_URL
 from gwas_sumstats_tools.constants import (
     GENOME_ASSEMBLY_MAPPINGS,
+    GWAS_SSF_VERSION,
     INGEST_API_SAMPLE_MAPPINGS,
     INGEST_API_STUDY_MAPPINGS,
     REST_API_SAMPLE_MAPPINGS,
@@ -522,7 +523,7 @@ def get_file_metadata(in_file: Path, out_file: str) -> SumStatsMetadataFile:
     return SumStatsMetadataFile.model_construct(
         gwas_id=accession_id,
         data_file_name=Path(out_file).name,
-        file_type="GWAS-SSF v1.0",
+        file_type=f"GWAS-SSF v{GWAS_SSF_VERSION}",
         genome_assembly=GENOME_ASSEMBLY_MAPPINGS.get(
             parse_genome_assembly(filename=in_file), "unknown"
         ),

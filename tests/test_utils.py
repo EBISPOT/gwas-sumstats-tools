@@ -5,6 +5,7 @@ from packaging import version
 from gwas_sumstats_tools.utils import (
     append_to_path,
     get_version,
+    normalize_file_type,
     parse_genome_assembly,
     replace_dictionary_keys,
     split_fields_on_delimiter,
@@ -48,3 +49,8 @@ def test_split_fields_on_delimiter():
 
 def test_get_version():
     assert version.parse(get_version())
+
+
+def test_normalize_file_type_versions():
+    assert normalize_file_type("GWAS-SSF") == "GWAS-SSF v1.1.0"
+    assert normalize_file_type("GWAS-SSF v1.0") == "GWAS-SSF v1.0"

@@ -49,7 +49,7 @@ GENOME_ASSEMBLY_MAPPINGS: Final[dict[str, GenomeAssembly]] = {
     "38": "GRCh38",
 }
 
-GWAS_SSF_VERSION: Final[str] = "1.0"
+GWAS_SSF_VERSION: Final[str] = "1.1.0"
 
 Z_SCORE_FALLBACK_WARNING: Final[str] = (
     "WARNING: z-score is accepted only as a fallback effect size. "
