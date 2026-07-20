@@ -16,10 +16,16 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     UV_LINK_MODE=copy uv sync --no-dev
 RUN uv build
 
+# copy wheel file to fixed file name
+RUN rm -f ./ssf-morph/wheels/gwas_sumstats_tools-*.whl && \
+    cp dist/gwas_sumstats_tools-*.whl \
+       ./ssf-morph/wheels/gwas_sumstats_tools.whl
+       
 # Copy ssf-morph (main landing page) and documentation
 COPY apps/ssf-morph/ ./ssf-morph/
 COPY docs/gwas-sumstats-tools-doc ./docs
 
+       
 # ── Stage 2: serve ────────────────────────────────────────────────────────────
 # Lightweight nginx container to serve ssf-morph (landing page) + documentation
 FROM nginx:alpine

@@ -32,10 +32,12 @@ async function loadPyodideAndPackages() {
         wheel("pandera-0.26.1-py3-none-any.whl"),
     ]);
 
-    // Install gwas_sumstats_tools; pass keep_going=true (second positional arg) so
-    // a transient PyPI failure for one dep doesn't abort the whole init.
-    await micropip.install(wheel("gwas_sumstats_tools-1.0.24-py3-none-any.whl"), true);
-
+    // install a fixed name wheel file
+    await micropip.install(
+	wheel("gwas_sumstats_tools.whl"),
+	true
+    );
+    
     await micropip.install("tabulate");
 }
 let pyodideReadyPromise = loadPyodideAndPackages();
