@@ -1,3 +1,6 @@
+apps/ssf-morph/wheels/gwas_sumstats_tools*.whl
+.idea
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
