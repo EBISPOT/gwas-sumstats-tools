@@ -86,14 +86,19 @@ class SumStatsTable:
         Files can be TAB seperated and optionally compressed
         with (B)GZIP. There could be cases where an input file
         has been renamed but the data is something different
-        to that suggested by the name and extension. Most
-        cases should be covered by the exception clause.
+        to that suggested by the name and extension - this raises
+        a ValueError rather than silently returning None, since a
+        None here is indistinguishable downstream from a genuinely
+        empty (zero-row) file.
 
         Arguments:
             infile -- Input file
 
         Returns:
-            petl Table or None
+            petl Table, or None if the file is genuinely empty
+
+        Raises:
+            ValueError: if the file cannot be read/decoded
         """
         try:
             if len(self.delimiter) == 1:
@@ -112,8 +117,11 @@ class SumStatsTable:
                 return None
             return self.sumstats
         except (IOError, UnicodeDecodeError) as exception:
-            print(exception)
-            return None
+            raise ValueError(
+                f"Could not read {self.filename}: {exception}. "
+                "The file may be mis-named (e.g. gzip-compressed data "
+                "without a .gz extension, or vice versa)."
+            ) from exception
 
     def is_table_content(self) -> bool:
         """Bool for whether table content exists
