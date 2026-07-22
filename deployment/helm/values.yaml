@@ -3,7 +3,7 @@ replicaCount: 1
 k8Namespace: gwas
 
 image:
-  repository: ebispot/gwas-sumstats-tools
+  repository: dockerhub.ebi.ac.uk/gwas/gwas-sumstats-tools
   tag: docs-latest
   pullPolicy: Always
 
