@@ -150,7 +150,7 @@ Two independent release flows:
 | Flow | Trigger | Produces |
 |---|---|---|
 | **PyPI** | GitHub Release | Python package on PyPI |
-| **Docs/App** | Manual GitLab CI job from the default branch (`main`) or a release tag | Static browser app and documentation on GitLab Pages |
+| **Docs/App** | Manual GitLab CI job from the default branch (`main`) or a release tag; automatic publication from protected `dev` | Production GitLab Pages site and separate `/dev/` version |
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for full details.
 

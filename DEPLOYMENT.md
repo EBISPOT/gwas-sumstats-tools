@@ -8,6 +8,9 @@ is required. Python processing still runs in the browser through Pyodide.
 
 - Enable Pages on the GitLab instance and project. This workflow requires GitLab
   17.10 or later for the Pages syntax and automatic publication of artefacts.
+- Development hosting requires GitLab Premium or Ultimate with an available
+  parallel Pages deployment slot. Protect the `dev` branch under branch rules;
+  the development publication job is excluded when that branch is unprotected.
 - Make a runner tagged `gwas` available, with access to Python packages needed
   for the build. The Pages jobs do not require Docker or Kubernetes credentials.
 - Confirm that commits and release tags reach the GitLab project. The GitHub
@@ -22,7 +25,8 @@ is required. Python processing still runs in the browser through Pyodide.
 | Trigger | Behaviour |
 |---------|-----------|
 | Default branch push (`main`) | Run tests and build the site, then offer the manual `publish_pages` job |
-| Other branch push, including `dev` | Run tests and build the static site as a downloadable `public/` artefact; do not publish |
+| Protected `dev` branch push | Run tests and build the site, then automatically run `publish_pages_dev` at the `/dev/` deployment prefix |
+| Other branch push (including unprotected `dev`) | Run tests and build the static site as a downloadable `public/` artefact; do not publish |
 | Release tag | Run tests and build the site, then offer the manual `publish_pages` job |
 
 To publish the default branch (`main`), open its latest pipeline, or use **Build > Pipelines
@@ -50,9 +54,22 @@ in `public/_redirects`. This preserves Docsify history routes such as
 `docs/UI_format` when opened directly or refreshed. Static files are served
 normally; there is no site-wide fallback masking missing scripts or wheels.
 
-Development Pages deployments are not configured: publishing a branch to the
-same Pages root would overwrite production. Add a separate development project
-or supported Pages parallel deployments when a hosted development URL is needed.
+The development job publishes a separate Pages deployment with `path_prefix: dev`
+and environment name `dev`. For example, production at
+`https://group.gitdocs.example/project/` has development at
+`https://group.gitdocs.example/project/dev/`. The environment link uses
+`CI_PAGES_URL`, which already includes the prefix; do not append `/dev` again.
+Documentation rewrites use this same URL, so development deep links also work.
+Both deployments have no automatic expiry and use separate publication locks.
+Publishing development does not replace production.
+
+Merge the Pages workflow and application changes from `main` into `dev` before
+running a development pipeline: GitLab reads CI configuration from that branch.
+After its tests and build pass, the development job runs automatically. Open
+**Operate > Environments > dev** to follow the site link. Branch protection
+controls deployment eligibility, not site visibility; the development site
+shares the project's Pages access settings. If environment-level deployment
+restrictions are needed, configure the `dev` environment separately in GitLab.
 
 ## Local check
 
@@ -94,3 +111,4 @@ the Pages deployment.
 
 - [GitLab Pages CI syntax](https://docs.gitlab.com/ci/yaml/#pagespublish)
 - [Pages redirects](https://docs.gitlab.com/user/project/pages/redirects/)
+- [Parallel Pages deployments](https://docs.gitlab.com/user/project/pages/parallel_deployments/)

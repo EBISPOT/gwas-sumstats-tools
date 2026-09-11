@@ -68,7 +68,7 @@ build_release:
   rules:
     - if: $CI_COMMIT_TAG
 
-# Build every branch and tag; publish manually from the default branch or a tag.
+# Build every branch and tag for production and development Pages deployments.
 build_pages:
   stage: build
   before_script:
@@ -79,7 +79,7 @@ build_pages:
     paths:
       - public/
 
-publish_pages:
+.publish_pages:
   stage: deploy
   needs:
     - job: test
@@ -89,7 +89,7 @@ publish_pages:
     - job: build_pages
       artifacts: true
   script:
-    # CI_PAGES_URL handles both group paths and unique project domains.
+    # CI_PAGES_URL includes the deployment prefix (GitLab 17.9+).
     - |
       python - <<'PYTHON'
       import os
@@ -104,6 +104,9 @@ publish_pages:
   pages:
     publish: public
     expire_in: never
+
+publish_pages:
+  extends: .publish_pages
   resource_group: pages-production
   environment:
     name: production
@@ -113,3 +116,15 @@ publish_pages:
       when: manual
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: manual
+
+publish_pages_dev:
+  extends: .publish_pages
+  pages:
+    path_prefix: dev
+  resource_group: pages-dev
+  environment:
+    name: dev
+    deployment_tier: development
+    url: $CI_PAGES_URL
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev" && $CI_COMMIT_REF_PROTECTED == "true"'
