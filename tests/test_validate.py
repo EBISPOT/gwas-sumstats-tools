@@ -101,6 +101,21 @@ def test_validate_df(sumstats_file):
     assert v._validate_df(df) == (True, "Data table is valid.")
 
 
+@pytest.mark.parametrize("header", ["z_score", "WRONG_NAME"])
+def test_validate_unrecognised_effect_header(sumstats_file, header):
+    sumstats_file.replace_header("beta", header)
+    sumstats_file.to_file()
+    v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
+    valid, message = v.validate()
+    assert valid is False
+    assert v.primary_error_type == "headers"
+    assert "No recognised effect-size header" in message
+    assert "'beta', 'odds_ratio', 'hazard_ratio', 'z-score'" in message
+    assert "Fields not in the required order" not in message
+    if header == "z_score":
+        assert "Rename 'z_score' to 'z-score'" in message
+
+
 def test_minrow_check(sumstats_file):
     sumstats_file.to_file()
     v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=30)
@@ -303,7 +318,7 @@ class TestValidator:
         sumstats_file.to_file()
         v = Validator(sumstats_file=sumstats_file.filepath, minimum_rows=4)
         assert v.validate()[0] is False
-        assert v.primary_error_type == "field order"
+        assert v.primary_error_type == "headers"
 
     def test_zero_pvalue(self, sumstats_file):
         sumstats_file.replace_values("p_value", [0, 0, 0, 0])

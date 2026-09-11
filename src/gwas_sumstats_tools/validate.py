@@ -123,6 +123,16 @@ class Validator(SumStatsTable):
         return valid, message
 
     def _validate_field_order(self) -> tuple[bool, Union[str, None]]:
+        if self._effect_field_in_header() is None:
+            self.primary_error_type = "headers"
+            message = (
+                "No recognised effect-size header. Expected one of: "
+                + ", ".join(repr(field) for field in self.FIELDS_EFFECT)
+                + "."
+            )
+            if "z_score" in self.header():
+                message += " Rename 'z_score' to 'z-score' (with a hyphen)."
+            return False, message
         message = None
         required_order = self.schema().field_order()
         actual_order = self.header()[: len(required_order)]

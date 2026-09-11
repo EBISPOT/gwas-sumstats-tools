@@ -34,7 +34,7 @@ async function loadPyodideAndPackages() {
 
     // The site build replaces this with the freshly built wheel's full filename.
     await micropip.install(
-	wheel("gwas_sumstats_tools-2.0.1-py3-none-any.whl"),
+	wheel("gwas_sumstats_tools-2.0.2-py3-none-any.whl"),
 	true
     );
     

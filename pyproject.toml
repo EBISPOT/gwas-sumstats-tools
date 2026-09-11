@@ -1,6 +1,6 @@
 [project]
 name = "gwas-sumstats-tools"
-version = "2.0.1"
+version = "2.0.2"
 description = ""
 authors = [
     {name = "jdhayhurst", email = "jhayhurst@ebi.ac.uk"},
