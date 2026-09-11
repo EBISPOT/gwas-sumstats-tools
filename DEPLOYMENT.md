@@ -21,11 +21,11 @@ is required. Python processing still runs in the browser through Pyodide.
 
 | Trigger | Behaviour |
 |---------|-----------|
-| `main` or default branch push (as configured in GitLab) | Run tests and build the site, then offer the manual `publish_pages` job |
+| Default branch push (`main`) | Run tests and build the site, then offer the manual `publish_pages` job |
 | Other branch push, including `dev` | Run tests and build the static site as a downloadable `public/` artefact; do not publish |
 | Release tag | Run tests and build the site, then offer the manual `publish_pages` job |
 
-To publish `main` or the default branch, open its latest pipeline, or use **Build > Pipelines
+To publish the default branch (`main`), open its latest pipeline, or use **Build > Pipelines
 > New pipeline** and select that branch. Wait for `test`, `test_worker` and
 `build_pages` to succeed, then run **publish_pages**. This publishes the pipeline's
 commit, so start a new pipeline if the branch has advanced and you want its latest
@@ -78,9 +78,12 @@ old Kubernetes pipeline as a Pages rollback.
 
 ## Other release flows and migration
 
-CLI Docker builds in GitLab and PyPI publishing through GitHub Actions remain
-independent and unchanged. CLI Docker jobs still require their existing Docker
-runner configuration.
+CLI Docker builds in GitLab and PyPI publishing through GitHub Actions are
+independent of Pages. The CLI `build` job publishes a commit-SHA image on pushes
+to the default branch or `dev`. On release tags, `build_release` publishes
+commit-SHA, release-tag and `latest` images to the GitLab project's container
+registry (`CI_REGISTRY_IMAGE`). These jobs still require Docker-in-Docker;
+the Pages jobs build and publish static files without it.
 
 The nginx image configuration, Helm chart and their GitLab deployment jobs have
 been removed. Existing Kubernetes workloads are not automatically removed;
