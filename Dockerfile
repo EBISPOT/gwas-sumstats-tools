@@ -1,4 +1,5 @@
-FROM python:3.13-slim-bookworm
+ARG PYTHON_IMAGE=python:3.13-slim-bookworm
+FROM ${PYTHON_IMAGE}
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
