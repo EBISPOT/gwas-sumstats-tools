@@ -20,7 +20,7 @@
   <div class="ssf-global-header__inner">
     <img src="Icons/ssf_morph_logo.jpeg" alt="SSF-morph" style="display:block;height:40px;width:auto">
     <nav class="ssf-global-header__nav">
-      <a href="/gwas/apps/gwas-sumstats-tools/docs/UI_format" target="_blank" rel="noopener">Documentation</a>
+      <a href="docs/UI_format" target="_blank" rel="noopener">Documentation</a>
       <a href="https://www.ebi.ac.uk/gwas/home" target="_blank" rel="noopener">GWAS Catalog</a>
       <a href="https://www.ebi.ac.uk/gwas/docs/summary-statistics-format" target="_blank" rel="noopener">GWAS-SSF standard</a>
       <a href="mailto:gwas-info@ebi.ac.uk">Contact</a>
@@ -375,7 +375,7 @@
             <strong>Operation stopped.</strong> For large files, the offline CLI is much faster:<br>
             <code>pip install gwas-sumstats-tools</code><br>
             <code>gwas-ssf format -f &lt;your-file&gt; -c &lt;config.json&gt;</code><br>
-            <a href="/gwas/apps/gwas-sumstats-tools/docs/CLI_format" target="_blank" rel="noopener">See formatting CLI docs</a>
+            <a href="docs/CLI_format" target="_blank" rel="noopener">See formatting CLI docs</a>
             <div class="mt-2">
               <button id="download-config-after-stop" class="btn btn-sm btn-outline-dark">&#11015; Download config file</button>
             </div>
@@ -406,7 +406,7 @@
 
         <div class="alert alert-info" role="alert">
           <strong>Tip:</strong> For large files or repeated use, you can run the validator locally via the command-line tool.
-          See <a href="/gwas/apps/gwas-sumstats-tools/docs/installation" target="_blank" rel="noopener">how to install from PyPI</a>.
+          See <a href="docs/install" target="_blank" rel="noopener">how to install from PyPI</a>.
         </div>
 
         <p class="card-text">5.1&nbsp; Select the file to validate:</p>
@@ -447,7 +447,7 @@
           <div>
             <button id="validate-full" disabled class="btn btn-outline-success">Full Validate</button>
             <div id="validate-full-estimate" class="text-muted small mt-1">~5 min per 0.5 GB</div>
-            <div class="text-muted small mt-1">or <a href="/gwas/apps/gwas-sumstats-tools/docs/install" target="_blank" rel="noopener">run locally via PyPI</a> for faster results</div>
+            <div class="text-muted small mt-1">or <a href="docs/install" target="_blank" rel="noopener">run locally via PyPI</a> for faster results</div>
           </div>
           <div class="align-self-center">
             <button id="stop-validate" class="btn btn-danger" style="display:none">&#9632; Stop</button>
@@ -457,11 +457,11 @@
           <strong>Validation stopped.</strong> For large files, the offline CLI is much faster:<br>
           <code>pip install gwas-sumstats-tools</code><br>
           <code>gwas-ssf validate &lt;your-file&gt;</code><br>
-          <a href="/gwas/apps/gwas-sumstats-tools/docs/CLI_validate" target="_blank" rel="noopener">See validation CLI docs</a>
+          <a href="docs/CLI_validate" target="_blank" rel="noopener">See validation CLI docs</a>
         </div>
         <div id="validate-large-file-hint" class="alert alert-warning mt-2" style="display:none">
           <strong>Large file detected.</strong> Full validation may take 30+ minutes in the browser.
-          Consider using the <a href="/gwas/apps/gwas-sumstats-tools/docs/install" target="_blank" rel="noopener">offline command-line tool</a> for faster validation.
+          Consider using the <a href="docs/install" target="_blank" rel="noopener">offline command-line tool</a> for faster validation.
         </div>
         <textarea id="validation_out" class="form-control" rows="8" disabled></textarea>
         <div id="step5error" class="mt-2"></div>

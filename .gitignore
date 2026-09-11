@@ -144,3 +144,5 @@ dmypy.json
 
 # uv test
 GCST*
+# Generated GitLab Pages site
+/public/

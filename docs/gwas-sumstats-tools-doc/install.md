@@ -27,7 +27,7 @@ $ pip install "gwas-sumstats-tools==1.0.6"
 ```
 To confirm successful installation of GWAS-Sumstat-Tools, run the command `gwas-ssf --help` in your terminal. This command will display the help message for the tool, confirming its installation and accessibility.
 
-![gwas-ssf](/img/gwas-demo.gif)
+![gwas-ssf](img/gwas-demo.gif)
 
 ### Optional Installation and Execution Methods for GWAS-Sumstat-Tools 
 If the Python version displayed is below Python 3.13, you may encounter compatibility issues with the package. In such cases, you have two options:

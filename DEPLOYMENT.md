@@ -1,229 +1,93 @@
-# Deployment Guide
+# Deployment guide
 
-## Overview
+The browser app and documentation are published together on GitLab Pages.
+GitLab hosts the static files; no project nginx server or Kubernetes deployment
+is required. Python processing still runs in the browser through Pyodide.
 
-This project has two independent release flows:
+## One-time operator setup
 
-| Flow | Trigger | System | Produces |
-|------|---------|--------|---------|
-| **A — PyPI** | GitHub Release | GitHub Actions | Python package on PyPI + updated wheel in apps/ssf-morph |
-| **B — Docs/App** | Push to `dev` or git tag | GitLab CI | Docker image on Docker Hub → deployed to K8S via Helm |
+- Enable Pages on the GitLab instance and project. This workflow requires GitLab
+  17.10 or later for the Pages syntax and automatic publication of artefacts.
+- Make a runner tagged `gwas` available, with access to Python packages needed
+  for the build. The Pages jobs do not require Docker or Kubernetes credentials.
+- Confirm that commits and release tags reach the GitLab project. The GitHub
+  remote alone does not run GitLab CI; configure mirroring or push to GitLab.
+- Configure Pages access for the intended audience, including anonymous access
+  if this is a public site. Protect release tags and restrict who can publish.
+- Use the URL shown under **Deploy > Pages**. Group-path and unique-domain URLs
+  are supported. No traffic-manager configuration is included.
 
----
+## Build and publish
 
-## Architecture
+| Trigger | Behaviour |
+|---------|-----------|
+| `main` or default branch push (as configured in GitLab) | Run tests and build the site, then offer the manual `publish_pages` job |
+| Other branch push, including `dev` | Run tests and build the static site as a downloadable `public/` artefact; do not publish |
+| Release tag | Run tests and build the site, then offer the manual `publish_pages` job |
 
-```
-┌──────────────────────────────────────────────────────┐
-│  ssf-morph (browser app)          nginx container         │
-│    webworker.js loads Pyodide  ──▶ /apps/gwas_sumstats_tools/ │
-│    + gwas_sumstats_tools wheel                            │
-│                                                           │
-│  gwas-sumstats-tools-doc                                 │
-│    docsify static site         ──▶ /apps/gwas_sumstats_tools/docs/      │
-└──────────────────────────────────────────────────────┘
-         built by Dockerfile.docs
-         served by nginx.conf
-         deployed via deployment/helm/
-```
+To publish `main` or the default branch, open its latest pipeline, or use **Build > Pipelines
+> New pipeline** and select that branch. Wait for `test`, `test_worker` and
+`build_pages` to succeed, then run **publish_pages**. This publishes the pipeline's
+commit, so start a new pipeline if the branch has advanced and you want its latest
+state. No release tag is required.
 
-**Docker Hub images**
+To release a tag, push it to GitLab and run **publish_pages** in that tag's pipeline
+after the same checks succeed. Both options replace the production site. The production
+environment links to the Pages URL. Publishing jobs are serialised.
 
-| Image | Built from | Purpose |
-|-------|-----------|---------|
-| `ebispot/gwas-sumstats-tools` | `Dockerfile` | Python CLI app |
-| `ebispot/gwas-sumstats-tools-docs` | `Dockerfile.docs` | nginx serving ssf-morph + docs — **this is what K8S runs** |
+`deployment/build_pages.sh` builds a wheel from the checked-out source, copies
+SSF-morph to `public/`, copies documentation to `public/docs/`, and adds the wheel
+with its full filename (for example,
+`public/wheels/gwas_sumstats_tools-2.0.1-py3-none-any.whl`). The generated worker
+references that exact filename; the source worker is not changed during builds.
+The build checks wheel filenames, archive structure and integrity, and the app's
+documentation links. The GitHub pull-request workflow runs this same
+build and check. A Node.js regression check verifies that failed worker startup
+and retries do not detach uploaded buffers before processing begins.
 
-**Kubernetes — EBI HH cluster (`gwas-depo-hh-config.yml`)**
+The publishing job uses `CI_PAGES_URL` to generate a documentation-only rewrite
+in `public/_redirects`. This preserves Docsify history routes such as
+`docs/UI_format` when opened directly or refreshed. Static files are served
+normally; there is no site-wide fallback masking missing scripts or wheels.
 
-| Namespace | Environment |
-|-----------|-------------|
-| `gwas-dev` | Development (auto-deployed on every `dev` push) |
-| `gwas` | Production (auto-deployed on every tag) |
+Development Pages deployments are not configured: publishing a branch to the
+same Pages root would overwrite production. Add a separate development project
+or supported Pages parallel deployments when a hosted development URL is needed.
 
-**EBI HX cluster** — fallback only, manually triggered.
+## Local check
 
----
+From the repository root, with Python 3.13+ and uv installed:
 
-## File inventory
-
-| File | Purpose |
-|------|---------|
-| `Dockerfile.docs` | Multi-stage build: uv builder → nginx server |
-| `nginx.conf` | Routes `/apps/gwas_sumstats_tools/` and `/apps/gwas_sumstats_tools/docs/` |
-| `apps/ssf-morph/webworker.js` | Loads Pyodide + the versioned wheel file |
-| `apps/ssf-morph/wheels/` | Wheel files loaded by the browser app |
-| `deployment/helm/Chart.yaml` | Helm chart metadata |
-| `deployment/helm/values.yaml` | Default values (image, namespace, resources) |
-| `deployment/helm/templates/` | K8S Deployment, Service, Ingress templates |
-| `.gitlab-ci.yml` | GitLab CI: test → build → deploy |
-| `.github/workflows/publish-pypi.yml` | GitHub Actions: PyPI release + wheel update |
-| `.github/workflows/publish-docs.yml` | GitHub Actions: build-only test on PRs |
-
----
-
-## One-time setup
-
-### 1. Docker Hub — create two public repositories
-
-- `ebispot/gwas-sumstats-tools`
-- `ebispot/gwas-sumstats-tools-docs`
-
-### 2. GitLab — CI/CD variables (Settings → CI/CD → Variables)
-
-### 3. GitHub — PyPI trusted publishing
-
-On [pypi.org](https://pypi.org) → your project → Publishing → Add trusted publisher:
-
-- Publisher: **GitHub Actions**
-- Owner: `EBISPOT`
-- Repository: `gwas-sumstats-tools`
-- Workflow filename: `publish-pypi.yml`
-- Environment: `publish`
-
-On GitHub → Settings → Environments → create an environment named `publish`.
-
----
-
-## Flow A — Python library release (GitHub)
-
-**Trigger:** creating a GitHub Release.
-
-### Steps
-
-1. Bump version and push to master:
-   ```bash
-   uv version 1.0.25            # update pyproject.toml
-   git add pyproject.toml
-   git commit -m "chore: bump version to 1.0.25"
-   git push origin master
-   ```
-
-2. On GitHub → Releases → Draft a new release:
-   - Tag: `v1.0.25` (create on `master`)
-   - Click **Publish release**
-
-**What `publish-pypi.yml` does automatically:**
-```
-test (pytest)
-  → build wheel: gwas_sumstats_tools-1.0.25-py3-none-any.whl
-  → remove old gwas_sumstats_tools-*.whl from apps/ssf-morph/wheels/
-  → copy new wheel to apps/ssf-morph/wheels/
-  → update apps/ssf-morph/webworker.js to reference new wheel filename
-  → commit & push changes to master
-  → publish to PyPI
+```sh
+sh deployment/build_pages.sh
+python -m http.server 8000 --directory public
 ```
 
-The commit pushed to `master` then automatically triggers Flow B in GitLab.
+Open `http://localhost:8000/`. The build replaces the generated `public/`
+directory. Python's simple server does not implement Pages rewrites, so verify
+refreshing documentation deep links on GitLab Pages.
 
----
+After publication, check app startup, wheel loading, formatting, validation and
+downloading a result. Check documentation navigation, a direct documentation
+link, and the installation-page image. Confirm missing JavaScript returns 404.
+A live Pages deployment is required to verify GitLab's routing and access policy.
 
-## Flow B — Docs/app deployment (GitLab)
+To roll back, rerun the build and manual publication for a known-good tag that
+contains this workflow. Rebuild first if its artefact has expired. Do not run an
+old Kubernetes pipeline as a Pages rollback.
 
-### On push to `dev`
+## Other release flows and migration
 
-```
-test (pytest)
-  ↓
-build      → ebispot/gwas-sumstats-tools:<sha>       (CLI image)
-build-docs → ebispot/gwas-sumstats-tools-docs:<sha>  (nginx image)
-  ↓
-deploy-dev → HH cluster, namespace: gwas-dev
-             helm install gwas-sumstats-tools-dev
-             --set image.tag=<sha>
-```
+CLI Docker builds in GitLab and PyPI publishing through GitHub Actions remain
+independent and unchanged. CLI Docker jobs still require their existing Docker
+runner configuration.
 
-Note: `BUILDKIT_OCI_MEDIA_TYPES=0` and `--provenance=false` are set on the
-`build-docs` job to ensure compatibility with EBI's older K8S nodes.
+The nginx image configuration, Helm chart and their GitLab deployment jobs have
+been removed. Existing Kubernetes workloads are not automatically removed;
+an operator must retire them and unused Kubernetes credentials after accepting
+the Pages deployment.
 
-### On push to `master`
+## References
 
-Same as `dev` but **no deploy job** — master builds images with the commit SHA
-tag only. Deploy to production only happens on a tagged release.
-
-### On a git tag (production release)
-
-```bash
-git tag v1.0.25
-git push origin v1.0.25    # or push to GitLab remote
-```
-
-```
-test (pytest)
-  ↓
-build_release      → ebispot/gwas-sumstats-tools:latest + :v1.0.25
-build_release-docs → ebispot/gwas-sumstats-tools-docs:latest + :v1.0.25
-  ↓
-deploy          (auto)   → PLIVE_KUBECONFIG  → HH cluster, namespace: gwas
-deploy-fallback (manual) → PFALLBACK_KUBECONFIG → HX cluster, namespace: gwas
-```
-
-`deploy-fallback` only runs when manually clicked in the GitLab pipeline UI.
-
----
-
-## URL structure after deployment
-
-| URL | Content |
-|-----|---------|
-| `/apps/gwas_sumstats_tools/` | ssf-morph browser app |
-| `/apps/gwas_sumstats_tools/docs/` | docsify documentation |
-
-The K8S Ingress rewrites `/apps/gwas_sumstats_tools/...` → `/apps/gwas_sumstats_tools/...`
-before handing off to nginx inside the pod.
-
----
-
-## Local development
-
-### Test the Docker image locally
-
-```bash
-# Build
-docker build -f Dockerfile.docs -t gwas-docs:dev .
-
-# Run
-docker run --rm -p 8000:80 gwas-docs:dev
-
-# Verify
-curl http://localhost:8000/apps/gwas_sumstats_tools/
-curl http://localhost:8000/apps/gwas_sumstats_tools/docs/
-```
-
-### Dry-run the Helm chart
-
-```bash
-# Against your local kubeconfig
-helm install gwas-sumstats-tools deployment/helm/ \
-  --set image.tag=latest \
-  --dry-run --debug
-```
-
----
-
-## Verify after deploy
-
-```bash
-# Check rollout
-kubectl --namespace gwas rollout status deployment/gwas-sumstats-tools
-
-# Confirm running image tag
-kubectl --namespace gwas get pods -l app=gwas-sumstats-tools \
-  -o jsonpath='{.items[0].spec.containers[0].image}'
-
-# Check ingress
-kubectl --namespace gwas get ingress sumstats-tools-ingress
-```
-
----
-
-## Troubleshooting
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Image fails to pull on K8S node | OCI media type incompatibility | Ensure `BUILDKIT_OCI_MEDIA_TYPES=0` and `--provenance=false` are set in `build-docs` job |
-| deploy fails with `Error: UPGRADE FAILED` or `release not found` | Stale or partial release in the namespace | Run `helm list -n <namespace>` to inspect state; `helm uninstall <release> -n <namespace>` then re-run the pipeline. Note: `helm init` and `--purge` are Helm 2 artefacts — if the CI image still runs Helm 2 (`dtzar/helm-kubectl:2.13.1`), upgrade it to a Helm 3 image (e.g. `dtzar/helm-kubectl:3.13.3`) and replace `helm init` / `helm delete --purge` / `helm install --name` with their Helm 3 equivalents (`helm repo update`, `helm uninstall`, `helm upgrade --install`) |
-| `deploy-dev` fails with kubeconfig error | `PLIVE_KUBECONFIG` not set or not base64-encoded | Run `cat gwas-depo-hh-config.yml \| base64 \| tr -d '\n'` and paste into GitLab variable |
-| 404 at `/apps/gwas_sumstats_tools/` | nginx misconfiguration or wrong COPY path | `docker exec <container> ls /usr/share/nginx/html/apps/gwas_sumstats_tools/` |
-| webworker loads wrong wheel version | `webworker.js` not updated | The `publish-pypi.yml` workflow updates it automatically on each release; check the commit it pushes to master |
-| `docker pull` fails on first `build-docs` run | No `latest` tag exists yet | `\|\| true` is already set — safe to ignore on first run |
+- [GitLab Pages CI syntax](https://docs.gitlab.com/ci/yaml/#pagespublish)
+- [Pages redirects](https://docs.gitlab.com/user/project/pages/redirects/)

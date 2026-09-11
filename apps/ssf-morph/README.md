@@ -63,13 +63,15 @@ All heavy lifting is delegated to the `gwas_sumstats_tools` Python library:
 SSF-morph must be served over HTTP (the File System Access API does not work from `file://`).
 
 ```bash
-# Serve from the ssf-morph directory
-cd ssf-morph
-python -m http.server 8000
+# Build and serve from the repository root (Python 3.13+ and uv required)
+sh deployment/build_pages.sh
+python -m http.server 8000 --directory public
 # Then open http://localhost:8000 in Chrome or Edge
 ```
 
-No build step is required — all dependencies are loaded at runtime.
+The build bundles the current Python package using its full wheel filename and
+updates the generated worker to match. Dependencies are loaded at runtime.
+See [the deployment guide](../../DEPLOYMENT.md) for GitLab Pages publishing.
 
 ---
 

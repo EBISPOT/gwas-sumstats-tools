@@ -1,5 +1,25 @@
 // This script is setting up a way to run Python scripts asynchronously in a web worker. It sends the Python script to the worker and sets up a callback to handle the result when the worker has finished executing the script.
-let pyodideWorker = new Worker("./webworker.js");
+let resolveReady;
+let ready;
+
+function startWorker() {
+  const worker = new Worker("./webworker.js");
+  ready = new Promise((resolve) => {
+    resolveReady = resolve;
+    worker.onmessage = (event) => {
+      if (event.data.type === 'ready') {
+        const { type, ...status } = event.data;
+        resolve(status);
+      } else {
+        handleMessage(event);
+      }
+    };
+    worker.onerror = (event) => resolve({ error: event.message || 'Worker startup failed' });
+  });
+  return worker;
+}
+
+let pyodideWorker = startWorker();
 
 const callbacks = {};
 const stdoutCallbacks = {};
@@ -22,26 +42,29 @@ function handleMessage(event) {
   onSuccess(data);
 }
 
-pyodideWorker.onmessage = handleMessage;
-
 // Terminates the running worker, resolves all pending promises with {stopped:true},
 // then recreates a fresh worker ready for the next operation.
 function stopWorker() {
   pyodideWorker.terminate();
+  resolveReady({ stopped: true });
   for (const id of Object.keys(callbacks)) {
     callbacks[id]({ stopped: true });
     delete callbacks[id];
     delete stdoutCallbacks[id];
     delete chunkCallbacks[id];
   }
-  pyodideWorker = new Worker("./webworker.js");
-  pyodideWorker.onmessage = handleMessage;
+  pyodideWorker = startWorker();
 }
 
 //This id is incremented each time the function is invoked and is kept within the safe integer limit.
 const asyncRun = (() => {
   let id = 0; // identify a Promise
-  return (script, context, onProgress, onChunk) => {
+  return async (script, context, onProgress, onChunk) => {
+    // Preserve uploads if package initialization fails before processing starts.
+    const worker = pyodideWorker;
+    const status = await ready;
+    if (status.error || status.stopped) return status;
+    if (worker !== pyodideWorker) return { stopped: true };
     // the id could be generated more carefully
     id = (id + 1) % Number.MAX_SAFE_INTEGER;
     if (onProgress) stdoutCallbacks[id] = onProgress;

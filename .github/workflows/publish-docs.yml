@@ -1,40 +1,35 @@
-name: Test Docs Image
+name: Test Pages Site
 
 on:
   pull_request:
     paths:
       - 'docs/gwas-sumstats-tools-doc/**'
       - 'apps/ssf-morph/**'
-      - 'Dockerfile.docs'
-      - 'nginx.conf'
+      - 'src/**'
+      - 'tests/test_py_worker.mjs'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'deployment/build_pages.sh'
+      - '.gitlab-ci.yml'
+      - '.github/workflows/publish-docs.yml'
   workflow_dispatch:
 
 permissions:
-   contents: read
+  contents: read
 
 jobs:
-  test-image:
+  test-pages:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build test image
-        uses: docker/build-push-action@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          context: .
-          file: ./Dockerfile.docs
-          push: false
-          load: true
-          tags: test-image:latest
-
-      - name: Test image
-        run: |
-          docker run -d --name test-container -p 8080:80 test-image:latest
-          sleep 3
-          curl -f http://localhost:8080/gwas/apps/gwas-sumstats-tools/ || exit 1
-          curl -f http://localhost:8080/gwas/apps/gwas-sumstats-tools/index.html || exit 1
-          docker stop test-container && docker rm test-container
+          python-version: '3.13'
+      - uses: astral-sh/setup-uv@v5
+      - name: Build and check Pages site
+        run: sh deployment/build_pages.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check worker startup and buffer transfers
+        run: node tests/test_py_worker.mjs

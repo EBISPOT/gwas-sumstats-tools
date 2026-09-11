@@ -32,15 +32,19 @@ async function loadPyodideAndPackages() {
         wheel("pandera-0.26.1-py3-none-any.whl"),
     ]);
 
-    // install a fixed name wheel file
+    // The site build replaces this with the freshly built wheel's full filename.
     await micropip.install(
-	wheel("gwas_sumstats_tools.whl"),
+	wheel("gwas_sumstats_tools-2.0.1-py3-none-any.whl"),
 	true
     );
     
     await micropip.install("tabulate");
 }
 let pyodideReadyPromise = loadPyodideAndPackages();
+pyodideReadyPromise.then(
+    () => self.postMessage({ type: 'ready' }),
+    (error) => self.postMessage({ type: 'ready', error: error.message })
+);
 
 self.onmessage = async (event) => {
     const { id, python, ...context } = event.data;

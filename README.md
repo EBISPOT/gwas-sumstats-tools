@@ -20,11 +20,10 @@ gwas-sumstats-tools/
 │   ├── gwas-sumstats-tools-doc/  # Docsify documentation site
 │   └── decisions/              # Architecture decision records
 ├── tests/                      # Pytest test suite
-├── deployment/                 # Kubernetes Helm chart
+├── deployment/                 # Static site build script
 ├── dist/                       # Built Python wheel and sdist archives
 ├── Dockerfile                  # Docker image for the CLI
-├── Dockerfile.docs             # Docker image: nginx serving ssf-morph + docs
-├── nginx.conf                  # nginx routing config for the Docker image
+├── .gitlab-ci.yml              # Tests, CLI images and GitLab Pages publishing
 ├── DEPLOYMENT.md               # End-to-end deployment guide
 ├── pyproject.toml              # uv/PEP 621 project configuration
 └── .github/                    # CI/CD pipelines
@@ -97,15 +96,11 @@ Pytest test suite covering CLI, formatting, reading, validation, and utilities.
 | `interfaces/` | Tests for the data-layer interfaces |
 
 ### `deployment/`
-Kubernetes deployment configuration using Helm.
+Static site packaging for GitLab Pages.
 
 | File | Purpose |
 |---|---|
-| `helm/Chart.yaml` | Helm chart metadata |
-| `helm/values.yaml` | Default values (image tag, namespace, resources) |
-| `helm/templates/deployment.yaml` | K8S Deployment resource |
-| `helm/templates/service.yaml` | K8S Service resource |
-| `helm/templates/ingress.yaml` | K8S Ingress resource |
+| `build_pages.sh` | Build and check the browser app, versioned Python wheel and documentation in `public/` |
 
 ### `docs/decisions/`
 Architecture Decision Records (ADRs) — lightweight design documents explaining why key technical choices were made.
@@ -154,8 +149,8 @@ Two independent release flows:
 
 | Flow | Trigger | Produces |
 |---|---|---|
-| **PyPI** | GitHub Release | Python package on PyPI + updated wheel in apps/ssf-morph |
-| **Docs/App** | Push to `dev` or git tag via GitLab CI | Docker image → Kubernetes (EBI) |
+| **PyPI** | GitHub Release | Python package on PyPI |
+| **Docs/App** | Manual GitLab CI job from `main`, the default branch or a release tag | Static browser app and documentation on GitLab Pages |
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for full details.
 
