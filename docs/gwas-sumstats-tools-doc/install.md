@@ -29,10 +29,9 @@ To confirm successful installation of GWAS-Sumstat-Tools, run the command `gwas-
 
 ![gwas-ssf](img/gwas-demo.gif)
 
-### Optional Installation and Execution Methods for GWAS-Sumstat-Tools 
-If the Python version displayed is below Python 3.13, you may encounter compatibility issues with the package. In such cases, you have two options:
+### Installing Python 3.13
+If the Python version displayed is below Python 3.13, you may encounter compatibility issues with the package. Install Python 3.13 locally:
 
-#### Option 1: Install Python 3.13 locally
 1. Download and install Python 3.13 from the [official Python website](https://www.python.org/downloads/).
 2. Determine the installation location of Python 3.13 by running:
 ```bash
@@ -56,29 +55,6 @@ $ pip install gwas-sumstats-tools
 ```bash
 $ deactivate
 ```
-> Please refer to [installing-packages](https://packaging.python.org/en/latest/tutorials/installing-packages/) for more detail information on how to install packages 
-
-#### Option 2: Run with docker or singularity
-1. Check if the Docker **OR** Singularity is available
-```bash
-# docker
-$ docker --version
-# singularity
-$ singularity --version
-```
-> please read how to install [Docker](https://docs.docker.com/engine/install/) or [Singularity](https://docs.sylabs.io/guides/2.6/user-guide/quick_start.html)
-
-2. Run with docker
-```bash
-$ docker run -it -v $path_installed_docker ebispot/gwas-sumstats-tools:latest
-```
-
-3. **OR** Run with singularity
-```bash
-# pull and build the docker image to a singularity image
-$ singularity build gwas-sumstats-tools.sif docker://ebispot/gwas-sumstats-tools:latest
-# Run the singularity image
-$ singularity shell gwas-sumstats-tools.sif
-```
+> Please refer to [installing packages](https://packaging.python.org/en/latest/tutorials/installing-packages/) for more information on installing packages.
 ----
 Copyright © EMBL-EBI 2024 | EMBL-EBI is an Outstation of the [European Molecular Biology Laboratory](https://www.embl.org/) | [Terms of use](https://www.ebi.ac.uk/about/terms-of-use) | [Data Preservation Statement](https://www.ebi.ac.uk/long-term-data-preservation)

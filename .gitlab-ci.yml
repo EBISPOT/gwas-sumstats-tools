@@ -9,11 +9,6 @@ default:
   tags:
     - gwas
 
-variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_HOST: tcp://docker:2375
-
 workflow:
   rules:
     - if: $CI_COMMIT_TAG
@@ -24,15 +19,6 @@ workflow:
     - pip install --upgrade pip
     - pip install uv
     - uv sync --group dev --frozen
-
-.docker:
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:latest
-  services:
-    - name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:dind
-      alias: docker
-  before_script:
-    - echo "$CI_DEPENDENCY_PROXY_PASSWORD" | docker login "$CI_DEPENDENCY_PROXY_SERVER" -u "$CI_DEPENDENCY_PROXY_USER" --password-stdin
-    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
 
 test:
   extends: .python
@@ -45,30 +31,6 @@ test_worker:
   stage: test
   script:
     - node tests/test_py_worker.mjs
-
-build:
-  extends: .docker
-  stage: build
-  script:
-    - docker pull "$CI_REGISTRY_IMAGE:latest" || true
-    - docker build --network=host --build-arg PYTHON_IMAGE="$CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX/python:3.13-slim-bookworm" --cache-from "$CI_REGISTRY_IMAGE:latest" -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
-    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "dev"'
-
-build_release:
-  extends: .docker
-  stage: build
-  script:
-    - docker pull "$CI_REGISTRY_IMAGE:latest" || true
-    - docker build --network=host --build-arg PYTHON_IMAGE="$CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX/python:3.13-slim-bookworm" --cache-from "$CI_REGISTRY_IMAGE:latest" -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
-    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
-    - docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE:latest"
-    - docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
-    - docker push "$CI_REGISTRY_IMAGE:latest"
-    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
-  rules:
-    - if: $CI_COMMIT_TAG
 
 # Build every branch and tag for production and development Pages deployments.
 build_pages:

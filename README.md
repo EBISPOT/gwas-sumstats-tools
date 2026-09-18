@@ -22,8 +22,7 @@ gwas-sumstats-tools/
 ├── tests/                      # Pytest test suite
 ├── deployment/                 # Static site build script
 ├── dist/                       # Built Python wheel and sdist archives
-├── Dockerfile                  # Docker image for the CLI
-├── .gitlab-ci.yml              # Tests, CLI images and GitLab Pages publishing
+├── .gitlab-ci.yml              # Tests and GitLab Pages publishing
 ├── DEPLOYMENT.md               # End-to-end deployment guide
 ├── pyproject.toml              # uv/PEP 621 project configuration
 └── .github/                    # CI/CD pipelines

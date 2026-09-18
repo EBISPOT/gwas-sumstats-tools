@@ -12,9 +12,9 @@ is required. Python processing still runs in the browser through Pyodide.
   parallel Pages deployment slot. Protect the `dev` branch under branch rules;
   the development publication job is excluded when that branch is unprotected.
 - Make a runner tagged `gwas` available, with access to Python packages needed
-  for the build. The Pages jobs do not require Docker or Kubernetes credentials.
-- Enable the group's Dependency Proxy for container images. CI pulls Python,
-  Node.js, Docker and Docker-in-Docker images through
+  for the build. The Pages jobs do not require Kubernetes credentials.
+- Enable the group's Dependency Proxy for container images. CI pulls Python and
+  Node.js images through
   `CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX`. GitLab Runner authenticates these
   pulls automatically using GitLab's predefined credentials.
 - Confirm that commits and release tags reach the GitLab project. The GitHub
@@ -99,20 +99,7 @@ old Kubernetes pipeline as a Pages rollback.
 
 ## Other release flows and migration
 
-CLI Docker builds in GitLab and PyPI publishing through GitHub Actions are
-independent of Pages. The CLI `build` job publishes a commit-SHA image on pushes
-to the default branch or `dev`. On release tags, `build_release` publishes
-commit-SHA, release-tag and `latest` images to the GitLab project's container
-registry (`CI_REGISTRY_IMAGE`). These jobs still require Docker-in-Docker;
-the Pages jobs build and publish static files without it.
-
-CLI builds also pull their Python base image through the Dependency Proxy,
-passing `PYTHON_IMAGE` to the Dockerfile and authenticating Docker with the
-predefined `CI_DEPENDENCY_PROXY_*` credentials. Local Docker builds default to
-Docker Hub. The uv image still comes from GHCR; Python packages still come from
-their configured package index. The container Dependency Proxy caches Docker Hub
-images, not those other dependencies. Published CLI images continue to use the
-project's container registry.
+PyPI publishing through GitHub Actions is independent of Pages.
 
 The nginx image configuration, Helm chart and their GitLab deployment jobs have
 been removed. Existing Kubernetes workloads are not automatically removed;
